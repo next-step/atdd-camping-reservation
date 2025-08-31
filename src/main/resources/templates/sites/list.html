@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사이트 목록 - 초록 캠핑장</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); 
+            min-height: 100vh;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .page-header {
+            text-align: center;
+            color: white;
+            margin: 2rem 0;
+        }
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .filter-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 0.6rem 1.5rem;
+            border: 2px solid #e0e0e0;
+            background: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+        .filter-btn:hover {
+            border-color: #52b788;
+        }
+        .filter-btn.active {
+            background: #52b788;
+            color: white;
+            border-color: #52b788;
+        }
+        .sites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .site-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .site-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .site-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .site-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+        .site-size {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            background: #ffc107;
+            color: #000;
+        }
+        .site-size.large {
+            background: #28a745;
+            color: white;
+        }
+        .site-size.small {
+            background: #17a2b8;
+            color: white;
+        }
+        .site-details {
+            margin-bottom: 1rem;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .detail-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .detail-value {
+            color: #333;
+            font-weight: 500;
+        }
+        .site-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-top: 1rem;
+        }
+        .site-actions {
+            margin-top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .btn {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .feature-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <div class="main-container">
+        <div class="page-header">
+            <h1>🏕️ 캠핑 사이트 목록</h1>
+            <p>총 50개의 캠핑 사이트를 보유하고 있습니다</p>
+        </div>
+        
+        <div class="filter-card">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">📍 사이트 필터</h3>
+            <div class="filter-buttons">
+                <button class="filter-btn active" onclick="filterSites('all')">전체</button>
+                <button class="filter-btn" onclick="filterSites('large')">대형 사이트</button>
+                <button class="filter-btn" onclick="filterSites('small')">소형 사이트</button>
+            </div>
+        </div>
+        
+        <div class="sites-grid" id="sitesGrid">
+            <!-- 사이트 카드들이 여기에 동적으로 추가됩니다 -->
+        </div>
+    </div>
+    
+    <script>
+        let allSites = [];
+        
+        // 페이지 로드 시 사이트 목록 가져오기
+        window.addEventListener('DOMContentLoaded', async function() {
+            await loadSites();
+        });
+        
+        async function loadSites() {
+            try {
+                const response = await fetch('/api/sites');
+                const sites = await response.json();
+                allSites = sites;
+                displaySites(sites);
+            } catch (error) {
+                console.error('Error loading sites:', error);
+                document.getElementById('sitesGrid').innerHTML = 
+                    '<p style="text-align: center; color: white;">사이트 목록을 불러오는 중 오류가 발생했습니다.</p>';
+            }
+        }
+        
+        function displaySites(sites) {
+            const grid = document.getElementById('sitesGrid');
+            
+            if (sites.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: white;">표시할 사이트가 없습니다.</p>';
+                return;
+            }
+            
+            let html = '';
+            sites.forEach(site => {
+                const isLarge = site.siteNumber.startsWith('A');
+                const maxPeople = site.maxPeople || (isLarge ? 6 : 4);
+                
+                html += `
+                    <div class="site-card" onclick="viewSiteDetail('${site.siteNumber}')">
+                        <div class="site-header">
+                            <span class="site-number">${site.siteNumber}</span>
+                            <span class="site-size ${isLarge ? 'large' : 'small'}">
+                                ${isLarge ? '대형' : '소형'}
+                            </span>
+                        </div>
+                        <div class="site-details">
+                            <div class="detail-row">
+                                <span class="detail-label">최대 인원</span>
+                                <span class="detail-value">${maxPeople}명</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">시설</span>
+                                <span class="detail-value">
+                                    ${isLarge ? '<span class="feature-badge">⚡ 전기</span>' : ''}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="site-description">
+                            ${site.description || ''}
+                        </div>
+                        <div class="site-actions">
+                            <a href="/sites/${site.siteNumber}" class="btn btn-secondary">상세 정보</a>
+                            <a href="/?siteNumber=${site.siteNumber}" class="btn btn-primary">예약 확인</a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+        
+        function filterSites(filter) {
+            // 필터 버튼 활성화 상태 변경
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // 사이트 필터링
+            let filteredSites = allSites;
+            
+            switch(filter) {
+                case 'large':
+                    filteredSites = allSites.filter(site => site.siteNumber.startsWith('A'));
+                    break;
+                case 'small':
+                    filteredSites = allSites.filter(site => !site.siteNumber.startsWith('A'));
+                    break;
+                case 'electric':
+                    filteredSites = allSites.filter(site => site.siteNumber.startsWith('A'));
+                    break;
+                default:
+                    filteredSites = allSites;
+            }
+            
+            displaySites(filteredSites);
+        }
+        
+        function viewSiteDetail(siteNumber) {
+            window.location.href = `/sites/${siteNumber}`;
+        }
+    </script>
+</body>
+</html>

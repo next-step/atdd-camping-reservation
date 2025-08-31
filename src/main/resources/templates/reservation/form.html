@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예약하기 - 초록 캠핑장</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); min-height: 100vh; }
+        .container { max-width: 600px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; color: white; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .form-card { background: white; border-radius: 15px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; color: #333; font-weight: 600; margin-bottom: 0.5rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #52b788; }
+        .btn-group { display: flex; gap: 1rem; margin-top: 2rem; }
+        .btn { flex: 1; padding: 0.8rem 2rem; border: none; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: opacity 0.3s; text-align: center; text-decoration: none; }
+        .btn-primary { background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); color: white; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn:hover { opacity: 0.9; }
+        .alert { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #0c5460; }
+        .site-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem; }
+        .site-option { position: relative; }
+        .site-option input[type="radio"] { position: absolute; opacity: 0; }
+        .site-option label { display: block; padding: 0.8rem; text-align: center; background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; transition: all 0.3s; }
+        .site-option input[type="radio"]:checked + label { background: #52b788; color: white; border-color: #52b788; }
+        .site-option label:hover { border-color: #52b788; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏕️ 캠핑장 예약</h1>
+            <p>원하는 사이트와 날짜를 선택하세요</p>
+        </div>
+
+        <div class="form-card">
+            <div class="alert alert-info">
+                💡 로그인 없이 간편하게 예약하실 수 있습니다.
+            </div>
+
+            <form id="reservationForm">
+                <div class="form-group">
+                    <label for="customerName">예약자 이름 *</label>
+                    <input type="text" id="customerName" name="customerName" required placeholder="홍길동">
+                </div>
+
+                <div class="form-group">
+                    <label for="phoneNumber">연락처</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="010-1234-5678">
+                </div>
+
+                <div class="form-group">
+                    <label for="startDate">시작일 *</label>
+                    <input type="date" id="startDate" name="startDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="endDate">종료일 *</label>
+                    <input type="date" id="endDate" name="endDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>캠핑 사이트 선택 *</label>
+                    <div class="site-grid">
+                        <div class="site-option" th:each="campsite : ${campsites}">
+                            <input type="radio" name="siteNumber" th:id="${'site-' + campsite.siteNumber}" 
+                                   th:value="${campsite.siteNumber}" required>
+                            <label th:for="${'site-' + campsite.siteNumber}" th:text="${campsite.siteNumber}"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">예약하기</button>
+                    <a href="/" class="btn btn-secondary">뒤로 가기</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // URL 파라미터에서 값 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const siteFromUrl = urlParams.get('site');
+        const startDateFromUrl = urlParams.get('startDate');
+        const endDateFromUrl = urlParams.get('endDate');
+        
+        // 페이지 로드 시 초기값 설정
+        window.addEventListener('DOMContentLoaded', function() {
+            // 날짜 입력 제한 설정
+            const today = new Date();
+            const maxDate = new Date(today);
+            maxDate.setMonth(maxDate.getMonth() + 1);
+            
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            const formatDate = (date) => {
+                return date.toISOString().split('T')[0];
+            };
+            
+            // 날짜 입력 제한
+            startDateInput.min = formatDate(today);
+            startDateInput.max = formatDate(maxDate);
+            endDateInput.min = formatDate(today);
+            endDateInput.max = formatDate(maxDate);
+            
+            // URL에서 전달받은 값 설정
+            if (startDateFromUrl) {
+                startDateInput.value = startDateFromUrl;
+            }
+            if (endDateFromUrl) {
+                endDateInput.value = endDateFromUrl;
+            }
+            if (siteFromUrl) {
+                const siteRadio = document.querySelector(`input[name="siteNumber"][value="${siteFromUrl}"]`);
+                if (siteRadio) {
+                    siteRadio.checked = true;
+                }
+            }
+            
+            // 시작일 변경시 종료일 최소값 업데이트
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+                
+                const start = new Date(this.value);
+                const maxEnd = new Date(start);
+                maxEnd.setMonth(maxEnd.getMonth() + 1);
+                endDateInput.max = formatDate(maxEnd > maxDate ? maxDate : maxEnd);
+            });
+        });
+        
+        document.getElementById('reservationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                customerName: formData.get('customerName'),
+                phoneNumber: formData.get('phoneNumber'),
+                startDate: formData.get('startDate'),
+                endDate: formData.get('endDate'),
+                siteNumber: formData.get('siteNumber')
+            };
+            
+            try {
+                const response = await fetch('/api/reservations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`예약이 완료되었습니다!\n\n예약번호: ${result.id}\n확인코드: ${result.confirmationCode}\n사이트: ${result.siteNumber}\n기간: ${formData.get('startDate')} ~ ${formData.get('endDate')}\n\n⚠️ 확인 코드를 꼭 메모해주세요!\n예약 취소 시 필요합니다.`);
+                    window.location.href = '/';
+                } else {
+                    alert(`예약 실패: ${result.message || '알 수 없는 오류'}`);
+                }
+            } catch (error) {
+                alert('예약 처리 중 오류가 발생했습니다.');
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

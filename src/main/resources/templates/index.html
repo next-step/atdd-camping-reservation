@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>잔여석 조회 - 초록 캠핑장</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .header { text-align: center; color: white; margin-bottom: 2rem; }
+        .header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .filter-card { background: white; border-radius: 15px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .filter-form { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { margin-bottom: 0.5rem; color: #2d6a4f; font-weight: 600; }
+        .filter-form input, .filter-form select { padding: 0.8rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; min-width: 150px; }
+        .btn { padding: 0.8rem 2rem; border: none; border-radius: 50px; font-size: 1rem; cursor: pointer; transition: opacity 0.3s; text-decoration: none; display: inline-block; }
+        .btn-primary { background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); color: white; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn:hover { opacity: 0.9; }
+        .btn-small { padding: 0.4rem 1rem; font-size: 0.875rem; }
+        .results-card { background: white; border-radius: 15px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; color: #333; font-weight: 600; text-align: left; padding: 1rem; border-bottom: 2px solid #dee2e6; }
+        td { padding: 1rem; border-bottom: 1px solid #dee2e6; color: #666; }
+        tr:hover { background: #f8f9fa; }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.875rem; font-weight: 600; }
+        .status-available { background: #d4edda; color: #155724; }
+        .status-unavailable { background: #f8d7da; color: #721c24; }
+        .empty-state { text-align: center; padding: 3rem; color: #999; }
+        .site-badge { display: inline-block; padding: 0.5rem 1rem; background: #52b788; color: white; border-radius: 8px; font-weight: 600; margin-right: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏕️ 초록 캠핑장 - 잔여석 조회</h1>
+            <p>원하는 날짜의 캠핑 사이트 예약 가능 여부를 확인하세요</p>
+        </div>
+
+        <div class="filter-card">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">🔍 조회 조건</h3>
+            <form class="filter-form" id="searchForm">
+                <div class="filter-group">
+                    <label for="startDate">시작일:</label>
+                    <input type="date" id="startDate" name="startDate" required>
+                </div>
+                <div class="filter-group">
+                    <label for="endDate">종료일:</label>
+                    <input type="date" id="endDate" name="endDate" required>
+                </div>
+                <div class="filter-group">
+                    <label for="siteNumber">사이트 선택:</label>
+                    <select id="siteNumber" name="siteNumber">
+                        <option value="">전체 사이트</option>
+                        <option value="A-1">A-1</option>
+                        <option value="A-2">A-2</option>
+                        <option value="A-3">A-3</option>
+                        <option value="A-4">A-4</option>
+                        <option value="A-5">A-5</option>
+                        <option value="B-1">B-1</option>
+                        <option value="B-2">B-2</option>
+                        <option value="B-3">B-3</option>
+                        <option value="B-4">B-4</option>
+                        <option value="B-5">B-5</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">조회</button>
+            </form>
+        </div>
+
+        <div class="results-card">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">📋 조회 결과</h3>
+            <div id="availability-results">
+                <p style="text-align: center; color: #666;">조회 조건을 선택하고 조회 버튼을 클릭하세요.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 페이지 로드 시 초기 설정
+        window.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const maxDate = new Date(today);
+            maxDate.setMonth(maxDate.getMonth() + 1);
+            
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            // 오늘 날짜를 YYYY-MM-DD 형식으로 변환
+            const formatDate = (date) => {
+                return date.toISOString().split('T')[0];
+            };
+            
+            // 초기값 설정: 오늘 ~ 내일
+            startDateInput.value = formatDate(today);
+            endDateInput.value = formatDate(tomorrow);
+            
+            // 날짜 입력 제한 설정
+            startDateInput.min = formatDate(today);
+            startDateInput.max = formatDate(maxDate);
+            endDateInput.min = formatDate(today);
+            endDateInput.max = formatDate(maxDate);
+            
+            // 시작일 변경시 종료일 최소값 업데이트
+            startDateInput.addEventListener('change', function() {
+                endDateInput.min = this.value;
+                
+                // 종료일이 시작일보다 이전이면 시작일로 설정
+                if (endDateInput.value && endDateInput.value < this.value) {
+                    endDateInput.value = this.value;
+                }
+                
+                // 기간이 한달을 초과하는지 확인
+                const start = new Date(this.value);
+                const maxEnd = new Date(start);
+                maxEnd.setMonth(maxEnd.getMonth() + 1);
+                endDateInput.max = formatDate(maxEnd > maxDate ? maxDate : maxEnd);
+            });
+            
+            // 폼 제출 이벤트 처리
+            const searchForm = document.getElementById('searchForm');
+            searchForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await checkAvailability();
+            });
+            
+            // 페이지 로드 시 자동으로 조회
+            checkAvailability();
+        });
+        
+        // 잔여석 조회 함수
+        async function checkAvailability() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const siteNumber = document.getElementById('siteNumber').value;
+            const resultsDiv = document.getElementById('availability-results');
+            
+            if (!startDate || !endDate) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #666;">날짜를 선택해주세요.</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p style="text-align: center; color: #666;">조회 중...</p>';
+            
+            try {
+                // 모든 사이트 목록
+                const allSites = ['A-1', 'A-2', 'A-3', 'A-4', 'A-5', 'B-1', 'B-2', 'B-3', 'B-4', 'B-5'];
+                const sitesToCheck = siteNumber ? [siteNumber] : allSites;
+                
+                // 각 날짜별로 예약 상태 확인
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const availabilityMap = {};
+                
+                // 사이트별 가용성 초기화
+                sitesToCheck.forEach(site => {
+                    availabilityMap[site] = [];
+                });
+                
+                // 기간 내 각 날짜에 대해 예약 확인
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = d.toISOString().split('T')[0];
+                    const response = await fetch(`/api/reservations?date=${dateStr}`);
+                    
+                    if (response.ok) {
+                        const reservations = await response.json();
+                        const reservedSites = new Set();
+                        
+                        reservations.forEach(reservation => {
+                            if (reservation.status === 'CONFIRMED') {
+                                reservedSites.add(reservation.siteNumber);
+                            }
+                        });
+                        
+                        sitesToCheck.forEach(site => {
+                            if (!reservedSites.has(site)) {
+                                availabilityMap[site].push(dateStr);
+                            }
+                        });
+                    }
+                }
+                
+                // 결과 표시
+                const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                let html = '<table style="width: 100%;">';
+                html += '<thead><tr><th>사이트</th><th>예약 가능 일수</th><th>상태</th><th>작업</th></tr></thead>';
+                html += '<tbody>';
+                
+                let hasAvailable = false;
+                
+                // 특정 사이트 선택 시 - 무조건 해당 사이트 표시
+                if (siteNumber) {
+                    const availableDays = availabilityMap[siteNumber] ? availabilityMap[siteNumber].length : 0;
+                    const isFullyAvailable = availableDays === totalDays;
+                    
+                    if (availableDays > 0) {
+                        hasAvailable = true;
+                        html += `<tr>
+                            <td><span class="site-badge">${siteNumber}</span></td>
+                            <td>${availableDays} / ${totalDays} 일</td>
+                            <td><span class="status ${isFullyAvailable ? 'status-available' : 'status-available'}">
+                                ${isFullyAvailable ? '전체 기간 예약 가능' : '부분 예약 가능'}
+                            </span></td>
+                            <td><button class="btn btn-primary btn-small" onclick="reserveSite('${siteNumber}', '${startDate}', '${endDate}')">예약하기</button></td>
+                        </tr>`;
+                    } else {
+                        html += `<tr style="opacity: 0.6;">
+                            <td><span class="site-badge" style="background: #ccc;">${siteNumber}</span></td>
+                            <td>0 / ${totalDays} 일</td>
+                            <td><span class="status status-unavailable">예약 불가</span></td>
+                            <td>-</td>
+                        </tr>`;
+                    }
+                } else {
+                    // 전체 사이트 조회 시
+                    sitesToCheck.forEach(site => {
+                        const availableDays = availabilityMap[site].length;
+                        const isFullyAvailable = availableDays === totalDays;
+                        
+                        if (availableDays > 0) {
+                            hasAvailable = true;
+                            html += `<tr>
+                                <td><span class="site-badge">${site}</span></td>
+                                <td>${availableDays} / ${totalDays} 일</td>
+                                <td><span class="status ${isFullyAvailable ? 'status-available' : 'status-available'}">
+                                    ${isFullyAvailable ? '전체 기간 예약 가능' : '부분 예약 가능'}
+                                </span></td>
+                                <td><button class="btn btn-primary btn-small" onclick="reserveSite('${site}', '${startDate}', '${endDate}')">예약하기</button></td>
+                            </tr>`;
+                        } else {
+                            html += `<tr style="opacity: 0.6;">
+                                <td><span class="site-badge" style="background: #ccc;">${site}</span></td>
+                                <td>0 / ${totalDays} 일</td>
+                                <td><span class="status status-unavailable">예약 불가</span></td>
+                                <td>-</td>
+                            </tr>`;
+                        }
+                    });
+                }
+                
+                html += '</tbody></table>';
+                
+                // 특정 사이트 선택했는데 예약 불가능한 경우 안내 메시지
+                if (!hasAvailable && siteNumber) {
+                    html += '<div style="margin-top: 1rem; text-align: center; color: #666;">선택한 기간에 해당 사이트는 예약이 불가능합니다. 다른 날짜를 선택해주세요.</div>';
+                } else if (!hasAvailable && !siteNumber) {
+                    html = '<div class="empty-state"><h3>😔 예약 가능한 사이트가 없습니다</h3><p>다른 날짜를 선택해주세요.</p></div>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error checking availability:', error);
+                resultsDiv.innerHTML = '<p style="color: red; text-align: center;">잔여석 조회 중 오류가 발생했습니다.</p>';
+            }
+        }
+        
+        // 예약 페이지로 이동
+        function reserveSite(siteNumber, startDate, endDate) {
+            window.location.href = `/reservations/new?site=${siteNumber}&startDate=${startDate}&endDate=${endDate}`;
+        }
+    </script>
+</body>
+</html>

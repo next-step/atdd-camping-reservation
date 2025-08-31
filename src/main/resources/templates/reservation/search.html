@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예약 조회 - 초록 캠핑장</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); 
+            min-height: 100vh;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .page-header {
+            text-align: center;
+            color: white;
+            margin: 2rem 0;
+        }
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .page-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        .search-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px;
+        }
+        .form-group label {
+            margin-bottom: 0.5rem;
+            color: #2d6a4f;
+            font-weight: 600;
+        }
+        .form-group input {
+            padding: 0.8rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        .btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .btn-small {
+            padding: 0.4rem 1rem;
+            font-size: 0.875rem;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .results-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .reservation-item {
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: box-shadow 0.3s;
+        }
+        .reservation-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .reservation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .reservation-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+        .reservation-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-confirmed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .reservation-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .detail-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        .detail-value {
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+        }
+        .site-link {
+            color: #2d6a4f;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .site-link:hover {
+            text-decoration: underline;
+        }
+        .reservation-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h3 {
+            color: #333;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <div class="main-container">
+        <div class="page-header">
+            <h1>📋 예약 조회</h1>
+            <p>이름 또는 전화번호로 예약을 조회하세요</p>
+        </div>
+        
+        <div class="search-card">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">🔍 예약 검색</h3>
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="customerName">예약자 이름</label>
+                    <input type="text" id="customerName" name="customerName" placeholder="홍길동">
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">전화번호</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" placeholder="010-1234-5678">
+                </div>
+                <button type="submit" class="btn btn-primary">조회</button>
+            </form>
+        </div>
+        
+        <div class="results-card">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">📑 조회 결과</h3>
+            <div id="reservation-results">
+                <p class="empty-state">이름 또는 전화번호를 입력하고 조회 버튼을 클릭하세요.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 예약 취소 모달 -->
+    <div id="cancelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close">&times;</span>
+                <h3>예약 취소</h3>
+            </div>
+            <form id="cancelForm">
+                <input type="hidden" id="cancelReservationId">
+                <div class="form-group">
+                    <label for="confirmationCode">확인 코드 입력</label>
+                    <input type="text" id="confirmationCode" required placeholder="6자리 확인 코드">
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                    <button type="submit" class="btn btn-danger" style="flex: 1;">예약 취소</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()" style="flex: 1; background: #e0e0e0; color: #333;">닫기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // 폼 제출 이벤트
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await searchReservations();
+        });
+        
+        // 예약 검색
+        async function searchReservations() {
+            const customerName = document.getElementById('customerName').value;
+            const phoneNumber = document.getElementById('phoneNumber').value;
+            const resultsDiv = document.getElementById('reservation-results');
+            
+            if (!customerName && !phoneNumber) {
+                resultsDiv.innerHTML = '<p class="empty-state">이름 또는 전화번호를 입력해주세요.</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="empty-state">조회 중...</p>';
+            
+            try {
+                let url = '/api/reservations/my?';
+                if (customerName) url += `name=${encodeURIComponent(customerName)}&`;
+                if (phoneNumber) url += `phone=${encodeURIComponent(phoneNumber)}`;
+                
+                const response = await fetch(url);
+                const reservations = await response.json();
+                
+                if (reservations.length === 0) {
+                    resultsDiv.innerHTML = '<p class="empty-state">조회된 예약이 없습니다.</p>';
+                    return;
+                }
+                
+                let html = '';
+                reservations.forEach(reservation => {
+                    const isActive = reservation.status === 'CONFIRMED';
+                    html += `
+                        <div class="reservation-item">
+                            <div class="reservation-header">
+                                <span class="reservation-number">예약번호: #${reservation.id}</span>
+                                <span class="reservation-status ${isActive ? 'status-confirmed' : 'status-cancelled'}">
+                                    ${isActive ? '예약 확정' : '취소됨'}
+                                </span>
+                            </div>
+                            <div class="reservation-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">예약자</span>
+                                    <span class="detail-value">${reservation.customerName}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">사이트</span>
+                                    <span class="detail-value">
+                                        <a href="/sites/${reservation.siteNumber}" class="site-link">${reservation.siteNumber}</a>
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">체크인</span>
+                                    <span class="detail-value">${reservation.startDate}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">체크아웃</span>
+                                    <span class="detail-value">${reservation.endDate}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">연락처</span>
+                                    <span class="detail-value">${reservation.phoneNumber || '-'}</span>
+                                </div>
+                            </div>
+                            ${isActive ? `
+                                <div class="reservation-actions">
+                                    <button class="btn btn-danger btn-small" onclick="openCancelModal(${reservation.id})">
+                                        예약 취소
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultsDiv.innerHTML = '<p class="empty-state" style="color: red;">조회 중 오류가 발생했습니다.</p>';
+            }
+        }
+        
+        // 취소 모달 열기
+        function openCancelModal(reservationId) {
+            document.getElementById('cancelReservationId').value = reservationId;
+            document.getElementById('confirmationCode').value = '';
+            document.getElementById('cancelModal').style.display = 'block';
+        }
+        
+        // 모달 닫기
+        function closeModal() {
+            document.getElementById('cancelModal').style.display = 'none';
+        }
+        
+        // 모달 외부 클릭 시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('cancelModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // X 버튼 클릭 시 모달 닫기
+        document.querySelector('.close').onclick = function() {
+            closeModal();
+        }
+        
+        // 예약 취소 폼 제출
+        document.getElementById('cancelForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const reservationId = document.getElementById('cancelReservationId').value;
+            const confirmationCode = document.getElementById('confirmationCode').value;
+            
+            if (!confirmationCode) {
+                alert('확인 코드를 입력해주세요.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/reservations/${reservationId}?confirmationCode=${confirmationCode}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert('예약이 취소되었습니다.');
+                    closeModal();
+                    await searchReservations(); // 목록 새로고침
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '예약 취소에 실패했습니다.');
+                }
+            } catch (error) {
+                alert('예약 취소 중 오류가 발생했습니다.');
+                console.error('Error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

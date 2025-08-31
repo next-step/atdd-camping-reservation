@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사이트 상세 - 초록 캠핑장</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%); 
+            min-height: 100vh;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .page-header {
+            text-align: center;
+            color: white;
+            margin: 2rem 0;
+        }
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .detail-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .site-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #f0f0f0;
+            margin-bottom: 1.5rem;
+        }
+        .site-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .site-number-large {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d6a4f;
+        }
+        .site-badges {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .badge {
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+        .badge-large {
+            background: #28a745;
+            color: white;
+        }
+        .badge-small {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-electric {
+            background: #ffc107;
+            color: #000;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .info-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+        }
+        .info-title {
+            color: #2d6a4f;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #6c757d;
+        }
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        .calendar-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .calendar-nav {
+            display: flex;
+            gap: 1rem;
+        }
+        .calendar-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: #52b788;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .calendar-btn:hover {
+            opacity: 0.9;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            padding: 0.5rem;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+        .calendar-day:hover {
+            border-color: #52b788;
+            background: #f0f8f4;
+        }
+        .calendar-day.available {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        .calendar-day.reserved {
+            background: #f8d7da;
+            border-color: #dc3545;
+            cursor: not-allowed;
+        }
+        .calendar-day.past {
+            background: #f0f0f0;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #2d6a4f 0%, #52b788 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{fragments/header :: header}"></div>
+    
+    <div class="main-container">
+        <div class="page-header">
+            <h1 id="pageTitle">사이트 상세 정보</h1>
+        </div>
+        
+        <div class="detail-card">
+            <div class="site-header">
+                <div class="site-title">
+                    <span class="site-number-large" id="siteNumber">-</span>
+                </div>
+                <div class="site-badges" id="siteBadges">
+                    <!-- 배지들이 동적으로 추가됩니다 -->
+                </div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-section">
+                    <h3 class="info-title">📍 기본 정보</h3>
+                    <div class="info-item">
+                        <span class="info-label">사이트 타입</span>
+                        <span class="info-value" id="siteType">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">최대 인원</span>
+                        <span class="info-value" id="maxPeople">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">전기 시설</span>
+                        <span class="info-value" id="hasElectric">-</span>
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <h3 class="info-title">🏕️ 위치 및 특징</h3>
+                    <div class="info-item">
+                        <span class="info- label">위치 설명</span>
+                        <span class="info-value" id="location">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">주변 시설</span>
+                        <span class="info-value" id="nearbyFacilities">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;">
+                <p id="siteDescription" style="color: #666; line-height: 1.6;">-</p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="/sites" class="btn btn-secondary">목록으로</a>
+                <button class="btn btn-primary" onclick="checkAvailability()">예약 가능 날짜 확인</button>
+            </div>
+        </div>
+        
+        <div class="calendar-card" id="calendarCard" style="display: none;">
+            <h3 style="color: #2d6a4f; margin-bottom: 1rem;">📅 예약 가능 날짜</h3>
+            <div class="calendar-header">
+                <h4 id="calendarMonth">-</h4>
+                <div class="calendar-nav">
+                    <button class="calendar-btn" onclick="changeMonth(-1)">이전</button>
+                    <button class="calendar-btn" onclick="changeMonth(1)">다음</button>
+                </div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid">
+                <!-- 달력이 동적으로 생성됩니다 -->
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 2rem; justify-content: center;">
+                <span><span style="display: inline-block; width: 20px; height: 20px; background: #d4edda; border-radius: 4px; vertical-align: middle;"></span> 예약 가능</span>
+                <span><span style="display: inline-block; width: 20px; height: 20px; background: #f8d7da; border-radius: 4px; vertical-align: middle;"></span> 예약 불가</span>
+                <span><span style="display: inline-block; width: 20px; height: 20px; background: #f0f0f0; border-radius: 4px; vertical-align: middle;"></span> 지난 날짜</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentSiteNumber = '';
+        let currentMonth = new Date();
+        let siteData = null;
+        
+        // 페이지 로드 시 사이트 정보 가져오기
+        window.addEventListener('DOMContentLoaded', async function() {
+            // URL에서 사이트 번호 추출
+            const pathParts = window.location.pathname.split('/');
+            currentSiteNumber = pathParts[pathParts.length - 1];
+            
+            await loadSiteDetails();
+        });
+        
+        async function loadSiteDetails() {
+            try {
+                // 사이트 정보 가져오기
+                const response = await fetch('/api/sites');
+                const sites = await response.json();
+                
+                siteData = sites.find(site => site.siteNumber === currentSiteNumber);
+                
+                if (!siteData) {
+                    // 사이트 번호로 직접 생성
+                    siteData = {
+                        siteNumber: currentSiteNumber,
+                        maxPeople: currentSiteNumber.startsWith('A') ? 6 : 4
+                    };
+                }
+                
+                displaySiteDetails();
+            } catch (error) {
+                console.error('Error loading site details:', error);
+            }
+        }
+        
+        function displaySiteDetails() {
+            const isLarge = currentSiteNumber.startsWith('A');
+            const siteNum = parseInt(currentSiteNumber.split('-')[1]);
+            
+            // 페이지 제목
+            document.getElementById('pageTitle').textContent = `사이트 ${currentSiteNumber} 상세 정보`;
+            
+            // 사이트 번호
+            document.getElementById('siteNumber').textContent = currentSiteNumber;
+            
+            // 배지
+            let badges = '';
+            if (isLarge) {
+                badges += '<span class="badge badge-large">대형</span>';
+                badges += '<span class="badge badge-electric">⚡ 전기</span>';
+            } else {
+                badges += '<span class="badge badge-small">소형</span>';
+            }
+            document.getElementById('siteBadges').innerHTML = badges;
+            
+            // 기본 정보
+            document.getElementById('siteType').textContent = isLarge ? '대형 사이트' : '소형 사이트';
+            document.getElementById('maxPeople').textContent = siteData.maxPeople ? `${siteData.maxPeople}명` : (isLarge ? '6명' : '4명');
+            document.getElementById('hasElectric').textContent = isLarge ? '있음' : '없음';
+            
+            // 위치 정보 - 백엔드에서 받은 데이터 사용
+            document.getElementById('location').textContent = siteData.location || '-';
+            document.getElementById('nearbyFacilities').textContent = siteData.nearbyFacilities || '-';
+            
+            // 설명
+            document.getElementById('siteDescription').textContent = siteData.description || '-';
+        }
+        
+        async function checkAvailability() {
+            document.getElementById('calendarCard').style.display = 'block';
+            await loadCalendar();
+            document.getElementById('calendarCard').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        async function loadCalendar() {
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            // 월 표시
+            const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+            document.getElementById('calendarMonth').textContent = `${year}년 ${monthNames[month]}`;
+            
+            // 달력 그리드 생성
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // 요일 헤더
+            const dayHeaders = ['일', '월', '화', '수', '목', '금', '토'];
+            dayHeaders.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // 해당 월의 첫날과 마지막날
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // 첫 주의 빈 칸
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const emptyDiv = document.createElement('div');
+                grid.appendChild(emptyDiv);
+            }
+            
+            // 각 날짜에 대한 예약 상태 확인
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const currentDate = new Date(year, month, day);
+                const dateStr = currentDate.toISOString().split('T')[0];
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+                dayDiv.textContent = day;
+                
+                if (currentDate < today) {
+                    dayDiv.classList.add('past');
+                } else {
+                    // 예약 가능 여부 확인 (API 호출)
+                    try {
+                        const response = await fetch(`/api/sites/${currentSiteNumber}/availability?date=${dateStr}`);
+                        const data = await response.json();
+                        
+                        if (data.available) {
+                            dayDiv.classList.add('available');
+                            dayDiv.onclick = () => goToReservation(dateStr);
+                        } else {
+                            dayDiv.classList.add('reserved');
+                        }
+                    } catch (error) {
+                        console.error('Error checking availability:', error);
+                    }
+                }
+                
+                grid.appendChild(dayDiv);
+            }
+        }
+        
+        function changeMonth(direction) {
+            currentMonth.setMonth(currentMonth.getMonth() + direction);
+            loadCalendar();
+        }
+        
+        function goToReservation(date) {
+            window.location.href = `/reservations/new?site=${currentSiteNumber}&startDate=${date}&endDate=${date}`;
+        }
+    </script>
+</body>
+</html>
