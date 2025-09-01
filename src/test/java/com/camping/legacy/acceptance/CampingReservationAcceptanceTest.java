@@ -1,15 +1,12 @@
 package com.camping.legacy.acceptance;
 
+import com.camping.legacy.support.TestBase;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -20,21 +17,8 @@ import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
-})
 @DisplayName("캠핑장 예약 시스템 통합 인수 테스트")
-class CampingReservationAcceptanceTest {
-    
-    @LocalServerPort
-    int port;
-    
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
+class CampingReservationAcceptanceTest extends TestBase {
     
     @DisplayName("시나리오: 정상적인 예약 생성")
     @Test
@@ -485,37 +469,5 @@ class CampingReservationAcceptanceTest {
         assertThat(response.jsonPath().get("siteId")).isEqualTo(siteId.intValue());
     }
     
-    // Helper methods
-    private ExtractableResponse<Response> createReservation(String customerName, String phoneNumber, String campsiteId, LocalDate startDate, LocalDate endDate) {
-        return RestAssured
-                .given().log().all()
-                .contentType("application/json")
-                .body(Map.of(
-                        "customerName", customerName,
-                        "phoneNumber", phoneNumber,
-                        "campsiteId", campsiteId,
-                        "startDate", startDate.toString(),
-                        "endDate", endDate.toString()
-                ))
-                .when().post("/api/reservations")
-                .then().log().all()
-                .extract();
-    }
-    
-    private ExtractableResponse<Response> cancelReservation(Long reservationId, String confirmationCode) {
-        return RestAssured
-                .given().log().all()
-                .queryParam("confirmationCode", confirmationCode)
-                .when().delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
-    }
-    
-    private ExtractableResponse<Response> getReservation(Long reservationId) {
-        return RestAssured
-                .given().log().all()
-                .when().get("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
-    }
+    // Helper methods are now inherited from TestBase
 }

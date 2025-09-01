@@ -1,18 +1,14 @@
 package com.camping.legacy.controller;
 
+import com.camping.legacy.support.TestBase;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -21,20 +17,7 @@ import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
-})
-class ReservationControllerTest {
-    
-    @LocalServerPort
-    int port;
-    
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
+class ReservationControllerTest extends TestBase {
     @DisplayName("예약 생성 - 정상적인 예약 생성")
     @Test
     void createReservation_Success() {
@@ -63,19 +46,7 @@ class ReservationControllerTest {
         LocalDate endDate = startDate.plusDays(2);
         
         // When - "2024-01-20"부터 "2024-01-22"까지 사이트 "A001"을 예약 요청한다
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType("application/json")
-                .body(Map.of(
-                        "customerName", customerName,
-                        "phoneNumber", phoneNumber,
-                        "campsiteId", siteId,
-                        "startDate", startDate.toString(),
-                        "endDate", endDate.toString()
-                ))
-                .when().post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, siteId, startDate, endDate);
         
         // Then - 예약이 성공적으로 생성된다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -114,19 +85,7 @@ class ReservationControllerTest {
         LocalDate endDate = startDate.plusDays(2);
         
         // When - 30일 초과 날짜로 예약을 요청하면
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType("application/json")
-                .body(Map.of(
-                        "customerName", customerName,
-                        "phoneNumber", phoneNumber,
-                        "campsiteId", siteId,
-                        "startDate", startDate.toString(),
-                        "endDate", endDate.toString()
-                ))
-                .when().post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, siteId, startDate, endDate);
         
         // Then - 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());

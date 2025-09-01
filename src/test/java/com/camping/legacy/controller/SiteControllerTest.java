@@ -1,15 +1,12 @@
 package com.camping.legacy.controller;
 
+import com.camping.legacy.support.TestBase;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -17,20 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
-})
-class SiteControllerTest {
-    
-    @LocalServerPort
-    int port;
-    
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
+class SiteControllerTest extends TestBase {
     
     @DisplayName("사이트 조회 - 전체 사이트 목록 조회")
     @Test
@@ -52,11 +36,7 @@ class SiteControllerTest {
          */
 
         // When - 전체 사이트 목록을 조회한다
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .when().get("/api/sites")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response = getAllSites();
         
         // Then - 사이트 목록이 반환된다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -91,11 +71,7 @@ class SiteControllerTest {
         Long siteId = 1L;
         
         // When - 특정 사이트를 조회한다
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .when().get("/api/sites/" + siteId)
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response = getSiteDetail(siteId);
         
         // Then - 사이트 상세 정보가 반환된다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
