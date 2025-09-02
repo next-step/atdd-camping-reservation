@@ -24,12 +24,7 @@ import java.util.Map;
  * - 공통 헬퍼 메소드 제공
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.jpa.show-sql=true",
-        "spring.jpa.properties.hibernate.format_sql=true"
-})
+@TestPropertySource(locations = "classpath:test.properties")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 @Sql(scripts = "/data/test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public abstract class TestBase {
