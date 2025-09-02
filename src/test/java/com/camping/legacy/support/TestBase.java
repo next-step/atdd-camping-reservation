@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * 모든 테스트 클래스에서 공통으로 사용할 기본 설정을 제공하는 추상 클래스
- * 
+ * <p>
  * - SpringBootTest 설정 (RANDOM_PORT)
  * - H2 인메모리 데이터베이스 설정
  * - RestAssured 포트 설정
@@ -21,21 +21,21 @@ import java.util.Map;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(properties = {
-    "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
-    "spring.jpa.hibernate.ddl-auto=create-drop"
+        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 public abstract class TestBase {
-    
+
     @LocalServerPort
     protected int port;
-    
+
     @BeforeEach
     void setUpTestBase() {
         RestAssured.port = port;
     }
-    
+
     // 공통 헬퍼 메소드들
-    
+
     /**
      * 예약 생성 요청을 보내는 헬퍼 메소드
      */
@@ -54,7 +54,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 예약 취소 요청을 보내는 헬퍼 메소드
      */
@@ -66,7 +66,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 예약 조회 요청을 보내는 헬퍼 메소드
      */
@@ -77,7 +77,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 내 예약 조회 요청을 보내는 헬퍼 메소드
      */
@@ -90,7 +90,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 사이트 목록 조회 요청을 보내는 헬퍼 메소드
      */
@@ -101,7 +101,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 사이트 상세 조회 요청을 보내는 헬퍼 메소드
      */
@@ -112,7 +112,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 사이트 가용성 확인 요청을 보내는 헬퍼 메소드
      */
@@ -124,7 +124,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 날짜별 가용 사이트 조회 요청을 보내는 헬퍼 메소드
      */
@@ -136,7 +136,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 기간별 사이트 검색 요청을 보내는 헬퍼 메소드
      */
@@ -149,7 +149,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 크기별 사이트 검색 요청을 보내는 헬퍼 메소드
      */
@@ -163,7 +163,7 @@ public abstract class TestBase {
                 .then().log().all()
                 .extract();
     }
-    
+
     /**
      * 월별 예약 현황 캘린더 조회 요청을 보내는 헬퍼 메소드
      */
