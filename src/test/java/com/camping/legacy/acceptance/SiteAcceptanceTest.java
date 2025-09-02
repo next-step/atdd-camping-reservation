@@ -37,7 +37,7 @@ class SiteAcceptanceTest extends TestBase {
 
         createReservation("예약자", "010-0000-0000", reservedSiteId, startDate, endDate);
 
-        // When: 해당 기간에 가용한 사이트를 검색한다
+        // When: 예약된 사이트가 있는 기간에 가용 사이트를 검색하면
         ExtractableResponse<Response> response = RestAssured
                 .given().log().all()
                 .queryParam("startDate", startDate.toString())
@@ -73,7 +73,7 @@ class SiteAcceptanceTest extends TestBase {
         LocalDate searchEnd = searchStart.plusDays(2);
         String sizeFilter = "대형";
 
-        // When: "대형" 사이트만 검색한다
+        // When: 대형 사이트 필터로 사이트를 검색하면
         ExtractableResponse<Response> response = RestAssured
                 .given().log().all()
                 .queryParam("startDate", searchStart.toString())
@@ -83,7 +83,7 @@ class SiteAcceptanceTest extends TestBase {
                 .then().log().all()
                 .extract();
 
-        // Then: 대형 사이트만 검색 결과에 나타난다
+        // Then: A로 시작하는 대형 사이트만 검색 결과에 나타난다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
         List<Map<String, Object>> availableSites = response.jsonPath().getList("$");
 

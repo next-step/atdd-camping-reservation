@@ -41,7 +41,7 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate startDate = today.plusDays(5);
         LocalDate endDate = startDate.plusDays(2);
 
-        // When: startDate부터 endDate까지 사이트 "1"을 예약 요청한다
+        // When: 올바른 고객 정보와 날짜로 예약을 요청하면
         ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", startDate, endDate);
 
         // Then: 예약이 성공적으로 생성된다
@@ -73,7 +73,7 @@ class ReservationAcceptanceTest extends TestBase {
         String phoneNumber = "010-1234-5678";
         LocalDate farFutureDate = LocalDate.now().plusDays(35);
 
-        // When: 30일 초과 날짜로 예약을 요청한다
+        // When: 30일을 초과한 날짜로 예약을 시도하면
         ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", farFutureDate, farFutureDate.plusDays(2));
 
         // Then: 예약이 실패한다
@@ -101,7 +101,7 @@ class ReservationAcceptanceTest extends TestBase {
         String phoneNumber = "010-1234-5678";
         LocalDate pastDate = LocalDate.now().minusDays(1);
 
-        // When: 과거 날짜로 예약을 요청한다
+        // When: 과거 날짜로 예약을 시도하면
         ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", pastDate, pastDate.plusDays(2));
 
         // Then: 예약이 실패한다
@@ -133,7 +133,7 @@ class ReservationAcceptanceTest extends TestBase {
         CountDownLatch doneLatch = new CountDownLatch(2);
         List<ExtractableResponse<Response>> responses = new ArrayList<>();
 
-        // When: 두 고객이 동시에 같은 사이트/기간을 예약 요청한다
+        // When: 두 고객이 동시에 같은 사이트와 기간을 예약 요청하면
         CompletableFuture<Void> future1 = CompletableFuture.runAsync(() -> {
             try {
                 startLatch.await();
@@ -204,7 +204,7 @@ class ReservationAcceptanceTest extends TestBase {
         // 중간 날짜에 기존 예약 생성
         createReservation("기존예약자", "010-0000-0000", siteId, conflictDate, conflictDate.plusDays(1));
 
-        // When: 기존 예약과 겹치는 기간으로 연박 예약을 요청한다
+        // When: 이미 예약된 날짜가 중간에 포함된 기간으로 연박 예약을 시도하면
         LocalDate startDate = conflictDate.minusDays(1);
         LocalDate endDate = conflictDate.plusDays(2);
         ExtractableResponse<Response> response = createReservation("김철수", "010-1234-5678", siteId, startDate, endDate);
@@ -238,7 +238,7 @@ class ReservationAcceptanceTest extends TestBase {
         Long reservationId = createResponse.jsonPath().getLong("id");
         String confirmationCode = createResponse.jsonPath().getString("confirmationCode");
 
-        // When: 올바른 확인코드로 예약 취소를 요청한다
+        // When: 올바른 확인코드로 예약 취소를 요청하면
         ExtractableResponse<Response> response = cancelReservation(reservationId, confirmationCode);
 
         // Then: 예약 취소가 성공한다
@@ -269,7 +269,7 @@ class ReservationAcceptanceTest extends TestBase {
         );
         Long reservationId = createResponse.jsonPath().getLong("id");
 
-        // When: 잘못된 확인코드로 예약 취소를 요청한다
+        // When: 잘못된 확인코드로 예약 취소를 시도하면
         ExtractableResponse<Response> response = cancelReservation(reservationId, "WRONG1");
 
         // Then: 예약 취소가 실패한다
@@ -303,7 +303,7 @@ class ReservationAcceptanceTest extends TestBase {
         // 예약 취소
         cancelReservation(reservationId, confirmationCode);
 
-        // When: 취소된 사이트에 새로 예약을 요청한다
+        // When: 예약이 취소된 사이트에 새로운 예약을 요청하면
         ExtractableResponse<Response> response = createReservation("이영희", "010-5555-5555", siteId, reservationDate, reservationDate.plusDays(1));
 
         // Then: 예약이 성공적으로 생성된다
@@ -333,7 +333,7 @@ class ReservationAcceptanceTest extends TestBase {
         // 두 번째 예약
         createReservation(customerName, phoneNumber, "2", LocalDate.now().plusDays(10), LocalDate.now().plusDays(12));
 
-        // When: 이름과 전화번호로 예약을 조회한다
+        // When: 이름과 전화번호로 예약을 조회하면
         ExtractableResponse<Response> response = getMyReservations(customerName, phoneNumber);
 
         // Then: 해당 고객의 모든 예약 목록이 반환된다
@@ -366,7 +366,7 @@ class ReservationAcceptanceTest extends TestBase {
 
         createReservation("김철수", "010-1234-5678", siteId.toString(), reservationDate, reservationDate.plusDays(1));
 
-        // When: 해당 월 사이트의 캘린더를 조회한다
+        // When: 년도, 월, 사이트ID로 캘린더를 조회하면
         ExtractableResponse<Response> response = getReservationCalendar(reservationDate.getYear(), reservationDate.getMonthValue(), siteId);
 
         // Then: 예약된 날짜와 가능한 날짜가 구분되어 표시된다
