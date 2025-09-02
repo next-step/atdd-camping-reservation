@@ -1,0 +1,47 @@
+### 예약 생성
+POST localhost:8080/api/reservations
+Content-Type: application/json
+
+{
+  "customerName": "테스터2",
+  "startDate": "2025-09-02",
+  "endDate": "2025-09-05",
+  "siteNumber": "A-18",
+  "phoneNumber": "010-1234-5678",
+  "numberOfPeople": 4,
+  "carNumber": "12가3456",
+  "requests": "첫방문입니다. 잘 부탁드립니다."
+}
+
+### 예약 단건 조회
+GET localhost:8080/api/reservations/6
+
+### 예약 목록 조회
+GET localhost:8080/api/reservations
+
+### 예약 상세 조회
+GET localhost:8080/api/reservations/1
+
+### 예약 삭제
+DELETE localhost:8080/api/reservations/6?confirmationCode=BX76WG
+
+### 예약 수정
+PUT localhost:8080/api/reservations/6?confirmationCode=BX76WG
+Content-Type: application/json
+
+{
+  "customerName": "테스터11",
+  "startDate": "2025-09-02",
+  "endDate": "2025-09-05",
+  "siteNumber": "A-17",
+  "phoneNumber": "010-1234-5678",
+  "numberOfPeople": 4,
+  "carNumber": "12가3456",
+  "requests": "첫방문입니다. 잘 부탁드립니다!!"
+}
+
+### 나의 예약 조회
+GET localhost:8080/api/reservations/my?name=테스트2&phone=010-1234-5678
+
+### 예약 달력 조회
+GET localhost:8080/api/reservations/calendar?year=2025&month=9&siteId=35

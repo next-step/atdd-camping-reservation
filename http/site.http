@@ -1,0 +1,11 @@
+### 사이트 단건 조회
+GET http://localhost:8080/api/sites/35
+
+### 이용가능한 사이트 목록 조회
+GET http://localhost:8080/api/sites/available?date=2025-09-02
+
+### 사이트 검색
+GET http://localhost:8080/api/sites/search?startDate=2025-09-02&endDate=2025-09-10
+
+### 사이트 이용 가능 여부
+GET http://localhost:8080/api/sites/B-15/availability?date=2025-09-02
