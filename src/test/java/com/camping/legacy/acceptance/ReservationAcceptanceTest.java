@@ -32,9 +32,8 @@ class ReservationAcceptanceTest extends TestBase {
          * 어떻게(How): 올바른 고객 정보와 날짜로 예약 요청을 보내서
          */
 
-        // Background: 캠핑 사이트 "A001"(대형)과 "B001"(소형)이 등록되어 있다
+        // 캠핑 사이트 "A001"(대형)과 "B001"(소형)이 등록되어 있다
         // 오늘 날짜는 현재 날짜이다
-
         // Given: 고객 "김철수"의 전화번호는 "010-1234-5678"이다
         String customerName = "김철수";
         String phoneNumber = "010-1234-5678";
