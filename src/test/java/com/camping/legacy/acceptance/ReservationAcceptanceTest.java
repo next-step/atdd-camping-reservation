@@ -42,7 +42,7 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate endDate = startDate.plusDays(2);
 
         // When: 올바른 고객 정보와 날짜로 예약을 요청하면
-        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", startDate, endDate);
+        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "A001", startDate, endDate);
 
         // Then: 예약이 성공적으로 생성된다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -74,7 +74,7 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate farFutureDate = LocalDate.now().plusDays(35);
 
         // When: 30일을 초과한 날짜로 예약을 시도하면
-        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", farFutureDate, farFutureDate.plusDays(2));
+        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "A001", farFutureDate, farFutureDate.plusDays(2));
 
         // Then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
@@ -102,7 +102,7 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate pastDate = LocalDate.now().minusDays(1);
 
         // When: 과거 날짜로 예약을 시도하면
-        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "1", pastDate, pastDate.plusDays(2));
+        ExtractableResponse<Response> response = createReservation(customerName, phoneNumber, "A001", pastDate, pastDate.plusDays(2));
 
         // Then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
@@ -125,7 +125,7 @@ class ReservationAcceptanceTest extends TestBase {
          */
 
         // Given: 고객 "김철수"와 "이영희"가 동시에 같은 예약을 요청한다
-        String siteId = "1";
+        String siteId = "A001";
         LocalDate startDate = LocalDate.now().plusDays(10);
         LocalDate endDate = startDate.plusDays(2);
 
@@ -197,8 +197,8 @@ class ReservationAcceptanceTest extends TestBase {
          * 어떻게(How): 이미 예약된 날짜가 중간에 포함된 연박 예약 요청을 보내서
          */
 
-        // Given: 사이트 "1"의 중간 날짜가 이미 예약되어 있다
-        String siteId = "1";
+        // Given: 사이트 "A001"의 중간 날짜가 이미 예약되어 있다
+        String siteId = "A001";
         LocalDate conflictDate = LocalDate.now().plusDays(16);
 
         // 중간 날짜에 기존 예약 생성
@@ -234,7 +234,7 @@ class ReservationAcceptanceTest extends TestBase {
         String phoneNumber = "010-1234-5678";
         LocalDate startDate = LocalDate.now().plusDays(20);
 
-        ExtractableResponse<Response> createResponse = createReservation(customerName, phoneNumber, "1", startDate, startDate.plusDays(2));
+        ExtractableResponse<Response> createResponse = createReservation(customerName, phoneNumber, "A001", startDate, startDate.plusDays(2));
         Long reservationId = createResponse.jsonPath().getLong("id");
         String confirmationCode = createResponse.jsonPath().getString("confirmationCode");
 
@@ -264,7 +264,7 @@ class ReservationAcceptanceTest extends TestBase {
          */
 
         // Given: 고객 "김철수"가 확인코드로 예약을 완료했다
-        ExtractableResponse<Response> createResponse = createReservation("김철수", "010-1234-5678", "1",
+        ExtractableResponse<Response> createResponse = createReservation("김철수", "010-1234-5678", "A001",
                                                                          LocalDate.now().plusDays(22), LocalDate.now().plusDays(24)
         );
         Long reservationId = createResponse.jsonPath().getLong("id");
@@ -275,8 +275,8 @@ class ReservationAcceptanceTest extends TestBase {
         // Then: 예약 취소가 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 
-        // And: "확인코드가 일치하지 않습니다" 오류 메시지를 받는다
-        assertThat(response.jsonPath().getString("message")).contains("확인코드");
+        // And: "확인 코드가 일치하지 않습니다" 오류 메시지를 받는다
+        assertThat(response.jsonPath().getString("message")).contains("확인 코드");
     }
 
     @DisplayName("예약이 취소된 사이트에 새로운 예약을 요청하면, 예약이 성공적으로 생성된다")
@@ -293,7 +293,7 @@ class ReservationAcceptanceTest extends TestBase {
          */
 
         // Given: 사이트의 예약이 취소된 상태이다
-        String siteId = "1";
+        String siteId = "A001";
         LocalDate reservationDate = LocalDate.now().plusDays(25);
 
         ExtractableResponse<Response> createResponse = createReservation("김철수", "010-1234-5678", siteId, reservationDate, reservationDate.plusDays(1));
@@ -328,10 +328,10 @@ class ReservationAcceptanceTest extends TestBase {
         String phoneNumber = "010-1234-5678";
 
         // 첫 번째 예약
-        createReservation(customerName, phoneNumber, "1", LocalDate.now().plusDays(5), LocalDate.now().plusDays(7));
+        createReservation(customerName, phoneNumber, "A001", LocalDate.now().plusDays(5), LocalDate.now().plusDays(7));
 
         // 두 번째 예약
-        createReservation(customerName, phoneNumber, "2", LocalDate.now().plusDays(10), LocalDate.now().plusDays(12));
+        createReservation(customerName, phoneNumber, "A002", LocalDate.now().plusDays(10), LocalDate.now().plusDays(12));
 
         // When: 이름과 전화번호로 예약을 조회하면
         ExtractableResponse<Response> response = getMyReservations(customerName, phoneNumber);

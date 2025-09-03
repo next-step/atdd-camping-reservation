@@ -3,6 +3,9 @@ package com.camping.legacy.controller;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.exception.BadRequestException;
+import com.camping.legacy.exception.ConflictException;
+import com.camping.legacy.exception.NotFoundException;
 import com.camping.legacy.service.CalendarService;
 import com.camping.legacy.service.ReservationService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +32,11 @@ public class ReservationController {
         try {
             ReservationResponse response = reservationService.createReservation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
+        } catch (BadRequestException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        } catch (ConflictException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
@@ -41,7 +48,7 @@ public class ReservationController {
         try {
             ReservationResponse response = reservationService.getReservation(id);
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
+        } catch (NotFoundException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
@@ -71,7 +78,11 @@ public class ReservationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", "예약이 취소되었습니다.");
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
+        } catch (NotFoundException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (BadRequestException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
@@ -86,7 +97,11 @@ public class ReservationController {
         try {
             ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode);
             return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
+        } catch (NotFoundException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        } catch (BadRequestException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);

@@ -42,14 +42,14 @@ public abstract class TestBase {
     /**
      * 예약 생성 요청을 보내는 헬퍼 메소드
      */
-    protected ExtractableResponse<Response> createReservation(String customerName, String phoneNumber, String campsiteId, LocalDate startDate, LocalDate endDate) {
+    protected ExtractableResponse<Response> createReservation(String customerName, String phoneNumber, String siteNumber, LocalDate startDate, LocalDate endDate) {
         return RestAssured
                 .given().log().all()
                 .contentType("application/json")
                 .body(Map.of(
                         "customerName", customerName,
                         "phoneNumber", phoneNumber,
-                        "campsiteId", campsiteId,
+                        "siteNumber", siteNumber,
                         "startDate", startDate.toString(),
                         "endDate", endDate.toString()
                 ))

@@ -30,8 +30,8 @@ class SiteAcceptanceTest extends TestBase {
          * 어떻게(How): 이미 예약된 사이트가 있는 기간에 사이트 검색을 해서
          */
 
-        // Given: 사이트 "1"이 특정 기간 예약되어 있다
-        String reservedSiteId = "1";
+        // Given: 사이트 "A001"이 특정 기간 예약되어 있다
+        String reservedSiteId = "A001";
         LocalDate startDate = LocalDate.now().plusDays(28);
         LocalDate endDate = startDate.plusDays(3);
 

@@ -40,7 +40,10 @@ public class SiteService {
         List<SiteAvailabilityResponse> responses = new ArrayList<>();
         
         for (Campsite site : allSites) {
-            boolean isAvailable = !reservationRepository.existsByCampsiteAndReservationDate(site, date);
+            // 취소된 예약을 제외하고 가용성 확인
+            boolean isAvailable = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    site, date, date).stream()
+                    .noneMatch(reservation -> reservation.getStatus().isActive());
             
             responses.add(SiteAvailabilityResponse.builder()
                     .siteId(site.getId())
@@ -72,12 +75,12 @@ public class SiteService {
                 }
             }
             
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            // 기간 동안의 가용성 확인 - 취소된 예약은 제외
+            boolean isAvailable = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    site, request.getEndDate(), request.getStartDate()).stream()
+                    .noneMatch(reservation -> reservation.getStatus().isActive());
             
-            if (startAvailable && endAvailable) {
+            if (isAvailable) {
                 availableSites.add(SiteAvailabilityResponse.builder()
                         .siteId(site.getId())
                         .siteNumber(site.getSiteNumber())
@@ -98,7 +101,9 @@ public class SiteService {
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다: " + siteNumber));
         
-        return !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, date, date);
+        // 취소된 예약을 제외하고 해당 날짜의 가용성 확인
+        return reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                campsite, date, date).stream()
+                .noneMatch(reservation -> reservation.getStatus().isActive());
     }
 }
