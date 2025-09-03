@@ -1,0 +1,32 @@
+### 전체 사이트 목록 조회
+GET localhost:8080/api/sites
+
+### 사이트 상세 정보 조회
+GET localhost:8080/api/sites/1
+
+### 사이트의 특정 날짜 가용성 확인
+GET localhost:8080/api/sites/A-1/availability?date=2024-12-10
+
+### 특정 날짜에 예약 가능한 모든 사이트 조회 (예약이 없는 날짜)
+GET localhost:8080/api/sites/available?date=2024-12-05
+
+### 특정 날짜에 예약 가능한 모든 사이트 조회 (일부 예약이 있는 날짜)
+GET localhost:8080/api/sites/available?date=2024-12-10
+
+### 기간별 가용 사이트 검색 (대형 사이트만)
+GET localhost:8080/api/sites/search?startDate=2024-12-01&endDate=2024-12-03&size=대형
+
+### 기간별 가용 사이트 검색 (소형 사이트만)
+GET localhost:8080/api/sites/search?startDate=2024-12-01&endDate=2024-12-03&size=소형
+
+### 기간별 가용 사이트 검색 (사이트 크기 필터 없음)
+GET localhost:8080/api/sites/search?startDate=2024-12-01&endDate=2024-12-03
+
+### 예약이 있는 기간과 겹치는 검색 (A-1 사이트 예약 기간)
+GET localhost:8080/api/sites/search?startDate=2024-12-09&endDate=2024-12-11&size=대형
+
+### 연박 예약 검색 (3박 4일)
+GET localhost:8080/api/sites/search?startDate=2024-12-25&endDate=2024-12-28
+
+### 장기 예약 검색 (1주일)
+GET localhost:8080/api/sites/search?startDate=2024-12-15&endDate=2024-12-22
