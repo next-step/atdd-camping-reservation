@@ -5,7 +5,7 @@ Content-Type: application/json
 {
   "customerName": "김영희",
   "phoneNumber": "010-1234-5678",
-  "siteNumber": "A001",
+  "siteNumber": "A-1",
   "startDate": "2025-09-10",
   "endDate": "2025-09-12"
 }
@@ -24,7 +24,7 @@ Content-Type: application/json
 {
   "customerName": "박철수",
   "phoneNumber": "010-9876-5432", 
-  "siteNumber": "B001",
+  "siteNumber": "B-1",
   "startDate": "2025-09-15",
   "endDate": "2025-09-17"
 }
