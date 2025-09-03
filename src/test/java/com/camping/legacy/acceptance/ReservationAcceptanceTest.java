@@ -46,8 +46,8 @@ class ReservationAcceptanceTest extends TestBase {
         return createReservation(customerName, phoneNumber, siteId, startDate, endDate);
     }
 
-    // When - 예약 요청
-    private ExtractableResponse<Response> 예약_요청(CustomerInfo customer, String siteId, LocalDate startDate, LocalDate endDate) {
+    // When - 예약 요청 (기존 방식)
+    private ExtractableResponse<Response> 예약_요청_기존방식(CustomerInfo customer, String siteId, LocalDate startDate, LocalDate endDate) {
         return createReservation(customer.name, customer.phoneNumber, siteId, startDate, endDate);
     }
 
@@ -60,7 +60,12 @@ class ReservationAcceptanceTest extends TestBase {
         CompletableFuture<Void> future1 = CompletableFuture.runAsync(() -> {
             try {
                 startLatch.await();
-                ExtractableResponse<Response> response = 예약_요청(customer1, siteId, startDate, endDate);
+                ReservationRequest request = ReservationRequest.name(customer1.name)
+                        .phoneNumber(customer1.phoneNumber)
+                        .siteNumber(siteId)
+                        .startDate(startDate)
+                        .endDate(endDate);
+                ExtractableResponse<Response> response = 예약_요청(request);
                 synchronized (responses) {
                     responses.add(response);
                 }
@@ -73,7 +78,12 @@ class ReservationAcceptanceTest extends TestBase {
         CompletableFuture<Void> future2 = CompletableFuture.runAsync(() -> {
             try {
                 startLatch.await();
-                ExtractableResponse<Response> response = 예약_요청(customer2, siteId, startDate, endDate);
+                ReservationRequest request = ReservationRequest.name(customer2.name)
+                        .phoneNumber(customer2.phoneNumber)
+                        .siteNumber(siteId)
+                        .startDate(startDate)
+                        .endDate(endDate);
+                ExtractableResponse<Response> response = 예약_요청(request);
                 synchronized (responses) {
                     responses.add(response);
                 }
@@ -155,7 +165,12 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate endDate = startDate.plusDays(2);
 
         // When: 올바른 고객 정보와 날짜로 예약을 요청하면
-        ExtractableResponse<Response> response = 예약_요청(customer, "A001", startDate, endDate);
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(startDate)
+                .endDate(endDate);
+        ExtractableResponse<Response> response = 예약_요청(request);
 
         // Then: 예약이 성공적으로 생성되고 6자리 확인코드가 발급된다
         예약_생성_성공_검증(response);
@@ -170,7 +185,12 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate endDate = startDate.plusDays(2);
 
         // When: 30일을 초과한 날짜로 예약을 시도하면
-        ExtractableResponse<Response> response = 예약_요청(customer, "A001", startDate, endDate);
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(startDate)
+                .endDate(endDate);
+        ExtractableResponse<Response> response = 예약_요청(request);
 
         // Then: 예약이 실패하고 "30일 이내 예약만 가능합니다" 오류 메시지를 받는다
         예약_실패_검증(response, HttpStatus.BAD_REQUEST, "30일");
@@ -185,7 +205,12 @@ class ReservationAcceptanceTest extends TestBase {
         LocalDate endDate = startDate.plusDays(2);
 
         // When: 과거 날짜로 예약을 시도하면
-        ExtractableResponse<Response> response = 예약_요청(customer, "A001", startDate, endDate);
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(startDate)
+                .endDate(endDate);
+        ExtractableResponse<Response> response = 예약_요청(request);
 
         // Then: 예약이 실패하고 "과거 날짜로 예약할 수 없습니다" 오류 메시지를 받는다
         예약_실패_검증(response, HttpStatus.BAD_REQUEST, "과거");
@@ -221,7 +246,12 @@ class ReservationAcceptanceTest extends TestBase {
         CustomerInfo customer = 김철수();
         LocalDate startDate = conflictDate.minusDays(1);
         LocalDate endDate = conflictDate.plusDays(2);
-        ExtractableResponse<Response> response = 예약_요청(customer, siteId, startDate, endDate);
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber(siteId)
+                .startDate(startDate)
+                .endDate(endDate);
+        ExtractableResponse<Response> response = 예약_요청(request);
 
         // Then: 예약이 실패하고 "해당 기간에 예약이 불가능합니다" 오류 메시지를 받는다
         예약_실패_검증(response, HttpStatus.CONFLICT, "해당 기간");
@@ -233,7 +263,12 @@ class ReservationAcceptanceTest extends TestBase {
         // Given: 고객 "김철수"가 확인코드로 예약을 완료했다
         CustomerInfo customer = 김철수();
         LocalDate startDate = 미래날짜(20);
-        ExtractableResponse<Response> createResponse = 예약_요청(customer, "A001", startDate, startDate.plusDays(2));
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(startDate)
+                .endDate(startDate.plusDays(2));
+        ExtractableResponse<Response> createResponse = 예약_요청(request);
         Long reservationId = createResponse.jsonPath().getLong("id");
         String confirmationCode = createResponse.jsonPath().getString("confirmationCode");
 
@@ -250,7 +285,12 @@ class ReservationAcceptanceTest extends TestBase {
         // Given: 고객 "김철수"가 확인코드로 예약을 완료했다
         CustomerInfo customer = 김철수();
         LocalDate startDate = 미래날짜(22);
-        ExtractableResponse<Response> createResponse = 예약_요청(customer, "A001", startDate, startDate.plusDays(2));
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(startDate)
+                .endDate(startDate.plusDays(2));
+        ExtractableResponse<Response> createResponse = 예약_요청(request);
         Long reservationId = createResponse.jsonPath().getLong("id");
 
         // When: 잘못된 확인코드로 예약 취소를 시도하면
@@ -269,13 +309,23 @@ class ReservationAcceptanceTest extends TestBase {
         CustomerInfo customer1 = 김철수();
         CustomerInfo customer2 = 이영희();
 
-        ExtractableResponse<Response> createResponse = 예약_요청(customer1, siteId, reservationDate, reservationDate.plusDays(1));
+        ReservationRequest createRequest = ReservationRequest.name(customer1.name)
+                .phoneNumber(customer1.phoneNumber)
+                .siteNumber(siteId)
+                .startDate(reservationDate)
+                .endDate(reservationDate.plusDays(1));
+        ExtractableResponse<Response> createResponse = 예약_요청(createRequest);
         Long reservationId = createResponse.jsonPath().getLong("id");
         String confirmationCode = createResponse.jsonPath().getString("confirmationCode");
         cancelReservation(reservationId, confirmationCode);
 
         // When: 예약이 취소된 사이트에 새로운 예약을 요청하면
-        ExtractableResponse<Response> response = 예약_요청(customer2, siteId, reservationDate, reservationDate.plusDays(1));
+        ReservationRequest newRequest = ReservationRequest.name(customer2.name)
+                .phoneNumber(customer2.phoneNumber)
+                .siteNumber(siteId)
+                .startDate(reservationDate)
+                .endDate(reservationDate.plusDays(1));
+        ExtractableResponse<Response> response = 예약_요청(newRequest);
 
         // Then: 예약이 성공적으로 생성된다
         예약_생성_성공_검증(response);
@@ -286,8 +336,19 @@ class ReservationAcceptanceTest extends TestBase {
     void scenario_QueryMyReservationsByNameAndPhone() {
         // Given: 고객 "김철수"가 여러 예약을 완료했다
         CustomerInfo customer = 김철수();
-        예약_요청(customer, "A001", 미래날짜(5), 미래날짜(7));
-        예약_요청(customer, "A002", 미래날짜(10), 미래날짜(12));
+        ReservationRequest request1 = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A001")
+                .startDate(미래날짜(5))
+                .endDate(미래날짜(7));
+        예약_요청(request1);
+        
+        ReservationRequest request2 = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber("A002")
+                .startDate(미래날짜(10))
+                .endDate(미래날짜(12));
+        예약_요청(request2);
 
         // When: 이름과 전화번호로 예약을 조회하면
         ExtractableResponse<Response> response = getMyReservations(customer.name, customer.phoneNumber);
@@ -310,7 +371,12 @@ class ReservationAcceptanceTest extends TestBase {
         Long siteId = 1L;
         LocalDate reservationDate = 미래날짜(10);
         CustomerInfo customer = 김철수();
-        예약_요청(customer, siteId.toString(), reservationDate, reservationDate.plusDays(1));
+        ReservationRequest request = ReservationRequest.name(customer.name)
+                .phoneNumber(customer.phoneNumber)
+                .siteNumber(siteId.toString())
+                .startDate(reservationDate)
+                .endDate(reservationDate.plusDays(1));
+        예약_요청(request);
 
         // When: 년도, 월, 사이트ID로 캘린더를 조회하면
         ExtractableResponse<Response> response = getReservationCalendar(reservationDate.getYear(), reservationDate.getMonthValue(), siteId);

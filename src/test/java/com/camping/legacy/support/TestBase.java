@@ -1,5 +1,6 @@
 package com.camping.legacy.support;
 
+import com.camping.legacy.acceptance.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -52,6 +53,25 @@ public abstract class TestBase {
                         "siteNumber", siteNumber,
                         "startDate", startDate.toString(),
                         "endDate", endDate.toString()
+                ))
+                .when().post("/api/reservations")
+                .then().log().all()
+                .extract();
+    }
+
+    /**
+     * 예약 생성 요청을 보내는 헬퍼 메소드 (빌더 패턴 지원)
+     */
+    protected ExtractableResponse<Response> 예약_요청(ReservationRequest request) {
+        return RestAssured
+                .given().log().all()
+                .contentType("application/json")
+                .body(Map.of(
+                        "customerName", request.getCustomerName(),
+                        "phoneNumber", request.getPhoneNumber(),
+                        "siteNumber", request.getSiteNumber(),
+                        "startDate", request.getStartDate().toString(),
+                        "endDate", request.getEndDate().toString()
                 ))
                 .when().post("/api/reservations")
                 .then().log().all()
