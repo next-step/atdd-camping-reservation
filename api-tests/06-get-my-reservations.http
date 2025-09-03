@@ -1,0 +1,2 @@
+### 내 예약 조회 (이름 + 전화번호)
+GET http://localhost:8080/api/reservations/my?name=이영희&phone=010-3456-7890

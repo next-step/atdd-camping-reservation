@@ -1,0 +1,2 @@
+### 예약 취소
+DELETE http://localhost:8080/api/reservations/1?confirmationCode=ABC123

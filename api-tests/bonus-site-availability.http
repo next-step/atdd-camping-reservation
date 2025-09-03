@@ -1,0 +1,22 @@
+### 사이트 가용성 확인
+GET http://localhost:8080/api/sites/A-1/availability?date=2025-09-10
+
+###
+
+### 특정 날짜 가용한 사이트 조회
+GET http://localhost:8080/api/sites/available?date=2025-09-10
+
+###
+
+### 기간별 사이트 검색 (대형)
+GET http://localhost:8080/api/sites/search?startDate=2025-09-10&endDate=2025-09-12&size=대형
+
+###
+
+### 기간별 사이트 검색 (소형)
+GET http://localhost:8080/api/sites/search?startDate=2025-09-10&endDate=2025-09-12&size=소형
+
+###
+
+### 예약 캘린더 조회
+GET http://localhost:8080/api/reservations/calendar?year=2025&month=9&siteId=1
