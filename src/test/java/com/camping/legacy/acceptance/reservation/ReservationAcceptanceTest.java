@@ -3,11 +3,8 @@ package com.camping.legacy.acceptance.reservation;
 import com.camping.legacy.acceptance.AcceptanceTest;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
-import com.camping.legacy.repository.ReservationRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 
@@ -15,14 +12,6 @@ import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceSte
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationAcceptanceTest extends AcceptanceTest {
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void init() {
-        reservationRepository.deleteAll();
-    }
-
     @DisplayName("예약 생성 - 성공")
     @Test
     void createReservation() {
