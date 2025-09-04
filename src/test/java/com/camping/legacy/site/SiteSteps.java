@@ -95,9 +95,6 @@ public class SiteSteps {
         assertThat(response.statusCode()).isEqualTo(201);
     }
 
-    public static void 사이트_A002는_해당_기간에_예약이_없다() {
-    }
-
     public static ExtractableResponse<Response> 기간별_가용_사이트_검색_요청(String startDate, String endDate) {
         return given().log().all()
                 .when().get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
@@ -113,5 +110,34 @@ public class SiteSteps {
     public static void A001_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
+    }
+
+    /**
+     * 사이트들은 이미 데이터베이스에 초기화된 것으로 가정. 혹은 생성 API를 통해 생성.
+     */
+    public static void A구역_대형_사이트들과_B구역_소형_사이트들이_존재한다() {
+
+    }
+
+    public static ExtractableResponse<Response> 대형_사이트만_필터링하여_조회_요청() {
+        return given().log().all()
+                .when().get("/api/sites/search?size=대형")
+                .then().log().all().extract();
+    }
+
+    public static void A로_시작하는_사이트들만_반환된다(ExtractableResponse<Response> response) {
+        List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+
+        assertThat(siteNumbers).isNotEmpty();
+        assertThat(siteNumbers).allMatch(siteNumber -> siteNumber.startsWith("A"));
+
+        List<String> sizes = response.jsonPath().getList("size", String.class);
+        assertThat(sizes).allMatch(size -> "대형".equals(size));
+    }
+
+    public static void B로_시작하는_사이트들은_반환되지_않는다(ExtractableResponse<Response> response) {
+        List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+
+        assertThat(siteNumbers).noneMatch(siteNumber -> siteNumber.startsWith("B"));
     }
 }
