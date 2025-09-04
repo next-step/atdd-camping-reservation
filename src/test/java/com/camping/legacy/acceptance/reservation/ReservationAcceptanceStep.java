@@ -7,8 +7,6 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
-import static io.restassured.RestAssured.given;
-
 public class ReservationAcceptanceStep {
     final static String BASE_URL = "/api/reservations";
 
@@ -16,14 +14,37 @@ public class ReservationAcceptanceStep {
         return 예약_생성_요청(request, 201).as(ReservationResponse.class);
     }
 
+    public static String 예약_생성_실패(ReservationRequest request, Integer statusCode) {
+        return 예약_생성_요청(request, statusCode).jsonPath().getString("message");
+    }
+
     static ExtractableResponse<Response> 예약_생성_요청(ReservationRequest request, Integer statusCode) {
         return RestAssured
                 .given()
+                    .log().all()
                     .contentType(ContentType.JSON)
                     .body(request)
                 .when()
                     .post(BASE_URL)
                 .then()
+                    .log().all()
+                    .statusCode(statusCode)
+                    .extract();
+    }
+
+    public static String 예약_취소_성공(Long id, String confirmationCode) {
+        return 예약_취소_요청(id, confirmationCode, 200).jsonPath().getString("message");
+    }
+
+    static ExtractableResponse<Response> 예약_취소_요청(Long id, String confirmationCode, Integer statusCode) {
+        return RestAssured
+                .given()
+                    .log().all()
+                    .param("confirmationCode", confirmationCode)
+                .when()
+                    .delete(BASE_URL + "/" + id)
+                .then()
+                    .log().all()
                     .statusCode(statusCode)
                     .extract();
     }
