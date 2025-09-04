@@ -76,4 +76,42 @@ public class SiteSteps {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
     }
+
+    public static void 사이트_A001에_기간_예약이_존재한다(String startDate, String endDate) {
+        var reservationRequest = Map.of(
+                "siteNumber", "A-1",
+                "startDate", startDate,
+                "endDate", endDate,
+                "customerName", "테스트고객",
+                "phoneNumber", "010-1234-5678"
+        );
+
+        var response = given().log().all()
+                .contentType("application/json")
+                .body(reservationRequest)
+                .when().post("/api/reservations")
+                .then().log().all().extract();
+
+        assertThat(response.statusCode()).isEqualTo(201);
+    }
+
+    public static void 사이트_A002는_해당_기간에_예약이_없다() {
+    }
+
+    public static ExtractableResponse<Response> 기간별_가용_사이트_검색_요청(String startDate, String endDate) {
+        return given().log().all()
+                .when().get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
+                .then().log().all().extract();
+    }
+
+    public static void A002_사이트만_반환된다(ExtractableResponse<Response> response) {
+        List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
+        assertThat(availableSites).hasSize(1);
+        assertThat(availableSites).contains("A-2");
+    }
+
+    public static void A001_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
+        List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
+        assertThat(availableSites).doesNotContain("A-1");
+    }
 }
