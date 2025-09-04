@@ -1,5 +1,6 @@
 package com.camping.legacy.acceptance;
 
+import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
@@ -16,16 +17,15 @@ import org.springframework.http.MediaType;
 class ReservationAcceptanceTest extends AcceptanceTestBase {
 
     private static final String REGEX_CONFIRM_CODE = "^[A-Za-z0-9]{6}$";
-    private static final LocalDate TODAY = LocalDate.now();
-    private static final String NAME = "홍길동";
-    private static final String PHONE_NUMBER = "010-1234-5678";
 
     @DisplayName("정상적인 예약이 생성된다. 예약 완료 시 예약 확인 코드를 받는다.")
     @Test
     void reservationSuccessTest() {
         // given - 일반적인 예약 패턴
-        Map<String, String> request = createReservationRequest(NAME, LocalDate.of(2025, 9, 5).toString(),
-                LocalDate.of(2025, 9, 8).toString(), PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withStartDate(LocalDate.of(2025, 9, 5).toString())
+                .withEndDate(LocalDate.of(2025, 9, 8).toString())
+                .build();
 
         // when - 정상적인 패턴으로 예약한다.
         ExtractableResponse<Response> extract = RestAssured
@@ -51,8 +51,10 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         String startDate = TODAY.plusDays(28).toString();
         String endDate = TODAY.plusDays(31).toString();
 
-        Map<String, String> request = createReservationRequest(NAME, startDate,
-                endDate, PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .build();
 
         // when - 30일 이후의 날짜 예약을 요청하면
         ExtractableResponse<Response> extract = RestAssured
@@ -77,8 +79,10 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         // given
         LocalDate startDate = TODAY.minusDays(1);
 
-        Map<String, String> request = createReservationRequest(NAME, startDate.toString(), TODAY.toString(),
-                PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withStartDate(startDate.toString())
+                .withEndDate(TODAY.toString())
+                .build();
 
         // when - 과거의 날짜로 예약을 요청하면
         ExtractableResponse<Response> extract = RestAssured
@@ -102,8 +106,10 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = TODAY.plusDays(3);
         LocalDate endDate = TODAY.plusDays(1);
 
-        Map<String, String> request = createReservationRequest(NAME, startDate.toString(), endDate.toString(),
-                PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
 
         // when
         ExtractableResponse<Response> extract = RestAssured
@@ -127,8 +133,11 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = TODAY.plusDays(1);
         LocalDate endDate = TODAY.plusDays(3);
 
-        Map<String, String> request = createReservationRequest("", startDate.toString(), endDate.toString(),
-                PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withCustomerName("")
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
 
         // when
         ExtractableResponse<Response> extract = RestAssured
@@ -152,8 +161,11 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = TODAY.plusDays(1);
         LocalDate endDate = TODAY.plusDays(3);
 
-        Map<String, String> request = createReservationRequest(NAME, startDate.toString(), endDate.toString(),
-                "");
+        Map<String, String> request = reservationRequest()
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .withPhoneNumber("")
+                .build();
 
         // when
         ExtractableResponse<Response> extract = RestAssured
@@ -178,8 +190,10 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = TODAY.plusDays(1);
         LocalDate endDate = TODAY.plusDays(3);
 
-        Map<String, String> request = createReservationRequest(NAME, startDate.toString(), endDate.toString(),
-                PHONE_NUMBER);
+        Map<String, String> request = reservationRequest()
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
 
         RestAssured
                 .given()
@@ -190,8 +204,12 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .then()
                 .extract();
 
-        Map<String, String> anotherRequest = createReservationRequest("이영희", startDate.toString(), endDate.toString(),
-                "010-9876-5432");
+        Map<String, String> anotherRequest = reservationRequest()
+                .withCustomerName("이영희")
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .withPhoneNumber("010-9876-5432")
+                .build();
         // when
         ExtractableResponse<Response> extract = RestAssured
                 .given().log().all()
@@ -205,20 +223,5 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(extract.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
-    }
-
-    private Map<String, String> createReservationRequest(String name, String startDate, String endDate,
-                                                         String phoneNumber
-    ) {
-        return Map.of(
-                "customerName", name,
-                "startDate", startDate,
-                "endDate", endDate,
-                "siteNumber", "A-1",
-                "phoneNumber", phoneNumber,
-                "numberOfPeople", "2",
-                "carNumber", "15하-1234",
-                "requests", "어메니티 제공해주세요."
-        );
     }
 }
