@@ -18,5 +18,8 @@ public class SiteAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        A구역_대형_사이트들이_반환된다(response);
+        B구역_소형_사이트들이_반환된다(response);
+        각_사이트의_최대_수용_인원이_포함된다(response);
     }
 }
