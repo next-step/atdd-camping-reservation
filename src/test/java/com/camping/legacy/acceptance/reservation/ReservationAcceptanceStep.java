@@ -7,10 +7,32 @@ import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
+import java.time.LocalDate;
+
 public class ReservationAcceptanceStep {
     final static String BASE_URL = "/api/reservations";
 
+    public static ReservationRequest getReservationRequest(
+            String customerName,
+            LocalDate startDate,
+            LocalDate endDate,
+            String siteNumber,
+            String phone
+    ) {
+        return new ReservationRequest(
+                customerName,
+                startDate,
+                endDate,
+                siteNumber,
+                phone,
+                2,
+                null,
+                null
+        );
+    }
+
     public static ReservationResponse 예약_생성_성공(ReservationRequest request) {
+
         return 예약_생성_요청(request, 201).as(ReservationResponse.class);
     }
 

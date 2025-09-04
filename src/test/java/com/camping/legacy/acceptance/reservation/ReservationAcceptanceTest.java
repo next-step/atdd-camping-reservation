@@ -11,9 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
 
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.예약_생성_성공;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.예약_생성_실패;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.예약_취소_성공;
+import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationAcceptanceTest extends AcceptanceTest {
@@ -28,15 +26,12 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 성공")
     @Test
     void createReservation() {
-        ReservationRequest request = new ReservationRequest(
+        ReservationRequest request = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
 
         ReservationResponse response = 예약_생성_성공(request);
@@ -51,15 +46,12 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 30일 초과 예약 실패")
     @Test
     void createReservationFailWithOver30Days() {
-        ReservationRequest request = new ReservationRequest(
+        ReservationRequest request = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(31),
                 LocalDate.now().plusDays(32),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
 
         var message = 예약_생성_실패(request, 409);
@@ -70,15 +62,12 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 과거 날짜 예약 실패")
     @Test
     void createReservationFailWithPastDate() {
-        ReservationRequest request = new ReservationRequest(
+        ReservationRequest request = getReservationRequest(
                 "홍길동",
                 LocalDate.now().minusDays(1),
                 LocalDate.now().plusDays(1),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
 
         var message = 예약_생성_실패(request, 409);
@@ -89,15 +78,12 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 종료일이 시작일 이전인 예약 실패")
     @Test
     void createReservationFailWithEndDateBeforeStartDate() {
-        ReservationRequest request = new ReservationRequest(
+        ReservationRequest request = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().minusDays(1),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
 
         var message = 예약_생성_실패(request, 409);
@@ -108,26 +94,20 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 동일 사이트 동일 날짜 중복 예약 실패")
     @Test
     void createReservationFailWithDuplicateReservation() {
-        ReservationRequest firstRequest = new ReservationRequest(
+        ReservationRequest firstRequest = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
         예약_생성_성공(firstRequest);
-        ReservationRequest duplicateRequest = new ReservationRequest(
+        ReservationRequest duplicateRequest = getReservationRequest(
                 "김철수",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-9876-5432",
-                2,
-                null,
-                null
+                "010-9876-5432"
         );
 
         var message = 예약_생성_실패(duplicateRequest, 409);
@@ -138,15 +118,12 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 취소 - 성공")
     @Test
     void cancelReservation() {
-        ReservationRequest request = new ReservationRequest(
+        ReservationRequest request = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
         ReservationResponse reservation = 예약_생성_성공(request);
 
@@ -158,26 +135,20 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 예약 취소 후 동일 사이트 동일 날짜 예약 성공")
     @Test
     void cancelReservationAndCreateDuplicateReservation() {
-        ReservationRequest firstRequest = new ReservationRequest(
+        ReservationRequest firstRequest = getReservationRequest(
                 "홍길동",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
+                "010-1234-5678"
         );
         ReservationResponse response1 = 예약_생성_성공(firstRequest);
-        ReservationRequest duplicateRequest = new ReservationRequest(
+        ReservationRequest duplicateRequest = getReservationRequest(
                 "김철수",
                 LocalDate.now().plusDays(1),
                 LocalDate.now().plusDays(2),
                 "A-1",
-                "010-9876-5432",
-                2,
-                null,
-                null
+                "010-9876-5432"
         );
         예약_취소_성공(response1.getId(), response1.getConfirmationCode());
 
