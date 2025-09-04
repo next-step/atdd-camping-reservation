@@ -38,7 +38,8 @@ public class CalendarService {
         
         for (Reservation reservation : allReservations) {
             if (reservation.getCampsite().getId().equals(siteId) && 
-                reservation.getStartDate() != null && reservation.getEndDate() != null) {
+                reservation.getStartDate() != null && reservation.getEndDate() != null &&
+                reservation.getStatus().isActive()) {
                 // 예약 기간 내의 모든 날짜에 대해 예약 정보 추가
                 LocalDate current = reservation.getStartDate();
                 while (!current.isAfter(reservation.getEndDate()) && !current.isAfter(endDate)) {
