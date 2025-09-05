@@ -10,8 +10,8 @@ import lombok.experimental.Accessors;
 public class ReservationRequestBuilder {
 
     private String customerName = "테스터";
-    private LocalDate startDate = LocalDate.of(2025, 1, 1);
-    private LocalDate endDate = LocalDate.of(2025, 1, 2);
+    private LocalDate startDate = LocalDate.now().plusDays(1);
+    private LocalDate endDate = LocalDate.now().plusDays(2);
     private String siteNumber = "A-1";
     private String phoneNumber = "010-1111-2222";
     private Integer numberOfPeople = 4;
