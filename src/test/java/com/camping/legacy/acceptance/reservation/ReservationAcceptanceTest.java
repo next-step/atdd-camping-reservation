@@ -3,6 +3,7 @@ package com.camping.legacy.acceptance.reservation;
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성을_요청한다;
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_성공한다;
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_실패한다;
+import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약이_생성되어있다;
 import static com.camping.legacy.acceptance.site.SiteAcceptanceTestSteps.사이트가_존재한다;
 
 import com.camping.legacy.acceptance.reservation.request.ReservationRequestBuilder;
@@ -111,6 +112,33 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
             new ReservationRequestBuilder()
                 .siteNumber("A-1")
                 .phoneNumber(null)
+                .build()
+        );
+
+        // then
+        예약_생성이_실패한다(예약_생성_응답);
+    }
+
+    @Test
+    void 동일_사이트_동일_기간에_중복_예약이_불가능하다() {
+        // given
+        var 시작일 = LocalDate.now().plusDays(1);
+        var 종료일 = 시작일.plusDays(1);
+
+        예약이_생성되어있다(
+            new ReservationRequestBuilder()
+                .siteNumber("A-1")
+                .startDate(시작일)
+                .endDate(종료일)
+                .build()
+        );
+
+        // when
+        var 예약_생성_응답 = 예약_생성을_요청한다(
+            new ReservationRequestBuilder()
+                .siteNumber("A-1")
+                .startDate(시작일)
+                .endDate(종료일)
                 .build()
         );
 

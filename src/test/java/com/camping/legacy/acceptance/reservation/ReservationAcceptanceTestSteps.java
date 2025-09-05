@@ -11,6 +11,12 @@ import org.springframework.http.HttpStatus;
 public class ReservationAcceptanceTestSteps {
 
     // 예약 생성
+    public static Response 예약이_생성되어있다(ReservationRequest request) {
+        Response 예약_생성_응답 = 예약_생성을_요청한다(request);
+        예약_생성이_성공한다(예약_생성_응답);
+        return 예약_생성_응답;
+    }
+
     public static Response 예약_생성을_요청한다(ReservationRequest request) {
         return given().body(request)
             .when().post("/api/reservations")
