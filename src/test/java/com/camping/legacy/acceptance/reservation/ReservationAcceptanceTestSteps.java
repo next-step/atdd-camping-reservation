@@ -27,6 +27,14 @@ public class ReservationAcceptanceTestSteps {
         return assertThat(예약_생성_응답.statusCode()).isEqualTo(HttpStatus.CREATED.value());
     }
 
+    public static void 확인_코드가_6자리_영숫자로_생성된다(Response 예약_생성_응답) {
+        String confirmationCode = 예약_생성_응답.jsonPath().getString("confirmationCode");
+
+        assertThat(confirmationCode)
+            .hasSize(6)
+            .matches("^[A-Z0-9]{6}$");
+    }
+
     public static void 예약_생성이_실패한다(Response 예약_생성_응답) {
         assertThat(예약_생성_응답.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
     }

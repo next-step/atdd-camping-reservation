@@ -4,6 +4,7 @@ import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTes
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_성공한다;
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_실패한다;
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약이_생성되어있다;
+import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.확인_코드가_6자리_영숫자로_생성된다;
 import static com.camping.legacy.acceptance.site.SiteAcceptanceTestSteps.사이트가_존재한다;
 
 import com.camping.legacy.acceptance.reservation.request.ReservationRequestBuilder;
@@ -21,19 +22,6 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     void setUp() {
         // given
         A_1 = 사이트가_존재한다("A-1");
-    }
-
-    @Test
-    void 예약_생성_인수테스트() {
-        // when
-        var 예약_생성_응답 = 예약_생성을_요청한다(
-            new ReservationRequestBuilder()
-                .siteNumber(A_1.getSiteNumber())
-                .build()
-        );
-
-        // then
-        예약_생성이_성공한다(예약_생성_응답);
     }
 
     @Test
@@ -144,6 +132,20 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 
         // then
         예약_생성이_실패한다(예약_생성_응답);
+    }
+
+    @Test
+    void 예약_완료_시_6자리_영숫자_확인_코드가_자동_생성된다() {
+        // when
+        var 예약_생성_응답 = 예약_생성을_요청한다(
+            new ReservationRequestBuilder()
+                .siteNumber(A_1.getSiteNumber())
+                .build()
+        );
+
+        // then
+        예약_생성이_성공한다(예약_생성_응답);
+        확인_코드가_6자리_영숫자로_생성된다(예약_생성_응답);
     }
 
     @Test
