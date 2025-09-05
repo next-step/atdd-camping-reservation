@@ -145,4 +145,34 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // then
         예약_생성이_실패한다(예약_생성_응답);
     }
+
+    @Test
+    void 연박_예약_시_시작일부터_종료일까지_모든_날짜가_예약_가능해야한다() {
+        // given
+        var 오늘 = LocalDate.now().plusDays(1);
+        var 내일 = 오늘.plusDays(1);
+        var 모레 = 오늘.plusDays(2);
+
+        예약이_생성되어있다(
+            new ReservationRequestBuilder()
+                .siteNumber("A-1")
+                .startDate(내일)
+                .endDate(내일)
+                .build()
+        );
+
+        // when
+        var 예약_생성_응답 = 예약_생성을_요청한다(
+            new ReservationRequestBuilder()
+                .siteNumber("A-1")
+                .startDate(오늘)
+                .endDate(모레)
+                .customerName("연박고객")
+                .phoneNumber("010-7777-7777")
+                .build()
+        );
+
+        // then
+        예약_생성이_실패한다(예약_생성_응답);
+    }
 }
