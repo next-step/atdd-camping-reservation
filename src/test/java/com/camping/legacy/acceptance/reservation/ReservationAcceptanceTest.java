@@ -28,7 +28,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .build()
         );
 
@@ -44,7 +44,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(_30일_후.plusDays(1))
                 .endDate(_30일_후.plusDays(2))
                 .build()
@@ -62,7 +62,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(어제)
                 .endDate(어제.plusDays(1))
                 .build()
@@ -81,7 +81,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(모레)
                 .endDate(내일)
                 .build()
@@ -96,7 +96,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .customerName(null)
                 .build()
         );
@@ -110,7 +110,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .phoneNumber(null)
                 .build()
         );
@@ -127,7 +127,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 
         예약이_생성되어있다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(시작일)
                 .endDate(종료일)
                 .build()
@@ -136,7 +136,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(시작일)
                 .endDate(종료일)
                 .build()
@@ -155,7 +155,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 
         예약이_생성되어있다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(내일)
                 .endDate(내일)
                 .build()
@@ -164,7 +164,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // when
         var 예약_생성_응답 = 예약_생성을_요청한다(
             new ReservationRequestBuilder()
-                .siteNumber("A-1")
+                .siteNumber(A_1.getSiteNumber())
                 .startDate(오늘)
                 .endDate(모레)
                 .customerName("연박고객")
