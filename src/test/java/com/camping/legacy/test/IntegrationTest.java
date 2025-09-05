@@ -11,7 +11,7 @@ public abstract class IntegrationTest {
     private DatabaseCleaner databaseCleaner;
 
     @BeforeEach
-    void setUp() {
+    void integrationTestSetUp() {
         databaseCleaner.clear();
     }
 }
