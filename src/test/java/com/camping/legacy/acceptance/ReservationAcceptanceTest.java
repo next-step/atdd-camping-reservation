@@ -8,12 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import java.time.LocalDate;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+
+import java.time.LocalDate;
+import java.util.Map;
+
+import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 class ReservationAcceptanceTest extends AcceptanceTestBase {
 
@@ -83,7 +88,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
 
         // then - 예약에 실패하고, 과거 날짜는 예약할 수 없습니다 메시지가 반환된다.
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(extract.jsonPath().getString("message")).isEqualTo("과거 날짜는 예약할 수 없습니다");
+        assertThat(extract.jsonPath().getString("message")).isEqualTo("과거 날짜는 예약할 수 없습니다.");
     }
 
     @DisplayName("종료일이 시작일보다 빠른 경우에는 예약이 거부되어야 한다.")

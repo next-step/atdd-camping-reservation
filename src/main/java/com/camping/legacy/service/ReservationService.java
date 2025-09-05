@@ -9,6 +9,7 @@ import com.camping.legacy.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -21,7 +22,8 @@ import java.util.stream.Collectors;
 public class ReservationService {
 
     private static final int MAX_RESERVATION_DAYS = 30;
-    
+    private static final LocalDate TODAY = LocalDate.now();
+
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
 
@@ -37,12 +39,24 @@ public class ReservationService {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
 
+        if (startDate.isAfter(TODAY.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("30일 이후의 날짜는 예약할 수 없습니다.");
+        }
+
+        if (startDate.isBefore(TODAY)) {
+            throw new RuntimeException("과거 날짜는 예약할 수 없습니다.");
+        }
+
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
 
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
+        }
+
+        if (StringUtils.isEmpty(request.getPhoneNumber())) {
+            throw new RuntimeException("예약자 전화번호를 입력해주세요.");
         }
 
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
