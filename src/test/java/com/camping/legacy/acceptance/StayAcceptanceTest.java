@@ -1,5 +1,6 @@
 package com.camping.legacy.acceptance;
 
+import static com.camping.legacy.acceptance.helper.ReservationTestHelper.createReservation;
 import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -8,10 +9,10 @@ import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import java.time.LocalDate;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 
 class StayAcceptanceTest extends AcceptanceTestBase {
 
@@ -24,20 +25,15 @@ class StayAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = LocalDate.of(2025, 9, 15);
         LocalDate endDate = startDate.plusDays(5);
 
+        Map<String, String> request = reservationRequest()
+                .withCustomerName("김철수")
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
+
         // when
         ExtractableResponse<Response> extract =
-                RestAssured
-                        .given().log().all()
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .body(reservationRequest()
-                                .withCustomerName("김철수")
-                                .withStartDate(startDate.toString())
-                                .withEndDate(endDate.toString())
-                                .build())
-                        .when()
-                        .post("/api/reservations")
-                        .then().log().all()
-                        .extract();
+                createReservation(request);
 
         // then
         assertAll(() -> assertThat(extract.statusCode()).isEqualTo(HttpStatus.CREATED.value()),
@@ -51,34 +47,23 @@ class StayAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = LocalDate.of(2025, 9, 15);
         LocalDate endDate = startDate.plusDays(5);
 
-        RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(reservationRequest()
-                        .withCustomerName("김철수")
-                        .withStartDate(startDate.toString())
-                        .withEndDate(endDate.toString())
-                        .build())
-                .when()
-                .post("/api/reservations")
-                .then()
-                .log().all()
-                .extract();
+        Map<String, String> request = reservationRequest()
+                .withCustomerName("김철수")
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
+
+        createReservation(request);
 
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given().log().all()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(reservationRequest()
-                        .withCustomerName("박영희")
-                        .withPhoneNumber("010-9876-5432")
-                        .withStartDate(startDate.plusDays(2).toString())
-                        .withEndDate(startDate.plusDays(2).toString())
-                        .build())
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        Map<String, String> anotherRequest = reservationRequest()
+                .withCustomerName("박영희")
+                .withPhoneNumber("010-9876-5432")
+                .withStartDate(startDate.plusDays(2).toString())
+                .withEndDate(startDate.plusDays(2).toString())
+                .build();
+
+        ExtractableResponse<Response> extract = createReservation(anotherRequest);
 
         // then
         assertAll(
@@ -93,19 +78,13 @@ class StayAcceptanceTest extends AcceptanceTestBase {
         // given
         LocalDate endDate = TODAY.plusDays(31);
 
+        Map<String, String> request = reservationRequest()
+                .withCustomerName("김철수")
+                .withStartDate(TODAY.toString())
+                .withEndDate(endDate.toString())
+                .build();
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given().log().all()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(reservationRequest()
-                        .withCustomerName("김철수")
-                        .withStartDate(TODAY.toString())
-                        .withEndDate(endDate.toString())
-                        .build())
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -119,19 +98,13 @@ class StayAcceptanceTest extends AcceptanceTestBase {
         LocalDate startDate = TODAY.plusDays(1);
         LocalDate endDate = TODAY.plusDays(5);
 
-        ExtractableResponse<Response> createResponse = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(reservationRequest()
-                        .withCustomerName("김철수")
-                        .withStartDate(startDate.toString())
-                        .withEndDate(endDate.toString())
-                        .build())
-                .when()
-                .post("/api/reservations")
-                .then()
-                .log().all()
-                .extract();
+        Map<String, String> request = reservationRequest()
+                .withCustomerName("김철수")
+                .withStartDate(startDate.toString())
+                .withEndDate(endDate.toString())
+                .build();
+
+        ExtractableResponse<Response> createResponse = createReservation(request);
 
         String cancelId = createResponse.jsonPath().getString("id");
         String confirmationCode = createResponse.jsonPath().getString("confirmationCode");

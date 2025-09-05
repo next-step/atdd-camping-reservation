@@ -1,9 +1,24 @@
 package com.camping.legacy.acceptance.helper;
 
+import io.restassured.RestAssured;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.http.MediaType;
 
 public class ReservationTestHelper {
+
+    public static ExtractableResponse<Response> createReservation(Map<String, String> request) {
+        return RestAssured
+                .given().log().all()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .body(request)
+                .when()
+                .post("/api/reservations")
+                .then().log().all()
+                .extract();
+    }
 
     public static ReservationRequestBuilder reservationRequest() {
         return new ReservationRequestBuilder();

@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.EntityType;
 import java.util.List;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,9 @@ public class DatabaseCleanup implements InitializingBean {
     private EntityManager entityManager;
 
     private List<String> tableNames;
+
+    @Autowired
+    private DataInitializer dataInitializer;
 
     @Override
     public void afterPropertiesSet() {
@@ -45,5 +49,7 @@ public class DatabaseCleanup implements InitializingBean {
         }
 
         entityManager.createNativeQuery("SET REFERENTIAL_INTEGRITY TRUE").executeUpdate();
+
+        dataInitializer.execute();
     }
 }

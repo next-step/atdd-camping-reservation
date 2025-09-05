@@ -1,10 +1,10 @@
 package com.camping.legacy.acceptance;
 
+import static com.camping.legacy.acceptance.helper.ReservationTestHelper.createReservation;
 import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 
-import io.restassured.RestAssured;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 
 class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
 
@@ -31,17 +30,7 @@ class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
         for (int i = 0; i < NUMBER_OF_THREADS; i++) {
             executorService.submit(() -> {
                 try {
-                    int statusCode = RestAssured
-                            .given()
-                            .log().all()
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .body(reservationRequest().build())
-                            .when()
-                            .post("/api/reservations")
-                            .then()
-                            .log().all()
-                            .extract()
-                            .statusCode();
+                    int statusCode = createReservation(reservationRequest().build()).statusCode();
 
                     statusCodes.add(statusCode);
                 } finally {

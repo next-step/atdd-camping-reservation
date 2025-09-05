@@ -1,6 +1,5 @@
 package com.camping.legacy.acceptance;
 
-import com.camping.legacy.DataInitializer;
 import com.camping.legacy.DatabaseCleanup;
 import io.restassured.RestAssured;
 import java.time.LocalDate;
@@ -23,8 +22,6 @@ class AcceptanceTestBase {
     @Autowired
     private DatabaseCleanup databaseCleanup;
 
-    @Autowired
-    private DataInitializer dataInitializer;
 
     @BeforeEach
     void setUp() {
@@ -33,6 +30,5 @@ class AcceptanceTestBase {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         databaseCleanup.execute();
-        dataInitializer.execute();
     }
 }

@@ -1,5 +1,6 @@
 package com.camping.legacy.acceptance;
 
+import static com.camping.legacy.acceptance.helper.ReservationTestHelper.createReservation;
 import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -57,14 +58,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .build();
 
         // when - 30일 이후의 날짜 예약을 요청하면
-        ExtractableResponse<Response> extract = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then - 예약에 실패하고, 30일 이후의 날짜는 예약할 수 없다는 에러메시지를 받는다.
         assertAll(
@@ -85,14 +79,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .build();
 
         // when - 과거의 날짜로 예약을 요청하면
-        ExtractableResponse<Response> extract = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then - 예약에 실패하고, 과거 날짜는 예약할 수 없습니다 메시지가 반환된다.
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -112,14 +99,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .build();
 
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -140,14 +120,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .build();
 
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -168,15 +141,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .build();
 
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(request);
 
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -195,14 +160,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .withEndDate(endDate.toString())
                 .build();
 
-        RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        createReservation(request);
 
         Map<String, String> anotherRequest = reservationRequest()
                 .withCustomerName("이영희")
@@ -211,14 +169,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .withPhoneNumber("010-9876-5432")
                 .build();
         // when
-        ExtractableResponse<Response> extract = RestAssured
-                .given().log().all()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(anotherRequest)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> extract = createReservation(anotherRequest);
 
         // then
         assertThat(extract.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
