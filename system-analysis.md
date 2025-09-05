@@ -8,14 +8,14 @@
 |----------|--------|------|--------------|------|
 | /api/reservations | POST | 예약 생성 | ReservationRequest | 동시성 제어 필요, 확인코드 자동생성(예약자용) |
 | /api/reservations/{id} | GET | 예약 조회 | id (Long) | - |
-| /api/reservations | GET | 예약 목록 조회 | date (Optional), customerName (Optional) | 날짜별/고객명별 필터링 |
+| /api/reservations | GET | 예약 목록 조회 | date (Optional), customerName (Optional) | 날짜별/고객명별 필터링(관리자용) |
 | /api/reservations/{id} | DELETE | 예약 취소 | id (Long), confirmationCode (String) | 본인 확인 필수(예약자용)/관리자용 |
 | /api/reservations/{id} | PUT | 예약 수정 | id (Long), ReservationRequest, confirmationCode (String) | 본인 확인 필수(예약자용)/관리자용 |
 | /api/reservations/my | GET | 내 예약 조회 | name (String), phone (String) | 본인 정보 기반 조회(예약자용) |
 | /api/reservations/calendar | GET | 예약 캘린더 | year (Integer), month (Integer), siteId (Long) | 월별 예약 현황 |
 | /api/sites | GET | 캠핑장 목록 | 없음 | 전체 캠핑장 조회 |
 | /api/sites/{siteId} | GET | 캠핑장 상세 | siteId (Long) | 캠핑장 상세 정보 |
-| /api/sites/{siteNumber}/availability | GET | 예약 가능 캠핑장 | siteNumber (String), date (LocalDate) | 특정 날짜 예약 가능 여부 |
+| /api/sites/{siteNumber}/availability | GET | 예약 가능 캠핑장인지 확인 | siteNumber (String), date (LocalDate) | 특정 날짜 예약 가능 여부 |
 | /api/sites/available | GET | 예약 가능 캠핑장 검색 | date (LocalDate) | 특정 날짜 예약 가능한 모든 캠핑장 |
 | /api/sites/search | GET | 캠핑장 검색 | startDate (LocalDate), endDate (LocalDate), size (optional) | 기간별 예약 가능 캠핑장 검색 |
 
