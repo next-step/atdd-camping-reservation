@@ -46,4 +46,23 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         // then
         예약_생성이_실패한다(예약_생성_응답);
     }
+
+    @Test
+    void 과거_날짜로_예약이_불가능하다() {
+        // given
+        사이트가_존재한다("A-1");
+        var 어제 = LocalDate.now().minusDays(1);
+
+        // when
+        var 예약_생성_응답 = 예약_생성을_요청한다(
+            new ReservationRequestBuilder()
+                .siteNumber("A-1")
+                .startDate(어제)
+                .endDate(어제.plusDays(1))
+                .build()
+        );
+
+        // then
+        예약_생성이_실패한다(예약_생성_응답);
+    }
 }
