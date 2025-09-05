@@ -1,5 +1,5 @@
 ### 사이트 가용성 확인
-GET http://localhost:8080/api/sites/A-1/availability?date=2025-09-10
+GET http://localhost:8080/api/sites/A-1/availability?startDate=2025-09-5&endDate=2025-09-12
 
 ###
 
