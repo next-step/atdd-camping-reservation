@@ -6,15 +6,15 @@ import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.util.StringUtils;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,13 @@ public class ReservationService {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
 
-        if (startDate.isAfter(TODAY.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
+        long duration = ChronoUnit.DAYS.between(startDate, endDate);
+        if (duration > MAX_RESERVATION_DAYS) {
+            throw new RuntimeException("최대 예약 가능 기간을 초과했습니다.");
+        }
+
+        if (startDate.isAfter(TODAY.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(
+                LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
             throw new RuntimeException("30일 이후의 날짜는 예약할 수 없습니다.");
         }
 

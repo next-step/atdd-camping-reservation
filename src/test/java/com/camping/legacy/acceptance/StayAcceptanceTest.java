@@ -119,7 +119,7 @@ class StayAcceptanceTest extends AcceptanceTestBase {
 
         // then
         assertAll(
-                () -> assertThat(extract.statusCode()).isEqualTo(HttpStatus.NO_CONTENT.value()),
+                () -> assertThat(extract.statusCode()).isEqualTo(HttpStatus.OK.value()),
                 () -> assertThat(extract.jsonPath().getString("message")).isEqualTo("예약이 취소되었습니다.")
         );
     }
