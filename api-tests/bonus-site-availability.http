@@ -1,0 +1,32 @@
+### 사이트 가용성 확인
+GET http://localhost:8080/api/sites/A-1/availability?date=2025-09-10
+
+###
+
+### 특정 날짜 가용한 사이트 조회
+GET http://localhost:8080/api/sites/available?date=2025-09-10
+
+# 🚨 구현 오류 사항:
+# 1. SiteService:43에서 reservationDate 필드 사용 - 실제로는 startDate/endDate 범위로 확인해야 함
+# 2. 날짜 범위 기반 예약 확인 로직 오류
+
+###
+
+### 기간별 사이트 검색 (대형)
+GET http://localhost:8080/api/sites/search?startDate=2025-09-10&endDate=2025-09-12&size=대형
+
+# 🚨 구현 오류 사항:
+# 1. 연박 기간 중간 날짜 확인 누락 - SiteService:75-78에서 시작일과 종료일만 체크
+# 2. 전체 기간 동안 가용한 사이트만 반환해야 하나 중간 날짜 예약 상태 미확인
+
+###
+
+### 기간별 사이트 검색 (소형)
+GET http://localhost:8080/api/sites/search?startDate=2025-09-10&endDate=2025-09-12&size=소형
+
+# 🚨 동일한 오류: 연박 기간 중간 날짜 확인 누락
+
+###
+
+### 예약 캘린더 조회
+GET http://localhost:8080/api/reservations/calendar?year=2025&month=9&siteId=1

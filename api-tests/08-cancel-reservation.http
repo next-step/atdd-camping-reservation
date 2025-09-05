@@ -1,0 +1,6 @@
+### 예약 취소
+DELETE http://localhost:8080/api/reservations/1?confirmationCode=ABC123
+
+# 🚨 구현 오류 사항:
+# 1. 환불 금액 계산 로직 없음 - 취소 시점에 따른 환불 금액 계산 로직 필요하나 미구현
+#    현재는 상태만 변경하고 환불 계산 없음 (ReservationService:110-117)

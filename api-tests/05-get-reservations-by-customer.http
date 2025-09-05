@@ -1,0 +1,2 @@
+### 고객명으로 예약 조회
+GET http://localhost:8080/api/reservations?customerName=이영희

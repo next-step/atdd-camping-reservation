@@ -1,0 +1,11 @@
+### 예약 수정
+PUT http://localhost:8080/api/reservations/1?confirmationCode=ABC123
+Content-Type: application/json
+
+{
+  "customerName": "이영희",
+  "phoneNumber": "010-3456-7890",
+  "siteNumber": "A-2",
+  "startDate": "2025-09-11",
+  "endDate": "2025-09-13"
+}

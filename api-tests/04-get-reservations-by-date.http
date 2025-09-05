@@ -1,0 +1,2 @@
+### 날짜별 예약 조회
+GET http://localhost:8080/api/reservations?date=2025-09-10
