@@ -55,4 +55,13 @@ public class ReservationSteps {
         String status = response.jsonPath().getString("status");
         assertThat(status).isEqualTo("CONFIRMED");
     }
+
+    public static void 예약이_실패한다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    public static void 오류_메시지가_반환된다(ExtractableResponse<Response> response, String expectedMessage) {
+        String actualMessage = response.jsonPath().getString("message");
+        assertThat(actualMessage).isEqualTo(expectedMessage);
+    }
 }
