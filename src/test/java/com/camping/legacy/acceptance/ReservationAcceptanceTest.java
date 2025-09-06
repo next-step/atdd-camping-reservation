@@ -209,4 +209,37 @@ class ReservationAcceptanceTest {
         // Then: "종료일이 시작일보다 이전일 수 없습니다."와 같은 메시지와 함께 예약이 실패한다.
         assertThat(errorMessage).contains("종료일이 시작일보다 이전일 수 없습니다.");
     }
+
+    /**
+     * Scenario: 30일 이후 기간으로 예약을 시도하면 실패한다.
+     * When 사용자가 예약할 때, 예약 기간에 30일 이후 날짜가 포함되면
+     * Then "30일 이내 기간으로만 예약이 가능합니다."와 같은 메시지와 함께 예약이 실패한다.
+     */
+    @Test
+    void 삼십일_이후_기간으로_예약을_시도하면_실패한다() throws Exception {
+        // When: 사용자가 예약할 때, 예약 기간에 30일 이후 날짜가 포함되면
+        ReservationRequest request = ReservationRequest.builder()
+                .customerName("김미래")
+                .phoneNumber("010-5555-6666")
+                .startDate(LocalDate.now().plusDays(30))
+                .endDate(LocalDate.now().plusDays(31))
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        String errorMessage = RestAssured
+                .given()
+                    .log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(request))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .log().all()
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                    .extract().path("message");
+
+        // Then: "30일 이내 기간으로만 예약이 가능합니다."와 같은 메시지와 함께 예약이 실패한다.
+        assertThat(errorMessage).contains("30일 이내 기간으로만 예약이 가능합니다.");
+    }
 }
