@@ -27,7 +27,7 @@ public class ReservationService {
     private static final int MAX_RESERVATION_DAYS = 30;
     
     public ReservationResponse createReservation(ReservationRequest request) {
-        checkValidReservation(request);
+        checkReservationAvailable(request);
 
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
@@ -39,41 +39,38 @@ public class ReservationService {
             Thread.currentThread().interrupt();
         }
         
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.getCustomerName());
-        reservation.setStartDate(request.getStartDate());
-        reservation.setEndDate(request.getEndDate());
-        reservation.setReservationDate(request.getStartDate());
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(request.getPhoneNumber());
-        
-        reservation.setConfirmationCode(generateConfirmationCode());
-        
-        Reservation saved = reservationRepository.save(reservation);
-        
-        return ReservationResponse.from(saved);
+        // 동시성 제어를 위해 다시 한 번 체크
+        synchronized (this) {
+            checkReservationExists(request.getSiteNumber(), request.getStartDate(), request.getEndDate());
+
+            Reservation reservation = new Reservation();
+            reservation.setCustomerName(request.getCustomerName());
+            reservation.setStartDate(request.getStartDate());
+            reservation.setEndDate(request.getEndDate());
+            reservation.setReservationDate(request.getStartDate());
+            reservation.setCampsite(campsite);
+            reservation.setPhoneNumber(request.getPhoneNumber());
+
+            reservation.setConfirmationCode(generateConfirmationCode());
+
+            Reservation saved = reservationRepository.save(reservation);
+
+            return ReservationResponse.from(saved);
+        }
     }
 
-    private void checkValidReservation(ReservationRequest request) {
+    private void checkReservationAvailable(ReservationRequest request) {
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
 
-        checkValidDate(startDate, endDate);
+        checkDatesAvailable(startDate, endDate);
 
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-
-        Reservation reservation =
-                reservationRepository.findByCampsiteSiteNumberAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(
-                        request.getSiteNumber(), startDate, endDate);
-
-        if (reservation != null && reservation.isConfirmed()) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
     }
 
-    private void checkValidDate(LocalDate startDate, LocalDate endDate) {
+    private void checkDatesAvailable(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
@@ -89,6 +86,15 @@ public class ReservationService {
 
         if (startDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
             throw new RuntimeException("예약일이 오늘 기준 30일을 초과할 수 없습니다.");
+        }
+    }
+
+    private void checkReservationExists(String siteNumber, LocalDate startDate, LocalDate endDate) {
+        Reservation existingReservation =
+                reservationRepository.findByCampsiteSiteNumberAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(siteNumber, startDate, endDate);
+
+        if (existingReservation != null && existingReservation.isConfirmed()) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
     }
     
