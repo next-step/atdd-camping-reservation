@@ -19,7 +19,6 @@ public class ReservationRequestTestDataBuilder {
     private String carNumber = "12가3456";
     private String requests = "없음";
 
-    // with 메서드들
     public ReservationRequestTestDataBuilder withName(String name) {
         this.name = name;
         return this;
@@ -71,42 +70,5 @@ public class ReservationRequestTestDataBuilder {
                 carNumber,
                 requests
         );
-    }
-
-    // 기존 사용 패턴과 동일한 정적 팩토리 메서드 제공
-    public static ReservationRequest get(
-            String customerName,
-            String siteNumber,
-            LocalDate startDate,
-            LocalDate endDate
-    ) {
-        return new ReservationRequestTestDataBuilder()
-                .withName(customerName)
-                .withSiteNumber(siteNumber)
-                .withStartDate(startDate)
-                .withEndDate(endDate)
-                .build();
-    }
-
-    public static ReservationRequest get(
-            String customerName,
-            String siteNumber,
-            LocalDate startDate,
-            LocalDate endDate,
-            String phoneNumber,
-            Integer numberOfPeople,
-            String carNumber,
-            String requests
-    ) {
-        ReservationRequestTestDataBuilder b = new ReservationRequestTestDataBuilder();
-        if (customerName != null) b.withName(customerName);
-        if (siteNumber != null) b.withSiteNumber(siteNumber);
-        if (startDate != null) b.withStartDate(startDate);
-        if (endDate != null) b.withEndDate(endDate);
-        if (phoneNumber != null) b.withPhone(phoneNumber);
-        if (numberOfPeople != null) b.withNumberOfPeople(numberOfPeople);
-        if (carNumber != null) b.withCarNumber(carNumber);
-        if (requests != null) b.withRequests(requests);
-        return b.build();
     }
 }

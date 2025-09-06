@@ -20,44 +20,55 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class ReservationService {
-    
+
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
-    
+
     private static final int MAX_RESERVATION_DAYS = 30;
-    
+
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-        
+
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
-        
+        LocalDate today = LocalDate.now();
+
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
-        
+
+        // 시작일이 오늘보다 이전일 수 없음
+        if (startDate.isBefore(today) || endDate.isBefore(today)) {
+            throw new RuntimeException("시작일과 종료일은 오늘보다 이전일 수 없습니다.");
+        }
+
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
-        
+
+        // 시작일이 오늘 기준으로 30일 초과 불가
+        if (startDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("시작일은 오늘부터 최대 " + MAX_RESERVATION_DAYS + "일 이내여야 합니다.");
+        }
+
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-        
+
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
-        
+
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         Reservation reservation = new Reservation();
         reservation.setCustomerName(request.getCustomerName());
         reservation.setStartDate(startDate);
@@ -65,58 +76,63 @@ public class ReservationService {
         reservation.setReservationDate(startDate);
         reservation.setCampsite(campsite);
         reservation.setPhoneNumber(request.getPhoneNumber());
-        
+
         reservation.setConfirmationCode(generateConfirmationCode());
-        
+
         Reservation saved = reservationRepository.save(reservation);
-        
+
         return ReservationResponse.from(saved);
     }
-    
+
     @Transactional(readOnly = true)
     public ReservationResponse getReservation(Long id) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         return ReservationResponse.from(reservation);
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByDate(LocalDate date) {
         List<Reservation> reservations = reservationRepository.findAll().stream()
                 .filter(r -> r.getStartDate() != null && r.getEndDate() != null)
                 .filter(r -> !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()))
                 .collect(Collectors.toList());
-        
+
         return reservations.stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getAllReservations() {
         return reservationRepository.findAll().stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+        if (reservation.getStatus().startsWith("CANCELLED")) {
+            throw new RuntimeException("이미 취소된 예약입니다.");
+        }
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
+            reservation.setRefundPercent(0); // 당일 취소: 환불 불가
         } else {
             reservation.setStatus("CANCELLED");
+            reservation.setRefundPercent(100); // 사전 취소: 전액 환불
         }
-        
+
         reservationRepository.save(reservation);
     }
-    
+
     // 고객 이름으로 예약 조회
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByCustomerName(String customerName) {
@@ -124,55 +140,55 @@ public class ReservationService {
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> searchReservations(String keyword) {
         return reservationRepository.findAll().stream()
-                .filter(r -> r.getCustomerName().contains(keyword) || 
-                           (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
+                .filter(r -> r.getCustomerName().contains(keyword) ||
+                        (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
         if (request.getSiteNumber() != null) {
             Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
             reservation.setCampsite(campsite);
         }
-        
+
         if (request.getStartDate() != null) {
             reservation.setStartDate(request.getStartDate());
         }
         if (request.getEndDate() != null) {
             reservation.setEndDate(request.getEndDate());
         }
-        
+
         if (request.getCustomerName() != null) {
             reservation.setCustomerName(request.getCustomerName());
         }
         if (request.getPhoneNumber() != null) {
             reservation.setPhoneNumber(request.getPhoneNumber());
         }
-        
+
         Reservation updated = reservationRepository.save(reservation);
         return ReservationResponse.from(updated);
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByNameAndPhone(String name, String phone) {
         return reservationRepository.findByCustomerNameAndPhoneNumber(name, phone).stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     private String generateConfirmationCode() {
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         Random random = new Random();

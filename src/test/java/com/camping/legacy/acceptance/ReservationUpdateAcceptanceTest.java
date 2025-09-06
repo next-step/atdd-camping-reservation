@@ -3,7 +3,6 @@ package com.camping.legacy.acceptance;
 import com.camping.legacy.ShareContext;
 import com.camping.legacy.TestBase;
 import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.stub.ReservationRequestStub;
 import com.camping.legacy.stub.ReservationRequestTestDataBuilder;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -15,8 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 public class ReservationUpdateAcceptanceTest extends TestBase {
 
@@ -38,9 +36,12 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
         // 변경할 예약 기간
         LocalDate givenUpdateStartDate = givenStartDate.plusDays(1);
         LocalDate givenUpdateEndDate = givenEndDate.plusDays(1);
-        ReservationRequest req = ReservationRequestTestDataBuilder.get(
-                givenCustomerName, givenSiteNumber, givenUpdateStartDate, givenUpdateEndDate
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenUpdateStartDate)
+                .withEndDate(givenUpdateEndDate)
+                .build();
         // When
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
@@ -67,9 +68,12 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
         Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
         // 변경할 예약자 이름
         String givenUpdateCustomerName = "홍길순";
-        ReservationRequest req = ReservationRequestTestDataBuilder.get(
-                givenUpdateCustomerName, givenSiteNumber, givenStartDate, givenEndDate
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenUpdateCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
         // When
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
@@ -95,9 +99,13 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
         Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
         // 변경할 연락처
         String givenUpdatePhoneNumber = "010-9999-8888";
-        ReservationRequest req = ReservationRequestStub.get(
-                givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate, givenUpdatePhoneNumber, null, null, null
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .withPhone(givenUpdatePhoneNumber)
+                .build();
         // When
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
@@ -123,9 +131,12 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
         Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
         // 변경할 사이트
         String givenUpdateSiteNumber = "A-4";
-        ReservationRequest req = ReservationRequestTestDataBuilder.get(
-                givenCustomerName, givenUpdateSiteNumber, givenStartDate, givenEndDate
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenCustomerName)
+                .withSiteNumber(givenUpdateSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
         // When
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
@@ -141,7 +152,37 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
     }
 
     @Test
-    @DisplayName("예약자가 잘못된 확인 코드로 인해 예약 변경에 실패한다.")
+    @DisplayName("(예약 변경 실패) 예약자가 존재하지 않는 사이트 코드로 예약 변경을 시도하면 예약 변경에 실패한다.")
+    void d2() {
+        // Given
+        String givenCustomerName = "홍길동";
+        String givenSiteNumber = "A-3";
+        LocalDate givenStartDate = LocalDate.now().plusDays(1);
+        LocalDate givenEndDate = givenStartDate.plusDays(1);
+        Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
+        // 변경할 사이트
+        String givenUpdateSiteNumber = "AAA-4";
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenCustomerName)
+                .withSiteNumber(givenUpdateSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
+        // When
+        Response res = given().log().all()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .pathParam("id", reservationId)
+                .param("confirmationCode", ShareContext.CONFIRMMATION_CODE)
+                .put("/api/reservations/{id}");
+        // Then
+        res.then().log().all()
+                .statusCode(400)
+                .body("message", containsString("존재하지 않는 캠핑장입니다."));
+    }
+
+    @Test
+    @DisplayName("(예약 변경 실패) 예약자가 잘못된 확인 코드로 인해 예약 변경에 실패한다.")
     void e() {
         // Given
         String givenCustomerName = "홍길동";
@@ -151,9 +192,12 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
         Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
         // 변경할 예약자 이름
         String givenUpdateCustomerName = "홍길순";
-        ReservationRequest req = ReservationRequestTestDataBuilder.get(
-                givenCustomerName, givenUpdateCustomerName, givenStartDate, givenEndDate
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenUpdateCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
         // 잘못된 확인 코드
         String invalidConfirmationCode = "WRONGCODE";
         // When
@@ -165,6 +209,39 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
                 .put("/api/reservations/{id}");
         // Then
         res.then().log().all()
-                .statusCode(400);
+                .statusCode(400)
+                .body("message", containsString("확인 코드가 일치하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("(예약 변경 실패) 예약자가 존재하지 않는 예약 id로 예약변경을 시도하면 예약 변경에 실패한다.")
+    void f() {
+        // Given
+        String givenCustomerName = "홍길동";
+        String givenSiteNumber = "A-3";
+        LocalDate givenStartDate = LocalDate.now().plusDays(1);
+        LocalDate givenEndDate = givenStartDate.plusDays(1);
+        this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
+        // 변경할 예약자 이름
+        String givenUpdateCustomerName = "홍길순";
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenUpdateCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
+        // 잘못된 예약ID
+        String invalidReservationId = "10000000";
+        // When
+        Response res = given().log().all()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .pathParam("id", invalidReservationId)
+                .param("confirmationCode", ShareContext.CONFIRMMATION_CODE)
+                .put("/api/reservations/{id}");
+        // Then
+        res.then().log().all()
+                .statusCode(400)
+                .body("message", containsString("예약을 찾을 수 없습니다."));
     }
 }

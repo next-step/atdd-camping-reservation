@@ -1,6 +1,7 @@
 package com.camping.legacy;
 
 
+import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.stub.ReservationRequestTestDataBuilder;
@@ -30,9 +31,12 @@ public abstract class TestBase {
     }
 
     protected Long createReservationAndGetId(String customerName, String siteNumber, LocalDate startDate, LocalDate endDate) {
-        ReservationRequest req = ReservationRequestTestDataBuilder.get(
-                customerName, siteNumber, startDate, endDate
-        );
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(customerName)
+                .withSiteNumber(siteNumber)
+                .withStartDate(startDate)
+                .withEndDate(endDate)
+                .build();
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
                 .body(req)
@@ -42,5 +46,9 @@ public abstract class TestBase {
                 .body("id", notNullValue());
         ShareContext.CONFIRMMATION_CODE = res.jsonPath().getString("confirmationCode");
         return res.jsonPath().getLong("id");
+    }
+
+    protected Reservation findReservationById(Long id) {
+        return reservationRepository.findById(id).orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
     }
 }
