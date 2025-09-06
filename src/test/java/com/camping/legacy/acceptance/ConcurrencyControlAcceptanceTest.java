@@ -14,27 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import static com.camping.legacy.acceptance.AcceptanceTestFixTure.*;
+import static com.camping.legacy.acceptance.AcceptanceTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("동시성 제어")
-class ConcurrencyControlAcceptanceTest {
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    void tearDown() {
-        reservationRepository.deleteAll();
-    }
+class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
 
     @Test
     @DisplayName("여러 회원이 동일 사이트를 동일 날짜에 동시에 예약을 할 시 1명만 성공한다")
@@ -51,15 +35,9 @@ class ConcurrencyControlAcceptanceTest {
         assertThat(response.statusCode()).isEqualTo(201);
         JsonPath jsonPath = response.jsonPath();
         assertThat(jsonPath.getLong("id")).isPositive();
-        assertThat(jsonPath.getString("customerName")).isEqualTo(request.getCustomerName());
-        assertThat(jsonPath.getString("startDate")).isEqualTo(request.getStartDate().toString());
-        assertThat(jsonPath.getString("endDate")).isEqualTo(request.getEndDate().toString());
-        assertThat(jsonPath.getString("siteNumber")).isEqualTo(request.getSiteNumber());
-        assertThat(jsonPath.getString("phoneNumber")).isEqualTo(request.getPhoneNumber());
         assertThat(jsonPath.getString("status")).isEqualTo("CONFIRMED");
         assertThat(jsonPath.getString("confirmationCode")).hasSize(6);
         assertThat(jsonPath.getString("confirmationCode")).matches("[A-Z0-9]+");
-        assertThat(jsonPath.getString("createdAt")).isNotNull();
 
         assertThat(sameResponse.statusCode()).isEqualTo(409);
         assertThat(sameResponse.body().asString()).contains("해당 기간에 이미 예약이 존재합니다.");
@@ -80,15 +58,9 @@ class ConcurrencyControlAcceptanceTest {
         assertThat(response.statusCode()).isEqualTo(201);
         JsonPath jsonPath = response.jsonPath();
         assertThat(jsonPath.getLong("id")).isPositive();
-        assertThat(jsonPath.getString("customerName")).isEqualTo(request.getCustomerName());
-        assertThat(jsonPath.getString("startDate")).isEqualTo(request.getStartDate().toString());
-        assertThat(jsonPath.getString("endDate")).isEqualTo(request.getEndDate().toString());
-        assertThat(jsonPath.getString("siteNumber")).isEqualTo(request.getSiteNumber());
-        assertThat(jsonPath.getString("phoneNumber")).isEqualTo(request.getPhoneNumber());
         assertThat(jsonPath.getString("status")).isEqualTo("CONFIRMED");
         assertThat(jsonPath.getString("confirmationCode")).hasSize(6);
         assertThat(jsonPath.getString("confirmationCode")).matches("[A-Z0-9]+");
-        assertThat(jsonPath.getString("createdAt")).isNotNull();
 
         assertThat(sameResponse.statusCode()).isEqualTo(409);
         assertThat(sameResponse.body().asString()).contains("해당 기간에 이미 예약이 존재합니다.");

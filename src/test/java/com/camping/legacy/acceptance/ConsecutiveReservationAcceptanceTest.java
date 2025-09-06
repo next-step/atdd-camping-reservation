@@ -14,27 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import static com.camping.legacy.acceptance.AcceptanceTestFixTure.*;
+import static com.camping.legacy.acceptance.AcceptanceTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("연박 예약")
-class ConsecutiveReservationAcceptanceTest {
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    void tearDown() {
-        reservationRepository.deleteAll();
-    }
+class ConsecutiveReservationAcceptanceTest extends AcceptanceCommon {
 
     @Test
     @DisplayName("시작일과 종료일을 지정한 특정 기간에 연박 예약을 할 수 있다")

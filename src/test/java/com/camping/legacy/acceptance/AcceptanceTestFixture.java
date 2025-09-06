@@ -10,88 +10,46 @@ import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AcceptanceTestFixTure {
+public class AcceptanceTestFixture {
     private static final LocalDate now = LocalDate.now();
     private static final LocalDate startDate = now.plusDays(20);
 
     public static ReservationRequest createReservationRequest() {
-        return new ReservationRequest(
-                "김영희",
-                startDate,
-                startDate,
-                "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .build();
     }
 
     public static ReservationRequest createSameReservationRequest() {
-        return new ReservationRequest(
-                "박철수",
-                startDate,
-                startDate,
-                "A-1",
-                "010-9876-5432",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("박철수")
+                .phoneNumber("010-9876-5432")
+                .build();
     }
 
     public static ReservationRequest createCancelledReservationRequest() {
         예약_취소_성공();
-        return new ReservationRequest(
-                "김영희",
-                startDate,
-                startDate,
-                "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .build();
     }
 
     public static ReservationRequest createCancelledSameReservationRequest() {
         예약_취소_성공();
-        return new ReservationRequest(
-                "박철수",
-                startDate,
-                startDate,
-                "A-1",
-                "010-9876-5432",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("박철수")
+                .phoneNumber("010-9876-5432")
+                .build();
     }
 
     public static ReservationRequest createWrongReservationRequest() {
-        return new ReservationRequest(
-                "김영희",
-                now.plusDays(30),
-                now.plusDays(30),
-                "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .startDate(now.plusDays(30))
+                .endDate(now.plusDays(30))
+                .build();
     }
 
     public static ReservationRequest createBookedReservationRequest() {
-        return new ReservationRequest(
-                "김영희",
-                startDate,
-                startDate,
-                "A-1",
-                "010-1234-5678",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .build();
     }
 
     public static ExtractableResponse<Response> 예약_생성_성공() {
@@ -128,56 +86,42 @@ public class AcceptanceTestFixTure {
 
     public static ReservationRequest createConsecutiveReservationRequest() {
         예약_취소_성공();
-        return new ReservationRequest(
-                "김연박",
-                startDate,
-                startDate.plusDays(2),
-                "B-2",
-                "010-1111-2222",
-                4,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("김연박")
+                .endDate(startDate.plusDays(2))
+                .siteName("B-2")
+                .phoneNumber("010-1111-2222")
+                .numberOfPeople(4)
+                .build();
     }
 
     public static ReservationRequest createConsecutiveWithCancelledReservationRequest() {
         예약_취소_성공();
-        return new ReservationRequest(
-                "박연박",
-                startDate,
-                startDate.plusDays(2),
-                "C-3",
-                "010-3333-4444",
-                3,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("박연박")
+                .endDate(startDate.plusDays(2))
+                .siteName("C-3")
+                .phoneNumber("010-3333-4444")
+                .numberOfPeople(3)
+                .build();
     }
 
     public static ReservationRequest createBlockedConsecutiveReservationRequest() {
-        return new ReservationRequest(
-                "이연박",
-                now.plusDays(5),
-                now.plusDays(7),
-                "A-1",
-                "010-5555-6666",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("이연박")
+                .startDate(now.plusDays(5))
+                .endDate(now.plusDays(7))
+                .phoneNumber("010-5555-6666")
+                .build();
     }
 
     public static ReservationRequest createExistingReservationInConsecutivePeriod() {
-        return new ReservationRequest(
-                "최기존",
-                now.plusDays(6),
-                now.plusDays(6),
-                "A-1",
-                "010-7777-8888",
-                2,
-                null,
-                null
-        );
+        return ReservationRequestBuilder.builder()
+                .name("최기존")
+                .startDate(now.plusDays(6))
+                .endDate(now.plusDays(6))
+                .phoneNumber("010-7777-8888")
+                .build();
     }
 
     public static ExtractableResponse<Response> getCreateReservationApiResponse(ReservationRequest request) {
