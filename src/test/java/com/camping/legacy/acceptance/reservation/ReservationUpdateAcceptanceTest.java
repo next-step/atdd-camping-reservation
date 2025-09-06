@@ -102,16 +102,38 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
 
     @Test
     void 수정하는_날짜는_오늘로부터_30일_이내에만_가능하다() {
+        // given
+        var _30일_후 = LocalDate.now().plusDays(30);
+
         // when
         var 예약_수정_응답 = 예약_수정을_요청한다(
             기존_예약.getId(), 기존_예약.getConfirmationCode(),
             new ReservationRequestBuilder()
-                .startDate(LocalDate.now().plusDays(31))
-                .endDate(LocalDate.now().plusDays(32))
+                .startDate(_30일_후.plusDays(1))
+                .endDate(_30일_후.plusDays(2))
                 .build()
         );
 
         // then
         예약_수정이_실패한다(예약_수정_응답, "예약은 30일 이내에만 가능합니다.");
+    }
+
+    @Test
+    void 과거_날짜로_예약을_수정할_수_없다() {
+        // given
+        var 오늘 = LocalDate.now();
+        var 어제 = 오늘.minusDays(1);
+
+        // when
+        var 예약_수정_응답 = 예약_수정을_요청한다(
+            기존_예약.getId(), 기존_예약.getConfirmationCode(),
+            new ReservationRequestBuilder()
+                .startDate(어제)
+                .endDate(오늘)
+                .build()
+        );
+
+        // then
+        예약_수정이_실패한다(예약_수정_응답, "과거 날짜로 예약할 수 없습니다.");
     }
 }
