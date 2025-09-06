@@ -175,4 +175,38 @@ class ReservationAcceptanceTest {
         // Then: "유효하지 않은 날짜입니다."와 같은 메시지와 함께 예약은 실패한다.
         assertThat(errorMessage).contains("유효하지 않은 날짜입니다.");
     }
+
+
+    /**
+     * Scenario: 유효하지 않은 기간으로 예약을 시도하면 실패한다.
+     * When 사용자가 예약할 때, 종료 날짜를 시작 날짜보다 이전으로 지정하면
+     * Then "종료일이 시작일보다 이전일 수 없습니다."와 같은 메시지와 함께 예약이 실패한다.
+     */
+    @Test
+    void 유효하지_않은_기간으로_예약을_시도하면_실패한다() throws Exception {
+        // When: 사용자가 예약할 때, 종료 날짜를 시작 날짜보다 이전으로 지정하면
+        ReservationRequest request = ReservationRequest.builder()
+                .customerName("김기간")
+                .phoneNumber("010-1234-5678")
+                .startDate(LocalDate.of(2025, 9, 11)) // 시작일
+                .endDate(LocalDate.of(2025, 9, 10))   // 종료일 (시작일보다 빠름)
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        String errorMessage = RestAssured
+                .given()
+                    .log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(request))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .log().all()
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                .extract().path("message");
+
+        // Then: "종료일이 시작일보다 이전일 수 없습니다."와 같은 메시지와 함께 예약이 실패한다.
+        assertThat(errorMessage).contains("종료일이 시작일보다 이전일 수 없습니다.");
+    }
 }
