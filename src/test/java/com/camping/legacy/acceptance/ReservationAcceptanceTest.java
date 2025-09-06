@@ -107,6 +107,7 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
+        // todo : 테스트 헬퍼 메서드 같은 걸로 분리해보기
         RestAssured
                 .given()
                     .contentType(ContentType.JSON)
