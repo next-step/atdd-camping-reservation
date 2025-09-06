@@ -242,4 +242,78 @@ class ReservationAcceptanceTest {
         // Then: "30일 이내 기간으로만 예약이 가능합니다."와 같은 메시지와 함께 예약이 실패한다.
         assertThat(errorMessage).contains("30일 이내 기간으로만 예약이 가능합니다.");
     }
+
+    /**
+     * Scenario: 취소된 예약 날짜에 새로운 예약을 성공적으로 생성한다.
+     * Given 'A-1' 사이트에 특정 날짜로 예약이 생성되었다가 취소되었을 때
+     * When 다른 사용자가 동일한 사이트와 날짜로 새로운 예약을 요청하면
+     * Then 예약은 성공적으로 처리된다.
+     * And 'A-1' 사이트의 취소된 예약 날짜에 새로운 사용자 정보로 예약이 생긴다.
+     */
+    @Test
+    void 취소된_예약_날짜에_새로운_예약을_성공적으로_생성한다() throws Exception {
+        // Given: 'A-1' 사이트에 특정 날짜로 예약이 생성되었다가 취소되었을 때
+        // 1. 초기 예약 생성
+        ReservationRequest initialRequest = ReservationRequest.builder()
+                .customerName("김초기")
+                .phoneNumber("010-0000-0000")
+                .startDate(LocalDate.of(2025, 10, 1))
+                .endDate(LocalDate.of(2025, 10, 2))
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        String initialResponseBody = RestAssured
+                .given()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(initialRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(HttpStatus.CREATED.value())
+                    .extract().asString();
+
+        ReservationResponse initialResponse = objectMapper.readValue(initialResponseBody, ReservationResponse.class);
+        Long reservationId = initialResponse.getId();
+        String confirmationCode = initialResponse.getConfirmationCode();
+
+        // 2. 예약 취소
+        RestAssured
+                .given().log().all()
+                    .queryParam("confirmationCode", confirmationCode)
+                .when()
+                    .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                    .statusCode(HttpStatus.OK.value());
+
+        // When: 다른 사용자가 동일한 사이트와 날짜로 새로운 예약을 요청하면
+        ReservationRequest newRequest = ReservationRequest.builder()
+                .customerName("박새롬")
+                .phoneNumber("010-1111-1111")
+                .startDate(LocalDate.of(2025, 10, 1))
+                .endDate(LocalDate.of(2025, 10, 2))
+                .siteNumber("A-1")
+                .numberOfPeople(3)
+                .build();
+
+        String newResponseBody = RestAssured
+                .given().log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(newRequest))
+                .when()
+                    .post("/api/reservations")
+                .then().log().all()
+                    .statusCode(HttpStatus.CREATED.value())
+                    .extract().asString();
+
+        // Then: 예약은 성공적으로 처리된다.
+        ReservationResponse newResponse = objectMapper.readValue(newResponseBody, ReservationResponse.class);
+
+        // And: 'A-1' 사이트의 취소된 예약 날짜에 새로운 사용자 정보로 예약이 생긴다.
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(newResponse.getConfirmationCode()).isNotNull();
+            softly.assertThat(newResponse.getConfirmationCode()).isNotEqualTo(confirmationCode);
+            softly.assertThat(newResponse.getCustomerName()).isEqualTo("박새롬");
+        });
+    }
 }
