@@ -5,15 +5,12 @@ import com.camping.legacy.dto.ReservationRequest;
 import java.time.LocalDate;
 
 /**
- * 테스트 전용 ReservationRequest 생성 빌더.
- * - 명시적인 Test Data Builder 패턴을 사용합니다.
- * - 체이닝 가능한 withX 메서드 제공.
- * - 기존 정적 get(...) 메서드는 하위 호환을 위해 유지됩니다.
+ * 테스트 전용 ReservationRequest Test Data Builder.
  */
-public class ReservationRequestStub {
+public class ReservationRequestTestDataBuilder {
 
-    // 기본값 설정
-    private String name = "기본이름";
+    // 기본값
+    private String name = "홍길동";
     private String siteNumber = "A-1";
     private LocalDate startDate = LocalDate.now();
     private LocalDate endDate = LocalDate.now().plusDays(1);
@@ -22,74 +19,68 @@ public class ReservationRequestStub {
     private String carNumber = "12가3456";
     private String requests = "없음";
 
-    // 체이닝 가능한 with 메서드들
-    public ReservationRequestStub withName(String name) {
+    // with 메서드들
+    public ReservationRequestTestDataBuilder withName(String name) {
         this.name = name;
         return this;
     }
 
-    public ReservationRequestStub withSiteNumber(String siteNumber) {
+    public ReservationRequestTestDataBuilder withSiteNumber(String siteNumber) {
         this.siteNumber = siteNumber;
         return this;
     }
 
-    public ReservationRequestStub withStartDate(LocalDate startDate) {
+    public ReservationRequestTestDataBuilder withStartDate(LocalDate startDate) {
         this.startDate = startDate;
         return this;
     }
 
-    public ReservationRequestStub withEndDate(LocalDate endDate) {
+    public ReservationRequestTestDataBuilder withEndDate(LocalDate endDate) {
         this.endDate = endDate;
         return this;
     }
 
-    public ReservationRequestStub withPhone(String phone) {
+    public ReservationRequestTestDataBuilder withPhone(String phone) {
         this.phone = phone;
         return this;
     }
 
-    public ReservationRequestStub withNumberOfPeople(Integer numberOfPeople) {
+    public ReservationRequestTestDataBuilder withNumberOfPeople(Integer numberOfPeople) {
         this.numberOfPeople = numberOfPeople;
         return this;
     }
 
-    public ReservationRequestStub withCarNumber(String carNumber) {
+    public ReservationRequestTestDataBuilder withCarNumber(String carNumber) {
         this.carNumber = carNumber;
         return this;
     }
 
-    public ReservationRequestStub withRequests(String requests) {
+    public ReservationRequestTestDataBuilder withRequests(String requests) {
         this.requests = requests;
         return this;
     }
 
     public ReservationRequest build() {
         return new ReservationRequest(
-                name,                // customerName
+                name,
                 startDate,
                 endDate,
                 siteNumber,
-                phone,               // phoneNumber
+                phone,
                 numberOfPeople,
                 carNumber,
                 requests
         );
     }
 
-    // ----------------------------------------------
-    // 하위 호환: 기존 정적 팩토리 메서드 유지
-    // ----------------------------------------------
-
-    /**
-     * 필요한 주요 필드만 받아서 나머지는 기본값으로 채워 ReservationRequest를 생성합니다.
-     */
+    // 기존 사용 패턴과 동일한 정적 팩토리 메서드 제공
     public static ReservationRequest get(
             String customerName,
             String siteNumber,
             LocalDate startDate,
             LocalDate endDate
     ) {
-        return new ReservationRequestStub()
+        return new ReservationRequestTestDataBuilder()
                 .withName(customerName)
                 .withSiteNumber(siteNumber)
                 .withStartDate(startDate)
@@ -97,9 +88,6 @@ public class ReservationRequestStub {
                 .build();
     }
 
-    /**
-     * 모든 필드를 선택적으로 받아 null인 경우 기본값으로 대체하여 ReservationRequest를 생성합니다.
-     */
     public static ReservationRequest get(
             String customerName,
             String siteNumber,
@@ -110,7 +98,7 @@ public class ReservationRequestStub {
             String carNumber,
             String requests
     ) {
-        ReservationRequestStub b = new ReservationRequestStub();
+        ReservationRequestTestDataBuilder b = new ReservationRequestTestDataBuilder();
         if (customerName != null) b.withName(customerName);
         if (siteNumber != null) b.withSiteNumber(siteNumber);
         if (startDate != null) b.withStartDate(startDate);

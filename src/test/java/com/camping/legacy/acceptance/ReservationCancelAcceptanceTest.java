@@ -1,8 +1,7 @@
 package com.camping.legacy.acceptance;
 
+import com.camping.legacy.ShareContext;
 import com.camping.legacy.TestBase;
-import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.stub.ReservationRequestStub;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -14,7 +13,6 @@ import java.time.LocalDate;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class ReservationCancelAcceptanceTest extends TestBase {
 
@@ -22,25 +20,6 @@ public class ReservationCancelAcceptanceTest extends TestBase {
     void setUp() {
         RestAssured.port = this.port;
         this.clearDB();
-    }
-
-    public static class Context {
-        public static String confirmationCode = null;
-    }
-
-    private Long createReservationAndGetId(String customerName, String siteNumber, LocalDate startDate, LocalDate endDate) {
-        ReservationRequest req = ReservationRequestStub.get(
-                customerName, siteNumber, startDate, endDate
-        );
-        Response res = given().log().all()
-                .contentType(ContentType.JSON)
-                .body(req)
-                .post("/api/reservations");
-        res.then().log().all()
-                .statusCode(201)
-                .body("id", notNullValue());
-        Context.confirmationCode = res.jsonPath().getString("confirmationCode");
-        return res.jsonPath().getLong("id");
     }
 
     @Test
@@ -56,7 +35,7 @@ public class ReservationCancelAcceptanceTest extends TestBase {
         Response res = given().log().all()
                 .contentType(ContentType.JSON)
                 .pathParam("id", reservationId)
-                .param("confirmationCode", Context.confirmationCode)
+                .param("confirmationCode", ShareContext.CONFIRMMATION_CODE)
                 .delete("/api/reservations/{id}");
         // Then
         res.then().log().all()

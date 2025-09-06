@@ -2,7 +2,7 @@ package com.camping.legacy.acceptance;
 
 import com.camping.legacy.TestBase;
 import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.stub.ReservationRequestStub;
+import com.camping.legacy.stub.ReservationRequestTestDataBuilder;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -36,7 +36,7 @@ public class ReservationCreateAcceptanceTest extends TestBase {
         String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
-        ReservationRequest req = ReservationRequestStub.get(
+        ReservationRequest req = ReservationRequestTestDataBuilder.get(
                 givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate
         );
         // When
@@ -60,7 +60,7 @@ public class ReservationCreateAcceptanceTest extends TestBase {
         String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
-        ReservationRequest req = ReservationRequestStub.get(
+        ReservationRequest req = ReservationRequestTestDataBuilder.get(
                 givenInvalidCustomerName, givenSiteNumber, givenStartDate, givenEndDate
         );
         // When
@@ -84,7 +84,7 @@ public class ReservationCreateAcceptanceTest extends TestBase {
         String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_2_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_1_DAY;
-        ReservationRequest req = ReservationRequestStub.get(
+        ReservationRequest req = ReservationRequestTestDataBuilder.get(
                 givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate
         );
         // When
@@ -128,7 +128,7 @@ public class ReservationCreateAcceptanceTest extends TestBase {
         String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
-        ReservationRequest req = ReservationRequestStub.get(
+        ReservationRequest req = ReservationRequestTestDataBuilder.get(
                 givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate
         );
         // When
@@ -142,7 +142,7 @@ public class ReservationCreateAcceptanceTest extends TestBase {
                 .body("id", notNullValue())
                 .body("customerName", equalTo(givenCustomerName))
                 .body("siteNumber", equalTo(givenSiteNumber));
-        ReservationRequest req2 = ReservationRequestStub.get(
+        ReservationRequest req2 = ReservationRequestTestDataBuilder.get(
                 givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate
         );
         // When
