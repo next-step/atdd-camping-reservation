@@ -51,12 +51,22 @@ public class Reservation {
             this.status = ReservationStatus.CONFIRMED;
         }
     }
-    
-    public Reservation(String customerName, LocalDate startDate, LocalDate endDate, Campsite campsite) {
+
+    public Reservation(
+            String customerName,
+            LocalDate startDate,
+            LocalDate endDate,
+            Campsite campsite,
+            String phoneNumber,
+            String confirmationCode
+    ) {
         this.customerName = customerName;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.reservationDate = startDate;
         this.campsite = campsite;
+        this.phoneNumber = phoneNumber;
+        this.confirmationCode = confirmationCode;
     }
 
     public boolean isConfirmed() {

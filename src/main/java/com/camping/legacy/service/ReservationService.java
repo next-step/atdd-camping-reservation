@@ -28,9 +28,7 @@ public class ReservationService {
     
     public ReservationResponse createReservation(ReservationRequest request) {
         checkReservationAvailable(request);
-
-        String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+        Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         
         try {
@@ -43,16 +41,14 @@ public class ReservationService {
         synchronized (this) {
             checkReservationExists(request.getSiteNumber(), request.getStartDate(), request.getEndDate());
 
-            Reservation reservation = new Reservation();
-            reservation.setCustomerName(request.getCustomerName());
-            reservation.setStartDate(request.getStartDate());
-            reservation.setEndDate(request.getEndDate());
-            reservation.setReservationDate(request.getStartDate());
-            reservation.setCampsite(campsite);
-            reservation.setPhoneNumber(request.getPhoneNumber());
-
-            reservation.setConfirmationCode(generateConfirmationCode());
-
+            Reservation reservation = new Reservation(
+                    request.getCustomerName(),
+                    request.getStartDate(),
+                    request.getEndDate(),
+                    campsite,
+                    request.getPhoneNumber(),
+                    generateConfirmationCode()
+            );
             Reservation saved = reservationRepository.save(reservation);
 
             return ReservationResponse.from(saved);
