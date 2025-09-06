@@ -1,6 +1,7 @@
 package com.camping.legacy.dto;
 
 import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.domain.ReservationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,7 @@ public class ReservationResponse {
     private LocalDate endDate;
     private String siteNumber;
     private String phoneNumber;
-    private String status;
+    private ReservationStatus status;
     private String confirmationCode;
     private LocalDateTime createdAt;
     

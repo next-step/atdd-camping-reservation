@@ -2,6 +2,7 @@ package com.camping.legacy.service;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.domain.ReservationStatus;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -64,10 +64,11 @@ public class ReservationService {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
 
-        boolean hasConflict = 
-                reservationRepository.existsByCampsiteSiteNumberAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                        request.getSiteNumber(), endDate, startDate);
-        if (hasConflict) {
+        Reservation reservation =
+                reservationRepository.findByCampsiteSiteNumberAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(
+                        request.getSiteNumber(), startDate, endDate);
+
+        if (reservation != null && reservation.isConfirmed()) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
     }
@@ -127,9 +128,9 @@ public class ReservationService {
         
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
-            reservation.setStatus("CANCELLED_SAME_DAY");
+            reservation.setStatus(ReservationStatus.CANCELLED_SAME_DAY);
         } else {
-            reservation.setStatus("CANCELLED");
+            reservation.setStatus(ReservationStatus.CANCELLED);
         }
         
         reservationRepository.save(reservation);
