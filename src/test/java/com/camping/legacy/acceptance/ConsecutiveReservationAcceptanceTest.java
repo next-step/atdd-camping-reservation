@@ -1,18 +1,11 @@
 package com.camping.legacy.acceptance;
 
 import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
 import static com.camping.legacy.acceptance.AcceptanceTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;

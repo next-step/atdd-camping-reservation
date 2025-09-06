@@ -16,16 +16,13 @@ public class CampsiteReservationValidator {
     private final ReservationRepository reservationRepository;
 
     public void validateCampsiteAvailability(Campsite campsite, LocalDate startDate, LocalDate endDate) {
-        List<Reservation> reservations = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate
-        );
+        List<Reservation> conflictingReservations = reservationRepository
+                .findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(campsite, endDate, startDate);
 
-        int confirmedReservationSize = reservations.stream()
-                .filter(Reservation::isConfirmed)
-                .toList()
-                .size();
+        boolean hasConfirmedReservation = conflictingReservations.stream()
+                .anyMatch(Reservation::isConfirmed);
 
-        if (confirmedReservationSize != 0) {
+        if (hasConfirmedReservation) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
     }

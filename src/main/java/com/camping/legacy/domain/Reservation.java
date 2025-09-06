@@ -9,7 +9,11 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "reservations")
+@Table(name = "reservations", 
+       indexes = {
+           @Index(name = "idx_campsite_date_status", 
+                  columnList = "campsite_id, start_date, end_date, status")
+       })
 @Getter
 @NoArgsConstructor
 public class Reservation {
