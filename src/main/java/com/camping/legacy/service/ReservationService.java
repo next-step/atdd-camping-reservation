@@ -24,8 +24,6 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
 
-    private static final int MAX_RESERVATION_DAYS = 30;
-
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
@@ -34,34 +32,17 @@ public class ReservationService {
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
 
-        if (startDate == null || endDate == null) {
-            throw new RuntimeException("예약 기간을 선택해주세요.");
-        }
-
-        if (endDate.isBefore(startDate)) {
-            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
-        }
-
-        if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
-        }
-
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
         List<Reservation> reservations = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate
         );
 
-        int confirmedReservationSize = reservations.stream().filter(Reservation::isConfirmed)
+        int confirmedReservationSize = reservations.stream()
+                .filter(Reservation::isConfirmed)
                 .toList()
                 .size();
 
-        if (hasConflict && confirmedReservationSize != 0) {
+        if (confirmedReservationSize != 0) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
-
-        if (LocalDate.now().plusDays(MAX_RESERVATION_DAYS).isBefore(startDate)) {
-            throw new RuntimeException("예약은 최대 30일 전까지만 가능합니다");
         }
 
         try {
@@ -70,15 +51,14 @@ public class ReservationService {
             Thread.currentThread().interrupt();
         }
 
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.getCustomerName());
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setReservationDate(startDate);
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(request.getPhoneNumber());
-
-        reservation.setConfirmationCode(generateConfirmationCode());
+        Reservation reservation = new Reservation(
+                request.getCustomerName(),
+                startDate,
+                endDate,
+                campsite,
+                request.getPhoneNumber(),
+                generateConfirmationCode()
+        );
 
         Reservation saved = reservationRepository.save(reservation);
 
@@ -97,7 +77,7 @@ public class ReservationService {
         List<Reservation> reservations = reservationRepository.findAll().stream()
                 .filter(r -> r.getStartDate() != null && r.getEndDate() != null)
                 .filter(r -> !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()))
-                .collect(Collectors.toList());
+                .toList();
 
         return reservations.stream()
                 .map(ReservationResponse::from)
@@ -119,13 +99,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
-        LocalDate today = LocalDate.now();
-        if (reservation.getStartDate().equals(today)) {
-            reservation.setStatus("CANCELLED_SAME_DAY");
-        } else {
-            reservation.setStatus("CANCELLED");
-        }
-
+        reservation.cancel();
         reservationRepository.save(reservation);
     }
 
@@ -154,25 +128,19 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
+        Campsite campsite = null;
         if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+            campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
         }
 
-        if (request.getStartDate() != null) {
-            reservation.setStartDate(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            reservation.setEndDate(request.getEndDate());
-        }
-
-        if (request.getCustomerName() != null) {
-            reservation.setCustomerName(request.getCustomerName());
-        }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
-        }
+        reservation.updateReservation(
+                request.getCustomerName(),
+                request.getStartDate(),
+                request.getEndDate(),
+                campsite,
+                request.getPhoneNumber()
+        );
 
         Reservation updated = reservationRepository.save(reservation);
         return ReservationResponse.from(updated);
