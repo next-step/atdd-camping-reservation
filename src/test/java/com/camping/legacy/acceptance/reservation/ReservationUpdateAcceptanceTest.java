@@ -72,4 +72,31 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // then
         예약_수정이_성공한다(예약_수정_응답);
     }
+
+    @Test
+    void 수정된_예약이_기존_다른_예약과_중복되면_실패한다() {
+        // given
+        예약이_생성되어있다(
+            new ReservationRequestBuilder()
+                .customerName("다른예약자")
+                .startDate(LocalDate.now().plusDays(3))
+                .endDate(LocalDate.now().plusDays(4))
+                .siteNumber(A_2.getSiteNumber())
+                .phoneNumber("010-3333-4444")
+                .build()
+        );
+
+        // when
+        var 예약_수정_응답 = 예약_수정을_요청한다(
+            기존_예약.getId(), 기존_예약.getConfirmationCode(),
+            new ReservationRequestBuilder()
+                .startDate(LocalDate.now().plusDays(3))
+                .endDate(LocalDate.now().plusDays(4))
+                .siteNumber(A_2.getSiteNumber())
+                .build()
+        );
+
+        // then
+        예약_수정이_실패한다(예약_수정_응답, "이미 예약된 사이트입니다.");
+    }
 }
