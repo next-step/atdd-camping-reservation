@@ -1,10 +1,10 @@
 package com.camping.legacy.acceptance.reservation;
 
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성을_요청한다;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_성공한다;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약_생성이_실패한다;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.예약이_생성되어있다;
-import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceTestSteps.확인_코드가_6자리_영숫자로_생성된다;
+import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.예약_생성을_요청한다;
+import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.예약_생성이_성공한다;
+import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.예약_생성이_실패한다;
+import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.예약이_생성되어있다;
+import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.확인_코드가_6자리_영숫자로_생성된다;
 import static com.camping.legacy.acceptance.site.SiteAcceptanceTestSteps.사이트가_존재한다;
 
 import com.camping.legacy.acceptance.reservation.request.ReservationRequestBuilder;
@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ReservationAcceptanceTest extends AcceptanceTest {
+public class ReservationCreateAcceptanceTest extends AcceptanceTest {
 
     private Campsite A_1 = null;
 

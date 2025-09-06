@@ -4,17 +4,17 @@ import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.camping.legacy.dto.ReservationRequest;
+import com.camping.legacy.dto.ReservationResponse;
 import io.restassured.response.Response;
 import org.assertj.core.api.AbstractIntegerAssert;
 import org.springframework.http.HttpStatus;
 
-public class ReservationAcceptanceTestSteps {
+public class ReservationCreateAcceptanceTestSteps {
 
-    // 예약 생성
-    public static Response 예약이_생성되어있다(ReservationRequest request) {
+    public static ReservationResponse 예약이_생성되어있다(ReservationRequest request) {
         Response 예약_생성_응답 = 예약_생성을_요청한다(request);
         예약_생성이_성공한다(예약_생성_응답);
-        return 예약_생성_응답;
+        return 예약_생성_응답을_가져온다(예약_생성_응답);
     }
 
     public static Response 예약_생성을_요청한다(ReservationRequest request) {
@@ -35,10 +35,14 @@ public class ReservationAcceptanceTestSteps {
             .matches("^[A-Z0-9]{6}$");
     }
 
-    public static void 예약_생성이_실패한다(Response 예약_생성_응답, String errorMessage) {
+    public static void 예약_생성이_실패한다(Response 예약_생성_응답, String expectedErrorMessage) {
         assertThat(예약_생성_응답.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
 
-        String 실제_메시지 = 예약_생성_응답.jsonPath().getString("message");
-        assertThat(실제_메시지).isEqualTo(errorMessage);
+        String actualErrorMessage = 예약_생성_응답.jsonPath().getString("message");
+        assertThat(actualErrorMessage).isEqualTo(expectedErrorMessage);
+    }
+
+    public static ReservationResponse 예약_생성_응답을_가져온다(Response 예약_생성_응답) {
+        return 예약_생성_응답.as(ReservationResponse.class);
     }
 }
