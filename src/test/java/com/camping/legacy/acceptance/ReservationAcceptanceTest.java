@@ -18,6 +18,8 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 @DisplayNameGeneration(ReplaceUnderscores.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Transactional
@@ -70,5 +72,57 @@ class ReservationAcceptanceTest {
             softly.assertThat(response.getConfirmationCode()).hasSize(6);
             softly.assertThat(response.getConfirmationCode()).isNotNull();
         });
+    }
+
+    /**
+     * Given 2025-09-10일에 대형 사이트 'A-1'에 이미 예약이 존재할 때
+     * When 다른 사용자가 사이트 'A-1'에 대해 2025-09-10일을 포함하는 기간으로 예약을 요청하면
+     * Then "이미 예약된 날짜입니다."와 같은 메시지와 함께 예약이 실패한다.
+     */
+    @Test
+    void 이미_예약된_날짜에_중복으로_예약을_시도하면_실패한다() throws Exception {
+        // Given: 2025-09-10일에 대형 사이트 'A-1'에 이미 예약이 존재할 때
+        ReservationRequest initialRequest = ReservationRequest.builder()
+                .customerName("홍길동")
+                .phoneNumber("010-1111-2222")
+                .startDate(LocalDate.of(2025, 9, 10))
+                .endDate(LocalDate.of(2025, 9, 11))
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        RestAssured
+                .given()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(initialRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(HttpStatus.CREATED.value());
+
+        // When: 다른 사용자가 사이트 'A-1'에 대해 2025-09-10일을 포함하는 기간으로 예약을 요청하면
+        ReservationRequest conflictingRequest = ReservationRequest.builder()
+                .customerName("김중복")
+                .phoneNumber("010-3333-4444")
+                .startDate(LocalDate.of(2025, 9, 10)) // 중복되는 날짜
+                .endDate(LocalDate.of(2025, 9, 11))
+                .siteNumber("A-1")
+                .numberOfPeople(3)
+                .build();
+
+        String errorMessage = RestAssured
+                .given()
+                    .log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(conflictingRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .log().all()
+                    .statusCode(HttpStatus.CONFLICT.value())
+                    .extract().path("message");
+
+        // Then: "해당 기간에 이미 예약이 존재합니다."와 같은 메시지와 함께 예약이 실패한다.
+        assertThat(errorMessage).contains("해당 기간에 이미 예약이 존재합니다.");
     }
 }
