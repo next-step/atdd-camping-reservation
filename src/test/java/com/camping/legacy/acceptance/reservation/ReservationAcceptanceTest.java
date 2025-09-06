@@ -131,6 +131,102 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         assertThat(message).contains("예약자 이름을 입력해주세요.");
     }
 
+    @DisplayName("예약 생성 - 전화번호 null인 경우 실패")
+    @Test
+    void createReservationFailWithNullPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                null
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 빈 문자열인 경우 실패")
+    @Test
+    void createReservationFailWithEmptyPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                ""
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 공백만 있는 경우 실패")
+    @Test
+    void createReservationFailWithBlankPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "   "
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 형식이 잘못된 경우 실패")
+    @Test
+    void createReservationFailWithInvalidPhoneNumberFormat() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-12-34"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호에 숫자가 아닌 문자 포함된 경우 실패")
+    @Test
+    void createReservationFailWithNonNumericPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-abcd-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 길이가 부족한 경우 실패")
+    @Test
+    void createReservationFailWithShortPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
     @DisplayName("예약 생성 - 동일 사이트 동일 날짜 중복 예약 실패")
     @Test
     void createReservationFailWithDuplicateReservation() {

@@ -60,9 +60,10 @@ public class ReservationService {
         LocalDate endDate = request.getEndDate();
 
         checkDatesAvailable(startDate, endDate);
-
-        if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
+        checkRequiredField(request.getCustomerName(), "예약자 이름을 입력해주세요.");
+        
+        if (!isValidPhoneNumber(request.getPhoneNumber())) {
+            throw new RuntimeException("올바른 전화번호 형식이 아닙니다.");
         }
     }
 
@@ -85,6 +86,21 @@ public class ReservationService {
         }
     }
 
+
+    private void checkRequiredField(String value, String errorMessage) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new RuntimeException(errorMessage);
+        }
+    }
+
+    private boolean isValidPhoneNumber(String phoneNumber) {
+        checkRequiredField(phoneNumber, "전화번호를 입력해주세요.");
+
+        // 한국 휴대폰 번호 형식: 010-xxxx-xxxx
+        String pattern = "^010-\\d{4}-\\d{4}$";
+        return phoneNumber.matches(pattern);
+    }
+
     private void checkReservationExists(String siteNumber, LocalDate startDate, LocalDate endDate) {
         Reservation existingReservation =
                 reservationRepository.findByCampsiteSiteNumberAndStartDateLessThanEqualAndEndDateGreaterThanEqualOrderByCreatedAtDesc(siteNumber, startDate, endDate);
@@ -92,6 +108,16 @@ public class ReservationService {
         if (existingReservation != null && existingReservation.isConfirmed()) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
+    }
+
+    private String generateConfirmationCode() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        Random random = new Random();
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            code.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return code.toString();
     }
     
     @Transactional(readOnly = true)
@@ -192,15 +218,5 @@ public class ReservationService {
         return reservationRepository.findByCustomerNameAndPhoneNumber(name, phone).stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
-    }
-    
-    private String generateConfirmationCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random();
-        StringBuilder code = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            code.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return code.toString();
     }
 }
