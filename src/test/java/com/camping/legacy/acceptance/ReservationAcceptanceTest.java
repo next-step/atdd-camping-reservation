@@ -1,12 +1,16 @@
 package com.camping.legacy.acceptance;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.test_config.TestConfig;
+import com.camping.legacy.test_utils.CleanUp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import jakarta.transaction.Transactional;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores;
@@ -14,15 +18,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 
-import static org.assertj.core.api.Assertions.assertThat;
 
+@Import(TestConfig.class)
 @DisplayNameGeneration(ReplaceUnderscores.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Transactional
 class ReservationAcceptanceTest {
 
     @LocalServerPort
@@ -31,9 +35,17 @@ class ReservationAcceptanceTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private CleanUp cleanUp;
+
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanUp.all();
     }
 
     /**
