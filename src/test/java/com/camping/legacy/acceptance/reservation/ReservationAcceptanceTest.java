@@ -39,7 +39,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "예약 기간은 오늘로부터 30일 이내에만 가능합니다.");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "예약 기간은 오늘 이후로 선택해주세요.");
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "종료일이 시작일보다 이전일 수 없습니다.");
     }
 
     @Test
@@ -90,7 +90,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "예약자 이름을 입력해주세요.");
     }
 
     @Test
@@ -104,7 +104,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "예약자 전화번호를 입력해주세요.");
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "해당 기간에 이미 예약이 존재합니다.");
     }
 
     @Test
@@ -175,6 +175,6 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_생성이_실패한다(예약_생성_응답);
+        예약_생성이_실패한다(예약_생성_응답, "해당 기간에 이미 예약이 존재합니다.");
     }
 }

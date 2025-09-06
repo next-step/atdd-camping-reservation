@@ -35,7 +35,10 @@ public class ReservationAcceptanceTestSteps {
             .matches("^[A-Z0-9]{6}$");
     }
 
-    public static void 예약_생성이_실패한다(Response 예약_생성_응답) {
+    public static void 예약_생성이_실패한다(Response 예약_생성_응답, String errorMessage) {
         assertThat(예약_생성_응답.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+
+        String 실제_메시지 = 예약_생성_응답.jsonPath().getString("message");
+        assertThat(실제_메시지).isEqualTo(errorMessage);
     }
 }
