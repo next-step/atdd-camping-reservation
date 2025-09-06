@@ -17,7 +17,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceCommon {
     @DisplayName("예약을 한 날짜가 예약한 날짜와 30일 이내 차이가 나면 예약이 성공한다")
     void 예약_성공_30일_이내() {
         // Given 특정 날짜와 오늘이 30일 이내 차이 나는 사이트가 존재한다 (+ 모든 값이 채워진).
-        ReservationRequest request = createReservationRequest();
+        ReservationRequest request = createReservationRequest(30);
 
         // When 회원이 특정 날짜의 예약을 수행한다.
         ExtractableResponse<Response> response = getCreateReservationApiResponse(request);

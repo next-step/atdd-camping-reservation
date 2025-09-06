@@ -4,25 +4,36 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.generator.ConfirmationCodeGenerator;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import lombok.RequiredArgsConstructor;
+import com.camping.legacy.validator.CampsiteReservationValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class ReservationService {
-
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final CampsiteReservationValidator campsiteReservationValidator;
+    private final ConfirmationCodeGenerator confirmationCodeGenerator;
+
+    public ReservationService(
+            ReservationRepository reservationRepository,
+            CampsiteRepository campsiteRepository,
+            CampsiteReservationValidator campsiteReservationValidator,
+            ConfirmationCodeGenerator confirmationCodeGenerator
+    ) {
+        this.reservationRepository = reservationRepository;
+        this.campsiteRepository = campsiteRepository;
+        this.campsiteReservationValidator = campsiteReservationValidator;
+        this.confirmationCodeGenerator = confirmationCodeGenerator;
+    }
 
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
@@ -32,18 +43,7 @@ public class ReservationService {
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
 
-        List<Reservation> reservations = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate
-        );
-
-        int confirmedReservationSize = reservations.stream()
-                .filter(Reservation::isConfirmed)
-                .toList()
-                .size();
-
-        if (confirmedReservationSize != 0) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
+        campsiteReservationValidator.validateCampsiteAvailability(campsite, startDate, endDate);
 
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
@@ -57,7 +57,7 @@ public class ReservationService {
                 endDate,
                 campsite,
                 request.getPhoneNumber(),
-                generateConfirmationCode()
+                confirmationCodeGenerator.generateConfirmationCode()
         );
 
         Reservation saved = reservationRepository.save(reservation);
@@ -153,13 +153,4 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
 
-    private String generateConfirmationCode() {
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random();
-        StringBuilder code = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            code.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return code.toString();
-    }
 }

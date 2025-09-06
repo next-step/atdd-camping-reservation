@@ -19,6 +19,13 @@ public class AcceptanceTestFixture {
                 .build();
     }
 
+    public static ReservationRequest createReservationRequest(int day) {
+        return ReservationRequestBuilder.builder()
+                .startDate(now.plusDays(day))
+                .endDate(now.plusDays(day))
+                .build();
+    }
+
     public static ReservationRequest createSameReservationRequest() {
         return ReservationRequestBuilder.builder()
                 .name("박철수")
