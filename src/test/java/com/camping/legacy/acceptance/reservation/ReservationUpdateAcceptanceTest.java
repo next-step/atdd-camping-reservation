@@ -136,4 +136,24 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // then
         예약_수정이_실패한다(예약_수정_응답, "과거 날짜로 예약할 수 없습니다.");
     }
+
+    @Test
+    void 종료일이_시작일보다_이전으로_수정될_수_없다() {
+        // given
+        var 오늘 = LocalDate.now();
+        var 내일 = 오늘.plusDays(1);
+        var 모레 = 내일.plusDays(1);
+
+        // when
+        var 예약_수정_응답 = 예약_수정을_요청한다(
+            기존_예약.getId(), 기존_예약.getConfirmationCode(),
+            new ReservationRequestBuilder()
+                .startDate(모레)
+                .endDate(내일)
+                .build()
+        );
+
+        // then
+        예약_수정이_실패한다(예약_수정_응답, "종료일이 시작일보다 이전일 수 없습니다.");
+    }
 }
