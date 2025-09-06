@@ -14,35 +14,37 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class Reservation {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @Column(nullable = false)
     private String customerName;
-    
+
     @Column(nullable = false)
     private LocalDate startDate;
-    
+
     @Column(nullable = false)
     private LocalDate endDate;
-    
+
     private LocalDate reservationDate;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "campsite_id", nullable = false)
     private Campsite campsite;
-    
+
     private String phoneNumber;
-    
+
     private String status;
-    
+
     @Column(length = 6)
     private String confirmationCode;
-    
+
+    private Integer refundPercent;
+
     private LocalDateTime createdAt;
-    
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -50,7 +52,7 @@ public class Reservation {
             this.status = "CONFIRMED";
         }
     }
-    
+
     public Reservation(String customerName, LocalDate startDate, LocalDate endDate, Campsite campsite) {
         this.customerName = customerName;
         this.startDate = startDate;
