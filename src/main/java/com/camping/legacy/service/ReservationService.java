@@ -42,6 +42,10 @@ public class ReservationService {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
         
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("예약 기간은 오늘 이후로 선택해주세요.");
+        }
+        
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
