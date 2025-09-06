@@ -7,17 +7,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.*;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.camping.legacy.util.ConcurrencyTestHelper;
 
 public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 성공")
@@ -160,56 +155,23 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 
     @DisplayName("예약 생성 - 동시성 테스트")
     @Test
-    void createReservation_동시성_테스트() throws Exception {
+    void createReservation_동시성_테스트() {
         // Given
-        ReservationRequest request = getReservationRequest(
-                "홍길동",
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(2),
-                "A-1",
-                "010-1234-5678"
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(2);
+        String siteNumber = "A-1";
+        int threadCount = 10;
+        AtomicInteger counter = new AtomicInteger(0);
+
+        // When
+        ConcurrencyTestHelper.ConcurrencyTestResult result = ConcurrencyTestHelper.executeConcurrentTasks(
+                () -> ReservationAcceptanceStep.getReservationRequest(counter.getAndIncrement(), startDate, endDate, siteNumber),
+                request -> { 예약_생성_성공(request); return null; },
+                threadCount
         );
 
-        int threadCount = 10;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount);
-
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-        AtomicInteger successCount = new AtomicInteger(0);
-        AtomicInteger failureCount = new AtomicInteger(0);
-
-        // When - 10개의 스레드가 동시에 같은 예약을 시도
-        for (int i = 0; i < threadCount; i++) {
-            final int index = i;
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try {
-                    // 각 스레드마다 다른 고객 정보로 같은 사이트/날짜 예약 시도
-                    ReservationRequest concurrentRequest = getReservationRequest(
-                            "고객" + index,
-                            request.getStartDate(),
-                            request.getEndDate(),
-                            request.getSiteNumber(),
-                            "010-1234-567" + index
-                    );
-                    
-                    예약_생성_성공(concurrentRequest);
-                    successCount.incrementAndGet();
-                } catch (AssertionError e) {
-                    failureCount.incrementAndGet();
-                } finally {
-                    latch.countDown();
-                }
-            }, executorService);
-            futures.add(future);
-        }
-
-        // 모든 스레드 완료 대기 (최대 10초)
-        latch.await(10, TimeUnit.SECONDS);
-        executorService.shutdown();
-
-        // Then - 동시성 제어가 제대로 되면 1개만 성공, 나머지는 실패
-        assertThat(successCount.get()).isEqualTo(1);
-        assertThat(failureCount.get()).isEqualTo(threadCount - 1);
-        assertThat(successCount.get() + failureCount.get()).isEqualTo(threadCount);
+        // Then
+        assertThat(result.successCount()).isEqualTo(1);
+        assertThat(result.failureCount()).isEqualTo(threadCount - 1);
     }
 }
