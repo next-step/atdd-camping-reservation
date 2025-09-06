@@ -141,4 +141,37 @@ class ReservationAcceptanceTest {
         // Then: "해당 기간에 이미 예약이 존재합니다."와 같은 메시지와 함께 예약이 실패한다.
         assertThat(errorMessage).contains("해당 기간에 이미 예약이 존재합니다.");
     }
+
+    /**
+     * Scenario: 과거 날짜로 예약을 시도하면 실패한다.
+     * When 사용자가 예약할 때, 시작 날짜를 오늘보다 과거로 지정하면
+     * Then "유효하지 않은 날짜입니다."와 같은 메시지와 함께 예약은 실패한다.
+     */
+    @Test
+    void 과거_날짜로_예약을_시도하면_실패한다() throws Exception {
+        // When: 사용자가 예약할 때, 시작 날짜를 오늘보다 과거로 지정하면
+        ReservationRequest request = ReservationRequest.builder()
+                .customerName("김시간")
+                .phoneNumber("010-9876-5432")
+                .startDate(LocalDate.now().minusDays(1)) // 과거 날짜
+                .endDate(LocalDate.now().plusDays(1))
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        String errorMessage = RestAssured
+                .given()
+                    .log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(request))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .log().all()
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                .extract().path("message");
+
+        // Then: "유효하지 않은 날짜입니다."와 같은 메시지와 함께 예약은 실패한다.
+        assertThat(errorMessage).contains("유효하지 않은 날짜입니다.");
+    }
 }
