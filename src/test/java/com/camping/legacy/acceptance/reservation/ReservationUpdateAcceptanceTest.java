@@ -2,6 +2,7 @@ package com.camping.legacy.acceptance.reservation;
 
 import static com.camping.legacy.acceptance.reservation.ReservationCreateAcceptanceTestSteps.예약이_생성되어있다;
 import static com.camping.legacy.acceptance.reservation.ReservationUpdateAcceptanceTestSteps.예약_수정을_요청한다;
+import static com.camping.legacy.acceptance.reservation.ReservationUpdateAcceptanceTestSteps.예약_수정이_성공한다;
 import static com.camping.legacy.acceptance.reservation.ReservationUpdateAcceptanceTestSteps.예약_수정이_실패한다;
 import static com.camping.legacy.acceptance.site.SiteAcceptanceTestSteps.사이트가_존재한다;
 
@@ -9,6 +10,7 @@ import com.camping.legacy.acceptance.reservation.request.ReservationRequestBuild
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.test.AcceptanceTest;
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +29,11 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
 
         기존_예약 = 예약이_생성되어있다(
             new ReservationRequestBuilder()
+                .customerName("테스터")
+                .startDate(LocalDate.now().plusDays(1))
+                .endDate(LocalDate.now().plusDays(2))
                 .siteNumber(A_1.getSiteNumber())
+                .phoneNumber("010-1111-2222")
                 .build()
         );
     }
@@ -47,5 +53,23 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
 
         // then
         예약_수정이_실패한다(예약_수정_응답, "확인 코드가 일치하지 않습니다.");
+    }
+
+    @Test
+    void 사이트_시작일_종료일_예약자_이름_전화번호_수정이_가능하다() {
+        // when
+        var 예약_수정_응답 = 예약_수정을_요청한다(
+            기존_예약.getId(), 기존_예약.getConfirmationCode(),
+            new ReservationRequestBuilder()
+                .customerName("수정된이름")
+                .startDate(LocalDate.now().plusDays(2))
+                .endDate(LocalDate.now().plusDays(3))
+                .siteNumber(A_2.getSiteNumber())
+                .phoneNumber("010-4444-5555")
+                .build()
+        );
+
+        // then
+        예약_수정이_성공한다(예약_수정_응답);
     }
 }
