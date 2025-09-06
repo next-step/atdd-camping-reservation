@@ -99,4 +99,19 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // then
         예약_수정이_실패한다(예약_수정_응답, "이미 예약된 사이트입니다.");
     }
+
+    @Test
+    void 수정하는_날짜는_오늘로부터_30일_이내에만_가능하다() {
+        // when
+        var 예약_수정_응답 = 예약_수정을_요청한다(
+            기존_예약.getId(), 기존_예약.getConfirmationCode(),
+            new ReservationRequestBuilder()
+                .startDate(LocalDate.now().plusDays(31))
+                .endDate(LocalDate.now().plusDays(32))
+                .build()
+        );
+
+        // then
+        예약_수정이_실패한다(예약_수정_응답, "예약은 30일 이내에만 가능합니다.");
+    }
 }
