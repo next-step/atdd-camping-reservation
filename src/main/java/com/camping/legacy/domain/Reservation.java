@@ -36,7 +36,8 @@ public class Reservation {
     
     private String phoneNumber;
     
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private ReservationStatus status;
     
     @Column(length = 6)
     private String confirmationCode;
@@ -47,14 +48,28 @@ public class Reservation {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) {
-            this.status = "CONFIRMED";
+            this.status = ReservationStatus.CONFIRMED;
         }
     }
-    
-    public Reservation(String customerName, LocalDate startDate, LocalDate endDate, Campsite campsite) {
+
+    public Reservation(
+            String customerName,
+            LocalDate startDate,
+            LocalDate endDate,
+            Campsite campsite,
+            String phoneNumber,
+            String confirmationCode
+    ) {
         this.customerName = customerName;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.reservationDate = startDate;
         this.campsite = campsite;
+        this.phoneNumber = phoneNumber;
+        this.confirmationCode = confirmationCode;
+    }
+
+    public boolean isConfirmed() {
+        return this.status.isConfirmed();
     }
 }

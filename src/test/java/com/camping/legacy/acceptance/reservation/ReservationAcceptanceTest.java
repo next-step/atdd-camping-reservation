@@ -7,9 +7,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.camping.legacy.acceptance.reservation.ReservationAcceptanceStep.*;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.camping.legacy.util.ConcurrencyTestHelper;
 
 public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약 생성 - 성공")
@@ -80,6 +83,150 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         assertThat(message).isEqualTo("종료일이 시작일보다 이전일 수 없습니다.");
     }
 
+    @DisplayName("예약 생성 - 예약자 이름 null인 경우 실패")
+    @Test
+    void createReservationFailWithNullCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                null,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 예약자 이름 빈 문자열인 경우 실패")
+    @Test
+    void createReservationFailWithEmptyCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                "",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 예약자 이름 공백만 있는 경우 실패")
+    @Test
+    void createReservationFailWithBlankCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                "   ",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 null인 경우 실패")
+    @Test
+    void createReservationFailWithNullPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                null
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 빈 문자열인 경우 실패")
+    @Test
+    void createReservationFailWithEmptyPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                ""
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 공백만 있는 경우 실패")
+    @Test
+    void createReservationFailWithBlankPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "   "
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("전화번호를 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 형식이 잘못된 경우 실패")
+    @Test
+    void createReservationFailWithInvalidPhoneNumberFormat() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-12-34"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호에 숫자가 아닌 문자 포함된 경우 실패")
+    @Test
+    void createReservationFailWithNonNumericPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-abcd-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
+    @DisplayName("예약 생성 - 전화번호 길이가 부족한 경우 실패")
+    @Test
+    void createReservationFailWithShortPhoneNumber() {
+        ReservationRequest request = getReservationRequest(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("올바른 전화번호 형식이 아닙니다.");
+    }
+
     @DisplayName("예약 생성 - 동일 사이트 동일 날짜 중복 예약 실패")
     @Test
     void createReservationFailWithDuplicateReservation() {
@@ -148,5 +295,27 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         assertThat(response2.getEndDate()).isEqualTo(duplicateRequest.getEndDate());
         assertThat(response2.getSiteNumber()).isEqualTo(duplicateRequest.getSiteNumber());
         assertThat(response2.getPhoneNumber()).isEqualTo(duplicateRequest.getPhoneNumber());
+    }
+
+    @DisplayName("예약 생성 - 동시성 테스트")
+    @Test
+    void createReservation_동시성_테스트() {
+        // Given
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(2);
+        String siteNumber = "A-1";
+        int threadCount = 10;
+        AtomicInteger counter = new AtomicInteger(0);
+
+        // When
+        ConcurrencyTestHelper.ConcurrencyTestResult result = ConcurrencyTestHelper.executeConcurrentTasks(
+                () -> ReservationAcceptanceStep.getReservationRequest(counter.getAndIncrement(), startDate, endDate, siteNumber),
+                request -> { 예약_생성_성공(request); return null; },
+                threadCount
+        );
+
+        // Then
+        assertThat(result.successCount()).isEqualTo(1);
+        assertThat(result.failureCount()).isEqualTo(threadCount - 1);
     }
 }

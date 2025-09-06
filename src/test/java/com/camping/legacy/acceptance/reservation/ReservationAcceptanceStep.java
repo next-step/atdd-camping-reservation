@@ -31,6 +31,16 @@ public class ReservationAcceptanceStep {
         );
     }
 
+    public static ReservationRequest getReservationRequest(int index, LocalDate startDate, LocalDate endDate, String siteNumber) {
+        return getReservationRequest(
+                "고객" + index,
+                startDate,
+                endDate,
+                siteNumber,
+                "010-1234-567" + index
+        );
+    }
+
     public static ReservationResponse 예약_생성_성공(ReservationRequest request) {
 
         return 예약_생성_요청(request, 201).as(ReservationResponse.class);
