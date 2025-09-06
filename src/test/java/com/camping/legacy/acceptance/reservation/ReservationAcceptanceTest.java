@@ -83,6 +83,54 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         assertThat(message).isEqualTo("종료일이 시작일보다 이전일 수 없습니다.");
     }
 
+    @DisplayName("예약 생성 - 예약자 이름 null인 경우 실패")
+    @Test
+    void createReservationFailWithNullCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                null,
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 예약자 이름 빈 문자열인 경우 실패")
+    @Test
+    void createReservationFailWithEmptyCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                "",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("예약 생성 - 예약자 이름 공백만 있는 경우 실패")
+    @Test
+    void createReservationFailWithBlankCustomerName() {
+        ReservationRequest request = getReservationRequest(
+                "   ",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(2),
+                "A-1",
+                "010-1234-5678"
+        );
+
+        var message = 예약_생성_실패(request, 409);
+        
+        assertThat(message).contains("예약자 이름을 입력해주세요.");
+    }
+
     @DisplayName("예약 생성 - 동일 사이트 동일 날짜 중복 예약 실패")
     @Test
     void createReservationFailWithDuplicateReservation() {
