@@ -42,8 +42,8 @@ public class AcceptanceTestFixture {
 
     public static ReservationRequest createWrongReservationRequest() {
         return ReservationRequestBuilder.builder()
-                .startDate(now.plusDays(30))
-                .endDate(now.plusDays(30))
+                .startDate(now.plusDays(31))
+                .endDate(now.plusDays(31))
                 .build();
     }
 
@@ -100,7 +100,7 @@ public class AcceptanceTestFixture {
         return ReservationRequestBuilder.builder()
                 .name("박연박")
                 .endDate(startDate.plusDays(2))
-                .siteName("C-3")
+                .siteName("B-2")
                 .phoneNumber("010-3333-4444")
                 .numberOfPeople(3)
                 .build();

@@ -11,7 +11,7 @@ import static com.camping.legacy.acceptance.AcceptanceTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("예약 생성")
-class ReservationCreationAcceptanceTest {
+class ReservationCreationAcceptanceTest extends AcceptanceCommon {
 
     @Test
     @DisplayName("예약을 한 날짜가 예약한 날짜와 30일 이내 차이가 나면 예약이 성공한다")

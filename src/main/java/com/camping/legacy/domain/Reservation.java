@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "reservations")
@@ -56,5 +57,9 @@ public class Reservation {
         this.startDate = startDate;
         this.endDate = endDate;
         this.campsite = campsite;
+    }
+
+    public boolean isConfirmed () {
+        return Objects.equals(this.status, "CONFIRMED");
     }
 }
