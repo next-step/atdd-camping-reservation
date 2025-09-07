@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
 
+import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -27,12 +27,12 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         LocalDate startDate = LocalDate.of(currentYear, 12, 25);
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
 
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("siteNumber", "A-2");
-        reservationRequest.put("startDate", startDate.toString());
-        reservationRequest.put("endDate", endDate.toString());
-        reservationRequest.put("customerName", "김테스트");
-        reservationRequest.put("phoneNumber", "010-1234-5678");
+        Map<String, Object> reservationRequest = new ReservationTestDataBuilder()
+                .withSiteNumber("A-2")
+                .withDates(startDate, endDate)
+                .withName("김테스트")
+                .withPhone("010-1234-5678")
+                .build();
 
         ExtractableResponse<Response> response = given()
                 .contentType("application/json")
@@ -59,13 +59,13 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         LocalDate startDate = LocalDate.of(currentYear, 12, 25);
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
         
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("siteNumber", "A-1");
-        reservationRequest.put("startDate", startDate.toString());
-        reservationRequest.put("endDate", endDate.toString());
-        reservationRequest.put("customerName", "동시테스트");
-        reservationRequest.put("phoneNumber", "010-1111-1111");
-        
+        Map<String, Object> reservationRequest = new ReservationTestDataBuilder()
+                .withSiteNumber("A-1")
+                .withDates(startDate, endDate)
+                .withName("동시테스트")
+                .withPhone("010-1111-1111")
+                .build();
+
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         CountDownLatch latch = new CountDownLatch(10);
         List<ExtractableResponse<Response>> responses = new ArrayList<>();
@@ -74,9 +74,12 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             final int customerIndex = i;
             executorService.execute(() -> {
                 try {
-                    Map<String, Object> request = new HashMap<>(reservationRequest);
-                    request.put("customerName", "동시테스트" + customerIndex);
-                    request.put("phoneNumber", "010-1111-111" + customerIndex);
+                    Map<String, Object> request = new ReservationTestDataBuilder()
+                            .withSiteNumber("A-1")
+                            .withDates(startDate, endDate)
+                            .withName("동시테스트" + customerIndex)
+                            .withPhone("010-1111-111" + customerIndex)
+                            .build();
                     
                     ExtractableResponse<Response> response = given()
                             .contentType("application/json")
@@ -126,12 +129,12 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
 
         // 사전 예약 생성
-        Map<String, Object> existingReservation = new HashMap<>();
-        existingReservation.put("siteNumber", "B-1");
-        existingReservation.put("startDate", startDate.toString());
-        existingReservation.put("endDate", endDate.toString());
-        existingReservation.put("customerName", "기존고객");
-        existingReservation.put("phoneNumber", "010-9999-9999");
+        Map<String, Object> existingReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-1")
+                .withDates(startDate, endDate)
+                .withName("기존고객")
+                .withPhone("010-9999-9999")
+                .build();
         
         given()
                 .contentType("application/json")
@@ -142,12 +145,12 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
         
         // 동일한 기간으로 새로운 예약 시도
-        Map<String, Object> newReservation = new HashMap<>();
-        newReservation.put("siteNumber", "B-1");
-        newReservation.put("startDate", startDate.toString());
-        newReservation.put("endDate", endDate.toString());
-        newReservation.put("customerName", "새로운고객");
-        newReservation.put("phoneNumber", "010-8888-8888");
+        Map<String, Object> newReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-1")
+                .withDates(startDate, endDate)
+                .withName("새로운고객")
+                .withPhone("010-8888-8888")
+                .build();
         
         // when - 고객이 같은 기간으로 B-1 캠핑 구역을 예약하려고 하면
         ExtractableResponse<Response> response = given()
