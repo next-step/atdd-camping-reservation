@@ -350,4 +350,24 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         assertThat(conflictCount).isEqualTo(1);
         assertThat(responses).hasSize(2);
     }
+
+    @Test
+    void 날짜가_null인_요청_시_예약_실패() {
+        // when - 고객이 null 날짜로 예약을 시도하면
+        Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
+                .withStartDate(null)
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(invalidReservation)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .extract();
+
+        // then - 예약이 실패한다
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약 기간을 선택해주세요.");
+    }
 }

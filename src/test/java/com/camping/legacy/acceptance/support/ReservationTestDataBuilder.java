@@ -32,11 +32,21 @@ public class ReservationTestDataBuilder {
         return this;
     }
     
+    public ReservationTestDataBuilder withStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+        return this;
+    }
+    
+    public ReservationTestDataBuilder withEndDate(LocalDate endDate) {
+        this.endDate = endDate;
+        return this;
+    }
+    
     public Map<String, Object> build() {
         Map<String, Object> request = new HashMap<>();
         request.put("siteNumber", siteNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
+        request.put("startDate", startDate != null ? startDate.toString() : null);
+        request.put("endDate", endDate != null ? endDate.toString() : null);
         request.put("customerName", name);
         request.put("phoneNumber", phone);
         return request;

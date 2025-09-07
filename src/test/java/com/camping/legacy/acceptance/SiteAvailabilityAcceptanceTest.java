@@ -2,7 +2,9 @@ package com.camping.legacy.acceptance;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.OK;
 
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
@@ -251,5 +253,33 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // then - "예약 가능"으로 표시된다
         assertThat(response.statusCode()).isEqualTo(OK.value());
         assertThat(response.jsonPath().getBoolean("available")).isTrue();
+    }
+
+    @Test
+    void 빈_캠핑장_번호로_가용성_조회_실패() {
+        // when - 고객이 빈 캠핑장 번호로 가용성을 조회하면
+        LocalDate queryDate = LocalDate.now().plusDays(10);
+
+        ExtractableResponse<Response> response = given()
+            .when()
+                .get("/api/sites/ /availability?date=" + queryDate)
+            .then()
+                .extract();
+
+        // then - "사이트를 찾을 수 없습니다"라는 안내 메시지가 나타난다
+        assertThat(response.jsonPath().getString("message")).contains("사이트를 찾을 수 없습니다");
+    }
+
+    @Test
+    void 날짜_파라미터_없이_가용성_조회_실패() {
+        // when - 고객이 날짜 없이 가용성을 조회하면
+        ExtractableResponse<Response> response = given()
+            .when()
+                .get("/api/sites/A-12/availability")
+            .then()
+                .extract();
+
+        // then - "필수 파라미터가 누락되었습니다"라는 안내 메시지가 나타난다
+        assertThat(response.jsonPath().getString("message")).contains("date");
     }
 }

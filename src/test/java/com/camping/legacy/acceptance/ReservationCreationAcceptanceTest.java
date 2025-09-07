@@ -249,9 +249,48 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         }
 
         // then - 모든 예약이 성공해야 한다
-        for (int i = 0; i < responses.size(); i++) {
-            ExtractableResponse<Response> response = responses.get(i);
+        for (ExtractableResponse<Response> response : responses) {
             assertThat(response.statusCode()).isEqualTo(CREATED.value());
         }
+    }
+
+    @Test
+    void 고객명이_null인_경우_예약_실패() {
+        // when - 고객명이 null인 예약을 시도하면
+        Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
+                .withName(null)
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(invalidReservation)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약이 실패한다
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약자 이름을 입력해주세요.");
+    }
+
+    @Test
+    void 고객명이_빈_문자열인_경우_예약_실패() {
+        // when - 고객명이 빈 문자열인 예약을 시도하면
+        Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
+                .withName("")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(invalidReservation)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약이 실패한다
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약자 이름을 입력해주세요.");
     }
 }
