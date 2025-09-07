@@ -9,6 +9,8 @@ import io.restassured.response.Response;
 
 import java.time.LocalDate;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class ReservationAcceptanceStep {
     final static String BASE_URL = "/api/reservations";
 
@@ -31,23 +33,15 @@ public class ReservationAcceptanceStep {
         );
     }
 
-    public static ReservationRequest getReservationRequest(int index, LocalDate startDate, LocalDate endDate, String siteNumber) {
-        return getReservationRequest(
-                "고객" + index,
-                startDate,
-                endDate,
-                siteNumber,
-                "010-1234-567" + index
-        );
-    }
-
     public static ReservationResponse 예약_생성_성공(ReservationRequest request) {
 
         return 예약_생성_요청(request, 201).as(ReservationResponse.class);
     }
 
-    public static String 예약_생성_실패(ReservationRequest request, Integer statusCode) {
-        return 예약_생성_요청(request, statusCode).jsonPath().getString("message");
+    public static void 예약_생성_실패(ReservationRequest request, Integer statusCode, String message) {
+        String responseMessage = 예약_생성_요청(request, statusCode).jsonPath().getString("message");
+
+        assertThat(responseMessage).isEqualTo(message);
     }
 
     static ExtractableResponse<Response> 예약_생성_요청(ReservationRequest request, Integer statusCode) {
