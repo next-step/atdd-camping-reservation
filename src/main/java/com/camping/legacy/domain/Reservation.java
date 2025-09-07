@@ -111,4 +111,23 @@ public class Reservation {
         this.endDate = endDate;
         this.campsite = campsite;
     }
+
+    public static Reservation create(
+            String customerName,
+            LocalDate startDate,
+            LocalDate endDate,
+            Campsite campsite,
+            String phoneNumber,
+            String confirmationCode
+    ) {
+        Reservation reservation = new Reservation();
+        reservation.setCustomerName(customerName);
+        reservation.setStartDate(startDate);
+        reservation.setEndDate(endDate);
+        reservation.setReservationDate(startDate);
+        reservation.setCampsite(campsite);
+        reservation.setPhoneNumber(phoneNumber);
+        reservation.setConfirmationCode(confirmationCode);
+        return reservation;
+    }
 }

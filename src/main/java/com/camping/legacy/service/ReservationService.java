@@ -23,8 +23,6 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
 
-    private static final int MAX_RESERVATION_DAYS = 30;
-
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
@@ -32,35 +30,9 @@ public class ReservationService {
 
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
-        LocalDate today = LocalDate.now();
 
-        if (startDate == null || endDate == null) {
-            throw new RuntimeException("예약 기간을 선택해주세요.");
-        }
-
-        // 시작일이 오늘보다 이전일 수 없음
-        if (startDate.isBefore(today) || endDate.isBefore(today)) {
-            throw new RuntimeException("시작일과 종료일은 오늘보다 이전일 수 없습니다.");
-        }
-
-        if (endDate.isBefore(startDate)) {
-            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
-        }
-
-        // 시작일이 오늘 기준으로 30일 초과 불가
-        if (startDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
-            throw new RuntimeException("시작일은 오늘부터 최대 " + MAX_RESERVATION_DAYS + "일 이내여야 합니다.");
-        }
-
-        if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
-        }
-
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
-        if (hasConflict) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
+        request.validate();
+        this.checkDuplicateReservation(request);
 
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
@@ -68,19 +40,32 @@ public class ReservationService {
             Thread.currentThread().interrupt();
         }
 
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.getCustomerName());
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setReservationDate(startDate);
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(request.getPhoneNumber());
-
-        reservation.setConfirmationCode(generateConfirmationCode());
+        Reservation reservation = Reservation.create(
+            request.getCustomerName(),
+            startDate,
+            endDate,
+            campsite,
+            request.getPhoneNumber(),
+            generateConfirmationCode()
+        );
 
         Reservation saved = reservationRepository.save(reservation);
-
         return ReservationResponse.from(saved);
+    }
+
+    private void checkDuplicateReservation(ReservationRequest request) {
+        String siteNumber = request.getSiteNumber();
+        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
+
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                campsite, endDate, startDate);
+        if (hasConflict) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -113,11 +98,11 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
-        if(!reservation.isCancelable()) {
+        if (!reservation.isCancelable()) {
             throw new RuntimeException("취소할 수 없는 상태입니다.");
         }
 
-        if(!reservation.isValidConfirmationCode(confirmationCode)) {
+        if (!reservation.isValidConfirmationCode(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
@@ -146,11 +131,11 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
-        if(!reservation.isUpdatable()) {
+        if (!reservation.isUpdatable()) {
             throw new RuntimeException("수정할 수 없는 상태입니다.");
         }
 
-        if(!reservation.isValidConfirmationCode(confirmationCode)) {
+        if (!reservation.isValidConfirmationCode(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
@@ -160,11 +145,11 @@ public class ReservationService {
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         }
         reservation.update(
-            request.getCustomerName(),
-            request.getStartDate(),
-            request.getEndDate(),
-            request.getPhoneNumber(),
-            campsite
+                request.getCustomerName(),
+                request.getStartDate(),
+                request.getEndDate(),
+                request.getPhoneNumber(),
+                campsite
         );
 
         Reservation updated = reservationRepository.save(reservation);
