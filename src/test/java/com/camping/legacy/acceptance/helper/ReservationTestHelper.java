@@ -1,5 +1,8 @@
 package com.camping.legacy.acceptance.helper;
 
+
+import static com.camping.legacy.acceptance.AcceptanceTestBase.TODAY;
+
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -26,8 +29,8 @@ public class ReservationTestHelper {
 
     public static class ReservationRequestBuilder {
         private String customerName = "홍길동";
-        private String startDate = "2025-09-05";
-        private String endDate = "2025-09-06";
+        private String startDate = TODAY.toString();
+        private String endDate = TODAY.plusDays(1).toString();
         private String siteNumber = "A-1";
         private String phoneNumber = "010-1234-5678";
         private String numberOfPeople = "2";

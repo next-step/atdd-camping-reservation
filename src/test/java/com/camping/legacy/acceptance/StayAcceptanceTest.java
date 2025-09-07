@@ -22,7 +22,7 @@ class StayAcceptanceTest extends AcceptanceTestBase {
     @Test
     void staySuccessTest() {
         // given
-        LocalDate startDate = LocalDate.of(2025, 9, 15);
+        LocalDate startDate = TODAY;
         LocalDate endDate = startDate.plusDays(5);
 
         Map<String, String> request = reservationRequest()
@@ -44,7 +44,7 @@ class StayAcceptanceTest extends AcceptanceTestBase {
     @Test
     void stayDuplicateTest() {
         // given
-        LocalDate startDate = LocalDate.of(2025, 9, 15);
+        LocalDate startDate = TODAY;
         LocalDate endDate = startDate.plusDays(5);
 
         Map<String, String> request = reservationRequest()

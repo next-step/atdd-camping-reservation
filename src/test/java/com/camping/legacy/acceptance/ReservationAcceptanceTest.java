@@ -8,17 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import java.time.LocalDate;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-
-import java.time.LocalDate;
-import java.util.Map;
-
-import static com.camping.legacy.acceptance.helper.ReservationTestHelper.reservationRequest;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertAll;
 
 class ReservationAcceptanceTest extends AcceptanceTestBase {
 
@@ -29,8 +24,8 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
     void reservationSuccessTest() {
         // given - 일반적인 예약 패턴
         Map<String, String> request = reservationRequest()
-                .withStartDate(LocalDate.of(2025, 9, 5).toString())
-                .withEndDate(LocalDate.of(2025, 9, 8).toString())
+                .withStartDate(TODAY.toString())
+                .withEndDate(TODAY.plusDays(3).toString())
                 .build();
 
         // when - 정상적인 패턴으로 예약한다.

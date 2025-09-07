@@ -11,8 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-class AcceptanceTestBase {
-    public static final LocalDate TODAY = LocalDate.now();
+public class AcceptanceTestBase {
+    public static final LocalDate TODAY = LocalDate.of(2025, 9, 7);
 
     private static final String BASE_URI = "http://localhost";
 
