@@ -104,7 +104,7 @@ public class ReservationCancelAcceptanceTest extends TestBase {
         // Then
         res2.then().log().all()
                 .statusCode(400)
-                .body("message", containsString("이미 취소된 예약입니다."));
+                .body("message", containsString("취소할 수 없는 상태입니다."));
     }
 
     @Test
@@ -127,7 +127,7 @@ public class ReservationCancelAcceptanceTest extends TestBase {
                 .statusCode(200)
                 .body("message", equalTo("예약이 취소되었습니다."));
         Reservation reservation = this.findReservationById(reservationId);
-        assertThat(reservation.getRefundPercent()).isEqualTo(0);
+        assertThat(reservation.getRefundPercent()).isZero();
     }
 
     @Test

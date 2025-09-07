@@ -42,8 +42,6 @@ public class Reservation {
     @Column(length = 6)
     private String confirmationCode;
 
-    private Integer refundPercent;
-
     private LocalDateTime createdAt;
 
     @PrePersist
@@ -52,6 +50,31 @@ public class Reservation {
         if (this.status == null) {
             this.status = ReservationStatus.CONFIRMED;
         }
+    }
+
+    public boolean isCancelable() {
+        return this.status.isCancelable();
+    }
+
+    public boolean isValidConfirmationCode(String code) {
+        return this.confirmationCode.equals(code);
+    }
+
+    public void cancel() {
+        LocalDate now = LocalDate.now();
+        if (this.startDate.equals(now)) {
+            this.status = ReservationStatus.CANCELLED_SAME_DAY;
+        } else {
+            this.status = ReservationStatus.CANCELLED;
+        }
+    }
+
+    public int getRefundPercent() {
+        return switch (this.status) {
+            case CANCELLED -> 100; // 사전 취소: 전액 환불
+            case CANCELLED_SAME_DAY -> 0; // 당일 취소: 환불 불가
+            default -> 0; // CONFIRMED 상태에서는 환불 비율이 없음
+        };
     }
 
     public Reservation(String customerName, LocalDate startDate, LocalDate endDate, Campsite campsite) {
