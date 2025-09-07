@@ -216,23 +216,25 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
 
     @Test
     @DisplayName("과거 날짜로는 예약할 수 없다")
-    void scenario_과거_날짜_예약_거부된다() {
+    void scenario_과거_날짜로는_예약이_거부된다() {
         /*
          * 5W1H
-         * Who(누가): 기존 예약자 "김철수"와 새 예약자 "이영희"
-         * What(무엇을): 동일한 사이트·동일한 기간 재예약
-         * When(언제): 기존 예약을 취소한 직후
+         * Who(누가): 캠핑을 예약하려는 고객 "홍길동"
+         * What(무엇을): 과거 날짜로 캠핑 사이트 예약을 시도
+         * When(언제): 오늘 기준으로 이미 지나간 날짜
          * Where(어디서): 초록 캠핑장 예약 시스템
-         * Why(왜): 취소된 예약은 중복 체크에서 제외되어야 하므로
-         * How(어떻게): 예약→취소→같은 조건으로 새 예약 순서로 요청한다
+         * Why(왜): 과거 날짜로는 예약이 불가능해야 하기 때문
+         * How(어떻게): startDate와 endDate를 과거로 설정해 /api/reservations 요청을 보낸다
          */
+        // Given: 시드 데이터로 등록된 임의의 사이트가 있다
         String siteNumber = anySiteNumber();
+
+        // When: 고객이 과거 날짜로 예약을 시도하면
         var start = LocalDate.now().minusDays(1);
         var end   = start.plusDays(1);
-
         var res = createReservation("홍길동", "010-9999-0000", siteNumber, start, end);
 
-        // 기대: 거부 + "과거 날짜" 문구 (현 구현상 CREATED일 수 있어 Red가 나올 수 있다고 생각합니다.)
+        // Then: 예약은 거부되고, 오류 메시지에 '과거' 문구가 포함된다
         assertThat(res.statusCode()).isIn(HttpStatus.BAD_REQUEST.value(), HttpStatus.CONFLICT.value());
         assertThat(res.jsonPath().getString("message")).contains("과거 날짜");
     }
@@ -249,15 +251,17 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
          * Why(왜): "오늘부터 30일 이내만 예약 가능" 정책 준수 여부를 검증하기 위해
          * How(어떻게): start/end를 30일 초과 시점으로 설정해 /api/reservations 예약 생성 요청을 보낸다
          */
+        // Given: 시드 데이터로 등록된 임의의 사이트가 있다
         String siteNumber = anySiteNumber();
+
+        // When: 고객이 오늘부터 30일을 초과한 날짜로 예약을 시도하면
         var start = LocalDate.now().plusDays(35);
         var end   = start.plusDays(1);
-
         var res = createReservation("김철수", "010-1111-0000", siteNumber, start, end);
 
-        // 기대: 거부 + "30일 이내" 문구  (현 구현상 CREATED일 수 있어 Red가 나올 수 있다고 생각합니다.)
+        // Then: 예약은 거부되고, 오류 메시지에 "30일 이내" 문구가 포함된다
         assertThat(res.statusCode()).isIn(HttpStatus.BAD_REQUEST.value(), HttpStatus.CONFLICT.value());
-        assertThat(res.jsonPath().getString("message")).contains("30일");
+        assertThat(res.jsonPath().getString("message")).contains("30일 이내");
     }
 
 
@@ -273,10 +277,12 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
          * Why(왜): 전화번호가 필수 입력임을 검증하기 위해
          * How(어떻게): 요청 바디에 phoneNumber를 누락한 채 /api/reservations 예약 생성 요청을 보낸다
          */
+        // Given: 시드 데이터로 등록된 임의의 사이트가 있다
         String siteNumber = anySiteNumber();
+
+        // When: 고객이 전화번호 없이 예약 생성 요청을 보내면
         var start = LocalDate.now().plusDays(3);
         var end   = start.plusDays(1);
-
         var body = java.util.Map.of(
                 "customerName", "이영희",
                 "siteNumber", siteNumber,
@@ -293,7 +299,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .then().log().all()
                 .extract();
 
-        // 기대: 거부 + "전화번호" 문구  (현 구현상 CREATED일 수 있어 Red가 나올 수 있다고 생각합니다.)
+        // Then: 예약은 거부되고, 오류 메시지에 "전화번호" 문구가 포함된다
         assertThat(res.statusCode()).isIn(HttpStatus.BAD_REQUEST.value(), HttpStatus.CONFLICT.value());
         assertThat(res.jsonPath().getString("message")).contains("전화번호");
     }
@@ -302,6 +308,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
      *  분리하는 이유: 테스트 의도가 더 명확해짐, 같은 패턴이 필요할 때 재사용 쉬워짐
      *  기존 로직 부분은 해당 메서드를 호출하는 것으로 대체.
      */
+    // 헬퍼 메소드
     private void 바로_조회하면_동일한_정보가_확인된다(Long reservationId, String expectedSiteNumber, String expectedConfirmationCode) {
         var getRes = getReservation(reservationId);
 
