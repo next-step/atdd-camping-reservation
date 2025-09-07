@@ -7,6 +7,15 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -140,5 +149,63 @@ public class AcceptanceTestFixture {
                 .post("/api/reservations")
                 .then().log().all()
                 .extract();
+    }
+
+    public record ConcurrentTestResult(
+            int successCount,
+            int conflictCount,
+            int otherErrorCount,
+            List<ExtractableResponse<Response>> responses
+    ) {}
+
+    public static ConcurrentTestResult executeConcurrentTest(
+            int threadCount,
+            Function<Integer, ReservationRequest> requestBuilder
+    ) throws InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch endLatch = new CountDownLatch(threadCount);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger conflictCount = new AtomicInteger(0);
+        AtomicInteger otherErrorCount = new AtomicInteger(0);
+        List<ExtractableResponse<Response>> responses = Collections.synchronizedList(new ArrayList<>());
+
+        for (int i = 0; i < threadCount; i++) {
+            final int threadNum = i;
+            executorService.submit(() -> {
+                try {
+                    startLatch.await();
+
+                    ReservationRequest request = requestBuilder.apply(threadNum);
+                    ExtractableResponse<Response> response = getCreateReservationApiResponse(request);
+                    responses.add(response);
+
+                    if (response.statusCode() == 201) {
+                        successCount.incrementAndGet();
+                    } else if (response.statusCode() == 409) {
+                        conflictCount.incrementAndGet();
+                    } else {
+                        otherErrorCount.incrementAndGet();
+                    }
+
+                } catch (Exception e) {
+                    otherErrorCount.incrementAndGet();
+                } finally {
+                    endLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown();
+        endLatch.await(30, TimeUnit.SECONDS);
+        executorService.shutdown();
+
+        return new ConcurrentTestResult(
+                successCount.get(),
+                conflictCount.get(),
+                otherErrorCount.get(),
+                responses
+        );
     }
 }
