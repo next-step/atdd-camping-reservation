@@ -458,4 +458,51 @@ class ReservationAcceptanceTest {
                 .then().log().all()
                     .statusCode(HttpStatus.CREATED.value());
     }
+
+    /**
+     * Scenario: 사용자가 잘못된 확인 코드로 예약을 취소하려 하면 실패한다.
+     * Given 사용자가 사이트 'A-1'을 예약해둔 상태일 때
+     * When 사용자가 해당 예약 ID와 유효하지 않은 확인 코드로 취소를 요청하면
+     * Then "확인 코드가 일치하지 않습니다."와 같은 메시지와 함께 예약 취소가 실패한다.
+     */
+    @Test
+    void 사용자가_잘못된_확인_코드로_예약_취소를_시도하면_실패한다() throws Exception {
+        // Given: 사용자가 사이트 'A-1'을 예약해둔 상태일 때
+        ReservationRequest initialRequest = ReservationRequest.builder()
+                .customerName("김보안")
+                .phoneNumber("010-9999-8888")
+                .startDate(LocalDate.of(2025, 12, 1))
+                .endDate(LocalDate.of(2025, 12, 2))
+                .siteNumber("A-1")
+                .numberOfPeople(2)
+                .build();
+
+        String responseBody = RestAssured
+                .given()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(initialRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(HttpStatus.CREATED.value())
+                    .extract().asString();
+
+        ReservationResponse initialResponse = objectMapper.readValue(responseBody, ReservationResponse.class);
+        Long reservationId = initialResponse.getId();
+
+        // When: 사용자가 해당 예약 ID와 유효하지 않은 확인 코드로 취소를 요청하면
+        String invalidConfirmationCode = "invalid-code";
+
+        String errorMessage = RestAssured
+                .given().log().all()
+                    .queryParam("confirmationCode", invalidConfirmationCode)
+                .when()
+                    .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                    .statusCode(HttpStatus.BAD_REQUEST.value())
+                    .extract().path("message");
+
+        // Then: "확인 코드가 일치하지 않습니다."와 같은 메시지와 함께 예약 취소가 실패한다.
+        assertThat(errorMessage).contains("확인 코드가 일치하지 않습니다.");
+    }
 }
