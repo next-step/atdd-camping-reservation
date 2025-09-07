@@ -51,11 +51,8 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .isNotBlank()
                 .hasSize(6);
 
-        // And: 바로 조회하면 동일한 정보가 확인된다(추가 안전망)
-        var getRes = getReservation(id);
-        assertThat(getRes.statusCode()).isEqualTo(HttpStatus.OK.value());
-        assertThat(getRes.jsonPath().getString("siteNumber")).isEqualTo(siteNumber);
-        assertThat(getRes.jsonPath().getString("confirmationCode")).isEqualTo(confirmationCode);
+        // And: 바로 조회하면 동일한 정보가 확인된다(추가 안전망) 메서드 호출
+        바로_조회하면_동일한_정보가_확인된다(id, siteNumber, confirmationCode);
     }
 
     @Test
@@ -300,5 +297,27 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         assertThat(res.statusCode()).isIn(HttpStatus.BAD_REQUEST.value(), HttpStatus.CONFLICT.value());
         assertThat(res.jsonPath().getString("message")).contains("전화번호");
     }
+
+    /** step2 리뷰 적용 - And 부분을 헬퍼 메소드로 분리
+     *  분리하는 이유: 테스트 의도가 더 명확해짐, 같은 패턴이 필요할 때 재사용 쉬워짐
+     *  기존 로직 부분은 해당 메서드를 호출하는 것으로 대체.
+     */
+    private void 바로_조회하면_동일한_정보가_확인된다(Long reservationId, String expectedSiteNumber, String expectedConfirmationCode) {
+        var getRes = getReservation(reservationId);
+
+        // 상태 코드 OK
+        assertThat(getRes.statusCode()).isEqualTo(org.springframework.http.HttpStatus.OK.value());
+
+        // 사이트 번호가 동일
+        assertThat(getRes.jsonPath().getString("siteNumber"))
+                .as("조회 결과의 사이트 번호는 생성 시점과 동일해야 한다")
+                .isEqualTo(expectedSiteNumber);
+
+        // 확인코드가 동일
+        assertThat(getRes.jsonPath().getString("confirmationCode"))
+                .as("조회 결과의 확인코드는 생성 시점에 발급된 코드와 동일해야 한다")
+                .isEqualTo(expectedConfirmationCode);
+    }
+
 
 }
