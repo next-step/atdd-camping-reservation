@@ -6,82 +6,47 @@ import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ReservationService {
-    
+
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
-    
+
     private static final int MAX_RESERVATION_DAYS = 30;
-    
+
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-        
-        LocalDate startDate = request.getStartDate();
-        LocalDate endDate = request.getEndDate();
-        
-        if (startDate == null || endDate == null) {
-            throw new RuntimeException("예약 기간을 선택해주세요.");
-        }
-        
-        if (endDate.isBefore(startDate)) {
-            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
-        }
-        
-        if (startDate.isBefore(LocalDate.now())) {
-            throw new RuntimeException("예약 기간은 오늘 이후로 선택해주세요.");
-        }
-        
-        if (startDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
-            throw new RuntimeException("예약 기간은 오늘로부터 30일 이내에만 가능합니다.");
-        }
-        
-        if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
-        }
-        
-        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty()) {
-            throw new RuntimeException("예약자 전화번호를 입력해주세요.");
-        }
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
-        if (hasConflict) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
-        
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+        Reservation reservation = Reservation.builder()
+            .customerName(request.getCustomerName())
+            .startDate(request.getStartDate())
+            .endDate(request.getEndDate())
+            .campsite(campsite)
+            .phoneNumber(request.getPhoneNumber())
+            .build();
+
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.getCustomerName());
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setReservationDate(startDate);
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(request.getPhoneNumber());
-        
+
         reservation.setConfirmationCode(generateConfirmationCode());
-        
+
         Reservation saved = reservationRepository.save(reservation);
-        
+
         return ReservationResponse.from(saved);
     }
     
