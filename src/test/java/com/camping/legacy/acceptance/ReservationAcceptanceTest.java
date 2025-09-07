@@ -395,4 +395,67 @@ class ReservationAcceptanceTest {
 
         assertThat(reservations).hasSize(1);
     }
+
+    /**
+     * Scenario: 사용자가 올바른 확인 코드로 자신의 예약을 성공적으로 취소한다.
+     * When 사용자가 취소하고 싶은 예약의 예약 ID와 확인 코드로 취소를 요청하면
+     * Then 예약 취소는 성공적으로 처리된다.
+     * And 취소된 사이트와 날짜는 이제 다른 사용자가 예약할 수 있는 상태가 된다.
+     */
+    @Test
+    void 사용자가_올바른_확인_코드로_자신의_예약을_성공적으로_취소한다() throws Exception {
+        // Given: 특정 날짜에 예약이 생성되어 있음
+        ReservationRequest initialRequest = ReservationRequest.builder()
+                .customerName("김취소")
+                .phoneNumber("010-4321-8765")
+                .startDate(LocalDate.of(2025, 11, 5))
+                .endDate(LocalDate.of(2025, 11, 6))
+                .siteNumber("B-2")
+                .numberOfPeople(4)
+                .build();
+
+        String responseBody = RestAssured
+                .given()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(initialRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(HttpStatus.CREATED.value())
+                    .extract().asString();
+
+        ReservationResponse initialResponse = objectMapper.readValue(responseBody, ReservationResponse.class);
+        Long reservationId = initialResponse.getId();
+        String confirmationCode = initialResponse.getConfirmationCode();
+
+        // When: 사용자가 예약 ID와 올바른 확인 코드로 취소를 요청하면
+        RestAssured
+                .given().log().all()
+                    .queryParam("confirmationCode", confirmationCode)
+                .when()
+                    .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                    .statusCode(HttpStatus.OK.value());
+
+        // Then: 예약 취소는 성공적으로 처리된다. (위의 statusCode(200) 검증으로 확인)
+
+        // And: 취소된 사이트와 날짜는 이제 다른 사용자가 예약할 수 있는 상태가 된다.
+        ReservationRequest newRequest = ReservationRequest.builder()
+                .customerName("박새롬")
+                .phoneNumber("010-1111-1111")
+                .startDate(LocalDate.of(2025, 11, 5))
+                .endDate(LocalDate.of(2025, 11, 6))
+                .siteNumber("B-2")
+                .numberOfPeople(3)
+                .build();
+
+        RestAssured
+                .given().log().all()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(newRequest))
+                .when()
+                    .post("/api/reservations")
+                .then().log().all()
+                    .statusCode(HttpStatus.CREATED.value());
+    }
 }
