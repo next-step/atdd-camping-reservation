@@ -2,14 +2,19 @@ package com.camping.legacy.acceptance;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.CONFLICT;
 
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("NonAsciiCharacters")
@@ -157,7 +162,192 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .extract();
 
         // then - "예약은 30일 이내에만 가능합니다"라는 안내 메시지가 나타난다
-        assertThat(response.statusCode()).isEqualTo(409);
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("예약은 30일 이내에만 가능합니다");
+    }
+
+    @Test
+    void _29일_후_예약은_성공() {
+        // when - B-3 캠핑 구역을 고객이 오늘로부터 29일 후의 날짜로 예약하려고 하면
+        LocalDate startDate = LocalDate.now().plusDays(29);
+        LocalDate endDate = LocalDate.now().plusDays(30);
+
+        Map<String, Object> validReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-3")
+                .withDates(startDate, endDate)
+                .withName("29일경계고객")
+                .withPhone("010-1111-2222")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(validReservation)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약에 성공한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+    }
+
+    @Test
+    void _30일_후_예약은_성공() {
+        // when - B-4 캠핑 구역을 고객이 오늘로부터 30일 후에 예약하려고 하면
+        LocalDate startDate = LocalDate.now().plusDays(30);
+        LocalDate endDate = LocalDate.now().plusDays(31);
+
+        Map<String, Object> validReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-4")
+                .withDates(startDate, endDate)
+                .withName("30일경계고객")
+                .withPhone("010-2222-3333")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(validReservation)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .extract();
+
+        // then - 예약에 성공한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+    }
+
+    @Test
+    void 시작일과_종료일이_동일한_당일_예약_성공() {
+        // when - B-5 캠핑 구역을 고객이 시작일과 종료일이 동일한 당일 예약을 시도하면
+        LocalDate sameDate = LocalDate.now().plusDays(15);
+
+        Map<String, Object> sameDayReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-5")
+                .withDates(sameDate, sameDate)
+                .withName("당일예약고객")
+                .withPhone("010-3333-4444")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(sameDayReservation)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .extract();
+
+        // then - 예약에 성공한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+    }
+
+    @Test
+    void 오늘_날짜_예약_시도_성공() {
+        // given - B-6 캠핑 구역을 고객이 오늘 날짜로 예약을 시도하면
+        LocalDate today = LocalDate.now();
+
+        Map<String, Object> todayReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-6")
+                .withDates(today, today.plusDays(1))
+                .withName("오늘예약고객")
+                .withPhone("010-4444-5555")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(todayReservation)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약에 성공한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+    }
+
+    @Test
+    void 존재하지_않는_캠핑장_예약_시도_실패() {
+        // when - 고객이 존재하지 않는 캠핑장으로 예약하려고 하면
+        LocalDate startDate = LocalDate.now().plusDays(10);
+        LocalDate endDate = LocalDate.now().plusDays(12);
+
+        Map<String, Object> invalidSiteReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("Z-99")  // 존재하지 않는 캠핑장
+                .withDates(startDate, endDate)
+                .withName("잘못된사이트고객")
+                .withPhone("010-5555-6666")
+                .build();
+
+        ExtractableResponse<Response> response = given()
+                .contentType("application/json")
+                .body(invalidSiteReservation)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - "존재하지 않는 캠핑장입니다" 오류가 발생한다
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).contains("존재하지 않는 캠핑장");
+    }
+
+    @Test
+    void 최소_동시성_2명_예약_시도() {
+        // when - 2명의 고객이 동시에 같은 기간으로 B-7 캠핑 구역을 예약하려고 하면
+        LocalDate startDate = LocalDate.now().plusDays(10);
+        LocalDate endDate = LocalDate.now().plusDays(12);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(2);
+        List<ExtractableResponse<Response>> responses = new ArrayList<>();
+
+        for (int i = 0; i < 2; i++) {
+            final int customerIndex = i;
+            executorService.execute(() -> {
+                try {
+                    Map<String, Object> request = new ReservationTestDataBuilder()
+                            .withSiteNumber("B-7")
+                            .withDates(startDate, endDate)
+                            .withName("최소동시고객" + customerIndex)
+                            .withPhone("010-6666-777" + customerIndex)
+                            .build();
+
+                    ExtractableResponse<Response> response = given()
+                            .contentType("application/json")
+                            .body(request)
+                            .when()
+                            .post("/api/reservations")
+                            .then()
+                            .extract();
+
+                    synchronized (responses) {
+                        responses.add(response);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        executorService.shutdown();
+
+        // then - 한 명만 예약에 성공하고 한 명은 실패한다
+        long successCount = responses.stream()
+                .mapToInt(ExtractableResponse::statusCode)
+                .filter(status -> status == CREATED.value())
+                .count();
+
+        long conflictCount = responses.stream()
+                .mapToInt(ExtractableResponse::statusCode)
+                .filter(status -> status == CONFLICT.value())
+                .count();
+
+        assertThat(successCount).isEqualTo(1);
+        assertThat(conflictCount).isEqualTo(1);
+        assertThat(responses).hasSize(2);
     }
 }

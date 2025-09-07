@@ -2,8 +2,7 @@ package com.camping.legacy.acceptance;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.CREATED;
-import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.*;
 
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
@@ -159,9 +158,98 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         assertThat(responses).hasSize(10);
         
         for (ExtractableResponse<Response> response : responses) {
-            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(response.statusCode()).isEqualTo(OK.value());
             assertThat(response.jsonPath().getBoolean("available")).isFalse();
             assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-8");
         }
+    }
+
+    @Test
+    void 존재하지_않는_캠핑장_가용성_조회_실패() {
+        // when - 고객이 존재하지 않는 캠핑장의 가용성을 조회하면
+        LocalDate queryDate = LocalDate.now().plusDays(10);
+
+        ExtractableResponse<Response> response = given()
+                .when()
+                    .get("/api/sites/Z-99/availability?date=" + queryDate)
+                .then()
+                    .extract();
+
+        // then - "사이트를 찾을 수 없습니다"라는 안내 메시지가 나타난다
+        assertThat(response.jsonPath().getString("message").contains("사이트를 찾을 수 없습니다"));
+    }
+
+    @Test
+    void 단독_가용성_조회_성공() {
+        // when - 1명의 고객이 A-9 캠핑 구역의 가용성을 조회하면
+        LocalDate availableDate = LocalDate.now().plusDays(20);
+
+        ExtractableResponse<Response> response = given()
+                .when()
+                .get("/api/sites/A-9/availability?date=" + availableDate)
+                .then()
+                .extract();
+
+        // then - "예약 가능"으로 표시된다
+        assertThat(response.jsonPath().getBoolean("available")).isTrue();
+    }
+
+    @Test
+    void 최소_동시_가용성_조회_2명() {
+        // when - 2명의 고객이 동시에 A-10 캠핑 구역의 예약 가능 여부를 확인하면
+        LocalDate checkDate = LocalDate.now().plusDays(16);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        CountDownLatch latch = new CountDownLatch(2);
+        List<ExtractableResponse<Response>> responses = new ArrayList<>();
+
+        for (int i = 0; i < 2; i++) {
+            executorService.execute(() -> {
+                try {
+                    ExtractableResponse<Response> response = given()
+                            .when()
+                            .get("/api/sites/A-10/availability?date=" + checkDate)
+                            .then()
+                            .extract();
+
+                    synchronized (responses) {
+                        responses.add(response);
+                    }
+                } finally {
+                    latch.countDown();
+                }
+            });
+        }
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        executorService.shutdown();
+
+        // then - 모든 고객에게 동일하게 "예약 가능"으로 표시된다
+        assertThat(responses).hasSize(2);
+
+        for (ExtractableResponse<Response> response : responses) {
+            assertThat(response.statusCode()).isEqualTo(OK.value());
+            assertThat(response.jsonPath().getBoolean("available")).isTrue();
+        }
+    }
+
+    @Test
+    void 오늘_날짜_가용성_조회_성공() {
+        // when - 고객이 오늘 날짜로 A-11 캠핑 구역의 가용성을 조회하면
+        LocalDate today = LocalDate.now();
+
+        ExtractableResponse<Response> response = given()
+                .when()
+                .get("/api/sites/A-11/availability?date=" + today)
+                .then()
+                .extract();
+
+        // then - "예약 가능"으로 표시된다
+        assertThat(response.statusCode()).isEqualTo(OK.value());
+        assertThat(response.jsonPath().getBoolean("available")).isTrue();
     }
 }
