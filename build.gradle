@@ -11,6 +11,25 @@ java {
     sourceCompatibility = '17'
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+        resources {
+            srcDirs = ['src/test/resources']
+        }
+    }
+}
+
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
@@ -38,6 +57,8 @@ dependencies {
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.rest-assured:rest-assured'
+
+    testImplementation("org.assertj:assertj-core:4.0.0-M1")
 }
 
 tasks.named('test') {
