@@ -74,7 +74,7 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
         int threadCount = 10;
 
         // When 모든 스레드가 동시에 예약 요청을 보낸다
-        ConcurrentTestResult result = executeConcurrentTest(threadCount, threadNum -> 
+        ConcurrentTestResult result = executeConcurrentTest(threadCount, threadNum ->
                 ReservationRequestBuilder.builder()
                         .name("동시고객" + threadNum)
                         .phoneNumber("010-" + String.format("%04d", threadNum) + "-" + String.format("%04d", threadNum))
@@ -90,7 +90,7 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
                 .filter(response -> response.statusCode() == 201)
                 .findFirst()
                 .orElseThrow();
-        
+
         JsonPath jsonPath = successResponse.jsonPath();
         assertThat(jsonPath.getLong("id")).isPositive();
         assertThat(jsonPath.getString("status")).isEqualTo("CONFIRMED");
@@ -140,63 +140,29 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
         assertThat(result.conflictCount() + result.otherErrorCount()).isEqualTo(0);
     }
 
-//    @Test
-//    @DisplayName("대용량 동시성 스트레스 테스트 - 50개 스레드로 5개 사이트 경쟁")
-//    void 대용량_동시성_스트레스_테스트() throws InterruptedException {
-//        // Given 50개 스레드가 5개 사이트에 분산되어 예약을 시도한다
-//        int threadCount = 50;
-//        int siteCount = 5;
-//        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-//        CountDownLatch startLatch = new CountDownLatch(1);
-//        CountDownLatch endLatch = new CountDownLatch(threadCount);
-//
-//        AtomicInteger successCount = new AtomicInteger(0);
-//        AtomicInteger conflictCount = new AtomicInteger(0);
-//        AtomicInteger otherErrorCount = new AtomicInteger(0);
-//
-//        // When 스레드들이 사이트별로 분산되어 동시 요청
-//        for (int i = 0; i < threadCount; i++) {
-//            final int threadNum = i;
-//            executorService.submit(() -> {
-//                try {
-//                    startLatch.await();
-//
-//                    // 스레드를 사이트별로 분산 (각 사이트마다 10개 스레드가 경쟁)
-//                    int siteNum = (threadNum % siteCount) + 1;
-//
-//                    ReservationRequest request = ReservationRequestBuilder.builder()
-//                            .name("스트레스고객" + threadNum)
-//                            .siteName("C-" + siteNum)
-//                            .phoneNumber("010-" + String.format("%04d", threadNum + 3000) + "-" + String.format("%04d", threadNum))
-//                            .build();
-//
-//                    ExtractableResponse<Response> response = getCreateReservationApiResponse(request);
-//
-//                    if (response.statusCode() == 201) {
-//                        successCount.incrementAndGet();
-//                    } else if (response.statusCode() == 409) {
-//                        conflictCount.incrementAndGet();
-//                    } else {
-//                        otherErrorCount.incrementAndGet();
-//                    }
-//
-//                } catch (Exception e) {
-//                    otherErrorCount.incrementAndGet();
-//                } finally {
-//                    endLatch.countDown();
-//                }
-//            });
-//        }
-//
-//        startLatch.countDown();
-//        endLatch.await(60, TimeUnit.SECONDS);
-//        executorService.shutdown();
-//
-//        // Then 사이트 개수만큼만 성공하고 나머지는 충돌 오류여야 한다
-//        assertThat(successCount.get()).isEqualTo(siteCount);
-//        assertThat(conflictCount.get()).isEqualTo(threadCount - siteCount);
-//        assertThat(otherErrorCount.get()).isEqualTo(0);
-//    }
+    @Test
+    @DisplayName("대용량 동시성 스트레스 테스트 - 50개 스레드로 5개 사이트 경쟁")
+    void 대용량_동시성_스트레스_테스트() throws InterruptedException {
+        // Given
+        int threadCount = 50;
+        int siteCount = 3;
+
+        // When
+        ConcurrentTestResult result = executeConcurrentTest(threadCount, threadNum -> {
+                    int siteNum = (threadNum % siteCount) + 1;
+                    return ReservationRequestBuilder.builder()
+                            .name("다른사이트고객" + threadNum)
+                            .siteName("B-" + siteNum)
+                            .phoneNumber("010-" + String.format("%04d", threadNum + 2000) + "-" + String.format("%04d", threadNum))
+                            .build();
+                }
+        );
+
+        // Then 사이트 개수만큼만 성공하고 나머지는 충돌 오류여야 한다
+        assertThat(result.successCount()).isEqualTo(siteCount);
+        assertThat(result.conflictCount()).isEqualTo(threadCount - siteCount);
+        assertThat(result.otherErrorCount()).isEqualTo(0);
+    }
 
     @Test
     @DisplayName("예약과 취소 동시 실행 테스트")
@@ -205,11 +171,11 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
         ExtractableResponse<Response> existingReservation = 예약_생성_성공();
         String confirmationCode = existingReservation.jsonPath().getString("confirmationCode");
         Long reservationId = existingReservation.jsonPath().getLong("id");
-        
+
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         CountDownLatch startLatch = new CountDownLatch(1);
         CountDownLatch endLatch = new CountDownLatch(2);
-        
+
         AtomicInteger cancelSuccessCount = new AtomicInteger(0);
         AtomicInteger reservationSuccessCount = new AtomicInteger(0);
         AtomicInteger failureCount = new AtomicInteger(0);
@@ -219,7 +185,7 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
         executorService.submit(() -> {
             try {
                 startLatch.await();
-                
+
                 ExtractableResponse<Response> cancelResponse = RestAssured
                         .given().log().all()
                         .param("confirmationCode", confirmationCode)
@@ -227,39 +193,39 @@ class ConcurrencyControlAcceptanceTest extends AcceptanceCommon {
                         .delete("/api/reservations/" + reservationId)
                         .then().log().all()
                         .extract();
-                
+
                 if (cancelResponse.statusCode() == 200) {
                     cancelSuccessCount.incrementAndGet();
                 } else {
                     failureCount.incrementAndGet();
                 }
-                
+
             } catch (Exception e) {
                 failureCount.incrementAndGet();
             } finally {
                 endLatch.countDown();
             }
         });
-        
+
         // 새 예약 스레드 (동일한 사이트, 동일한 날짜)
         executorService.submit(() -> {
             try {
                 startLatch.await();
                 Thread.sleep(100); // 취소가 먼저 실행되도록 약간의 지연
-                
+
                 ReservationRequest newRequest = ReservationRequestBuilder.builder()
                         .name("새고객")
                         .phoneNumber("010-9999-9999")
                         .build();
-                
+
                 ExtractableResponse<Response> newReservationResponse = getCreateReservationApiResponse(newRequest);
-                
+
                 if (newReservationResponse.statusCode() == 201) {
                     reservationSuccessCount.incrementAndGet();
                 } else {
                     failureCount.incrementAndGet();
                 }
-                
+
             } catch (Exception e) {
                 failureCount.incrementAndGet();
             } finally {
