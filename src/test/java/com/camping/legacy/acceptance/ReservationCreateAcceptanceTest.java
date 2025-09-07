@@ -59,15 +59,9 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @DisplayName("(예약 생성 실패) 존재하지 않는 사이트 번호면 예약에 실패한다.")
     void b() {
         // Given
-        String givenInvalidCustomerName = "";
-        String givenSiteNumber = "AAAAA-3";
-        LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
-        LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
+        String givenNotExistSiteNumber = "AAAAA-3";
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenInvalidCustomerName)
-                .withSiteNumber(givenSiteNumber)
-                .withStartDate(givenStartDate)
-                .withEndDate(givenEndDate)
+                .withSiteNumber(givenNotExistSiteNumber)
                 .build();
         // When
         Response res = given().log().all()
@@ -85,14 +79,8 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     void b2() {
         // Given
         String givenInvalidCustomerName = "";
-        String givenSiteNumber = "A-3";
-        LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
-        LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
         ReservationRequest req = new ReservationRequestTestDataBuilder()
                 .withName(givenInvalidCustomerName)
-                .withSiteNumber(givenSiteNumber)
-                .withStartDate(givenStartDate)
-                .withEndDate(givenEndDate)
                 .build();
         // When
         Response res = given().log().all()
@@ -109,13 +97,9 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @DisplayName("(예약 생성 실패) 시작일이 오늘보다 이전이면 예약에 실패한다.")
     void c() {
         // Given
-        String givenCustomerName = "홍길동";
-        String givenSiteNumber = "A-3";
         LocalDate givenStartDate = LocalDate.now().minusDays(7);
         LocalDate givenEndDate = Context.NOW_PLUS_1_DAY;
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
-                .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
                 .build();
@@ -134,13 +118,9 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @DisplayName("(예약 생성 실패) 종료일이 오늘보다 이전이면 예약에 실패한다.")
     void d() {
         // Given
-        String givenCustomerName = "홍길동";
-        String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
         LocalDate givenEndDate = LocalDate.now().minusDays(7);
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
-                .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
                 .build();
@@ -160,13 +140,9 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @DisplayName("(예약 생성 실패) 종료일이 시작일보다 이전이면 예약에 실패한다.")
     void e() {
         // Given
-        String givenCustomerName = "홍길동";
-        String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_2_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_1_DAY;
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
-                .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
                 .build();
@@ -184,13 +160,9 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @Test
     @DisplayName("(예약 생성 실패) 30일 초과 기간을 선택하면 예약에 실패한다.")
     void e2() {
-        String givenCustomerName = "홍길동";
-        String givenSiteNumber = "A-3";
         LocalDate givenStartDate = LocalDate.now().plusDays(40);
         LocalDate givenEndDate = givenStartDate.plusDays(1);
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
-                .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
                 .build();
@@ -209,12 +181,10 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     @DisplayName("(예약 생성 실패) 이미 예약된 사이트의 동일 기간을 선택하면 예약에 실패한다.")
     void e3() {
         // Given
-        String givenCustomerName = "홍길동";
         String givenSiteNumber = "A-3";
         LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
         LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
         ReservationRequest req = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
                 .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
@@ -228,10 +198,8 @@ public class ReservationCreateAcceptanceTest extends TestBase {
         res.then().log().all()
                 .statusCode(201)
                 .body("id", notNullValue())
-                .body("customerName", equalTo(givenCustomerName))
                 .body("siteNumber", equalTo(givenSiteNumber));
         ReservationRequest req2 = new ReservationRequestTestDataBuilder()
-                .withName(givenCustomerName)
                 .withSiteNumber(givenSiteNumber)
                 .withStartDate(givenStartDate)
                 .withEndDate(givenEndDate)
