@@ -53,26 +53,38 @@ public class Reservation {
     }
 
     public void update(
-            String customerName,
-            LocalDate startDate,
-            LocalDate endDate,
-            String phoneNumber,
-            Campsite campsite
+        String customerName,
+        LocalDate startDate,
+        LocalDate endDate,
+        String phoneNumber,
+        Campsite campsite
     ) {
-        if(customerName != null) {
+        if (customerName != null) {
             this.setCustomerName(customerName);
         }
-        if(startDate != null) {
+        if (startDate != null) {
             this.setStartDate(startDate);
         }
-        if(endDate != null) {
+        if (endDate != null) {
             this.setEndDate(endDate);
         }
-        if(phoneNumber != null) {
+        if (phoneNumber != null) {
             this.setPhoneNumber(phoneNumber);
         }
-        if(campsite != null) {
+        if (campsite != null) {
             this.setCampsite(campsite);
+        }
+    }
+
+    public void checkUpdatable(
+        String confirmationCode
+    ) {
+        if (!isUpdatable()) {
+            throw new RuntimeException("수정할 수 없는 상태입니다.");
+        }
+
+        if (!this.isValidConfirmationCode(confirmationCode)) {
+            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
     }
 
@@ -86,6 +98,16 @@ public class Reservation {
 
     public boolean isValidConfirmationCode(String code) {
         return this.confirmationCode.equals(code);
+    }
+
+    public void checkCancelable(String confirmationCode) {
+        if (!isCancelable()) {
+            throw new RuntimeException("취소할 수 없는 상태입니다.");
+        }
+
+        if (!this.isValidConfirmationCode(confirmationCode)) {
+            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
+        }
     }
 
     public void cancel() {
@@ -113,12 +135,12 @@ public class Reservation {
     }
 
     public static Reservation create(
-            String customerName,
-            LocalDate startDate,
-            LocalDate endDate,
-            Campsite campsite,
-            String phoneNumber,
-            String confirmationCode
+        String customerName,
+        LocalDate startDate,
+        LocalDate endDate,
+        Campsite campsite,
+        String phoneNumber,
+        String confirmationCode
     ) {
         Reservation reservation = new Reservation();
         reservation.setCustomerName(customerName);

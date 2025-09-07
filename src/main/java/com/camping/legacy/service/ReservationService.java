@@ -97,14 +97,7 @@ public class ReservationService {
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-
-        if (!reservation.isCancelable()) {
-            throw new RuntimeException("취소할 수 없는 상태입니다.");
-        }
-
-        if (!reservation.isValidConfirmationCode(confirmationCode)) {
-            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
-        }
+        reservation.checkCancelable(confirmationCode);
 
         reservation.cancel();
         reservationRepository.save(reservation);
@@ -130,14 +123,7 @@ public class ReservationService {
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-
-        if (!reservation.isUpdatable()) {
-            throw new RuntimeException("수정할 수 없는 상태입니다.");
-        }
-
-        if (!reservation.isValidConfirmationCode(confirmationCode)) {
-            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
-        }
+        reservation.checkUpdatable(confirmationCode);
 
         Campsite campsite = null;
         if (request.getSiteNumber() != null) {
