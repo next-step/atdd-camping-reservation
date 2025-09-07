@@ -114,39 +114,29 @@ public class ReservationService {
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
-    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+
+    public ReservationResponse updateReservation(
+        Long id, ReservationRequest request, String confirmationCode
+    ) {
         Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
-        if (!reservation.getConfirmationCode().equals(confirmationCode)) {
-            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
-        }
-        
-        if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
-                    .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
-        }
-        
-        if (request.getStartDate() != null) {
-            reservation.setStartDate(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            reservation.setEndDate(request.getEndDate());
-        }
-        
-        if (request.getCustomerName() != null) {
-            reservation.setCustomerName(request.getCustomerName());
-        }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
-        }
-        
+            .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
+        Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+            .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+        conflictValidator.validateNoConflict(campsite, request.getStartDate(), request.getEndDate());
+
+        reservation.update(
+            confirmationCode,
+            campsite,
+            request.getStartDate(),
+            request.getEndDate(),
+            request.getCustomerName(),
+            request.getPhoneNumber()
+        );
+
         Reservation updated = reservationRepository.save(reservation);
         return ReservationResponse.from(updated);
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByNameAndPhone(String name, String phone) {
         return reservationRepository.findByCustomerNameAndPhoneNumber(name, phone).stream()

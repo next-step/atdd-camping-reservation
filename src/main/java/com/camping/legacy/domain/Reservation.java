@@ -81,6 +81,27 @@ public class Reservation {
         this.status = "CONFIRMED";
     }
 
+    public void update(
+        String confirmationCode,
+        Campsite newCampsite,
+        LocalDate newStartDate,
+        LocalDate newEndDate,
+        String newCustomerName,
+        String newPhoneNumber
+    ) {
+        validateConfirmationCode(confirmationCode);
+        validateCustomerName(newCustomerName);
+        validatePhoneNumber(newPhoneNumber);
+        validateCampsite(newCampsite);
+        validateDates(newStartDate, newEndDate);
+
+        this.customerName = newCustomerName;
+        this.startDate = newStartDate;
+        this.endDate = newEndDate;
+        this.campsite = newCampsite;
+        this.phoneNumber = newPhoneNumber;
+    }
+
     private void validateCustomerName(String customerName) {
         if (customerName == null || customerName.trim().isEmpty()) {
             throw new IllegalArgumentException("예약자 이름을 입력해주세요.");
@@ -117,6 +138,12 @@ public class Reservation {
                 endDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))
         ) {
             throw new IllegalArgumentException("예약 기간은 오늘로부터 30일 이내에만 가능합니다.");
+        }
+    }
+
+    private void validateConfirmationCode(String confirmationCode) {
+        if (!this.confirmationCode.equals(confirmationCode)) {
+            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
     }
 }

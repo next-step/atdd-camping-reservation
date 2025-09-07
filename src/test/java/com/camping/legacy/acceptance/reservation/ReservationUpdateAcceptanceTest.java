@@ -115,7 +115,7 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_수정이_실패한다(예약_수정_응답, "예약은 30일 이내에만 가능합니다.");
+        예약_수정이_실패한다(예약_수정_응답, "예약 기간은 오늘로부터 30일 이내에만 가능합니다.");
     }
 
     @Test
@@ -134,7 +134,7 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_수정이_실패한다(예약_수정_응답, "과거 날짜로 예약할 수 없습니다.");
+        예약_수정이_실패한다(예약_수정_응답, "예약 기간은 오늘 이후로 선택해주세요.");
     }
 
     @Test
