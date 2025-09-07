@@ -1,11 +1,10 @@
 package com.camping.legacy.domain;
 
+import com.camping.legacy.domain.dto.ReservationParams;
 import com.camping.legacy.dto.ReservationResponse;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReservationTest {
 
-    public static final String API_RESERVATIONS = "/api/reservations";
+    static final String API_RESERVATIONS = "/api/reservations";
     @LocalServerPort
     private int port;
 
@@ -31,29 +30,19 @@ class ReservationTest {
         RestAssured.port = port;
     }
 
-    private record ReservationParams(String customerName, String phoneNumber, String siteNumber, String startDate,
-                                     String endDate) {
-        public static ReservationParams of(LocalDate startDate, LocalDate endDate) {
-            return new ReservationParams(
-                    "홍길동",
-                    "010-1234-5678",
-                    "A-3",
-                    startDate.toString(),
-                    endDate.toString()
-            );
-        }
-    }
 
     @Test
     @DisplayName("예약은 오늘로부터 30일 이내만 가능해야 한다.")
     void reservationDateLimit() {
+        // NOTE: 서비스 코드에 해당 기능 구현 필요.
+
         // given
         LocalDate startDate = LocalDate.now().plusDays(31);
         LocalDate endDate = LocalDate.now().plusDays(33);
         final var params = ReservationParams.of(startDate, endDate);
 
         // when
-        ExtractableResponse<Response> response = sendRequestByUriAndParams(API_RESERVATIONS, params);
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
@@ -69,7 +58,7 @@ class ReservationTest {
         final var params = ReservationParams.of(startDate, endDate);
 
         // when
-        ExtractableResponse<Response> response = sendRequestByUriAndParams(API_RESERVATIONS, params);
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -84,7 +73,7 @@ class ReservationTest {
         ReservationParams params = new ReservationParams(null, null, "A-1", startDate.toString(), endDate.toString());
 
         // when
-        final var response = sendRequestByUriAndParams(API_RESERVATIONS, params);
+        final var response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -99,8 +88,8 @@ class ReservationTest {
         final var params = ReservationParams.of(startDate, endDate);
 
         // when
-        ExtractableResponse<Response> response = sendRequestByUriAndParams(API_RESERVATIONS, params);
-        ExtractableResponse<Response> duplicateReservationResponse = sendRequestByUriAndParams(API_RESERVATIONS, params);
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
+        ExtractableResponse<Response> duplicateReservationResponse = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
         org.junit.jupiter.api.Assertions.assertAll(
@@ -118,24 +107,11 @@ class ReservationTest {
         final var params = ReservationParams.of(startDate, endDate);
 
         // when
-        ExtractableResponse<Response> response = sendRequestByUriAndParams(API_RESERVATIONS, params);
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
         ReservationResponse reservationResponse = response.body().as(ReservationResponse.class);
         assertThat(reservationResponse.getConfirmationCode()).matches("^[A-Za-z0-9]{6}$");
-    }
-
-
-    private static ExtractableResponse<Response> sendRequestByUriAndParams(String path, ReservationParams params) {
-        return RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(params)
-                .when()
-                .post(path)
-                .then()
-                .log().all()
-                .extract();
     }
 }
