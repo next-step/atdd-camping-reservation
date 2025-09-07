@@ -22,8 +22,7 @@ class ReservationTest {
     }
 
     @Nested
-    @DisplayName("생성자")
-    class constructor {
+    class 생성자 {
 
         @Test
         void 예약이_확정된_객체가_생성된다() {
@@ -78,7 +77,6 @@ class ReservationTest {
         }
 
         @Test
-        @DisplayName("과거 날짜로 예약이 불가능하다")
         void 과거_날짜로_예약이_불가능하다() {
             // when & then
             assertThatThrownBy(() ->
@@ -140,7 +138,6 @@ class ReservationTest {
         }
 
         @Test
-        @DisplayName("캠핑장이 필수값이다")
         void 캠핑장이_필수값이다() {
             // when & then
             assertThatThrownBy(() -> Reservation.builder()
@@ -156,7 +153,6 @@ class ReservationTest {
     }
 
     @Nested
-    @DisplayName("update")
     class update {
 
         private Reservation reservation;
@@ -247,7 +243,6 @@ class ReservationTest {
         }
 
         @Test
-        @DisplayName("캠핑장은 필수값이다")
         void 캠핑장은_필수값이다() {
             // when & then
             assertThatThrownBy(() ->
@@ -264,7 +259,6 @@ class ReservationTest {
         }
 
         @Test
-        @DisplayName("과거 날짜로 수정할 수 없다")
         void 과거_날짜로_수정할_수_없다() {
             // when & then
             assertThatThrownBy(() ->
@@ -281,7 +275,6 @@ class ReservationTest {
         }
 
         @Test
-        @DisplayName("종료일이 시작일보다 이전일 수 없다")
         void 종료일이_시작일보다_이전일_수_없다() {
             // when & then
             assertThatThrownBy(() ->
