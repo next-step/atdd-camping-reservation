@@ -1,4 +1,4 @@
-package com.camping.legacy;
+package com.camping.legacy.acceptance;
 
 import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;

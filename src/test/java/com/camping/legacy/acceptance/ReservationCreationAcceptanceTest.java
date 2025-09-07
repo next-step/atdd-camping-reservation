@@ -1,4 +1,4 @@
-package com.camping.legacy;
+package com.camping.legacy.acceptance;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
