@@ -1,40 +1,17 @@
 package com.camping.legacy.acceptance;
 
 import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 
-import static com.camping.legacy.acceptance.AcceptanceTestFixTure.*;
+import static com.camping.legacy.acceptance.AcceptanceTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("연박 예약")
-class ConsecutiveReservationAcceptanceTest {
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
-
-    @AfterEach
-    void tearDown() {
-        reservationRepository.deleteAll();
-    }
+class ConsecutiveReservationAcceptanceTest extends AcceptanceCommon {
 
     @Test
     @DisplayName("시작일과 종료일을 지정한 특정 기간에 연박 예약을 할 수 있다")
