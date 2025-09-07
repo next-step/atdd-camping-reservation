@@ -45,6 +45,22 @@ public class ReservationService {
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
+
+        if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty()) {
+            throw new RuntimeException("전화번호를 입력해주세요.");
+        }
+
+        LocalDate today = LocalDate.now();
+
+        // 과거 날짜 금지: 시작/종료일 중 하나라도 오늘 이전이면 거부
+        if (startDate.isBefore(today) || endDate.isBefore(today)) {
+            throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+        }
+
+        // 30일 제한: 종료일이 오늘+30일을 초과하면 거부
+        if (endDate.isAfter(today.plusDays(30))) {
+            throw new RuntimeException("오늘부터 30일 이내 날짜만 예약할 수 있습니다.");
+        }
         
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
