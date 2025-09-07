@@ -28,7 +28,7 @@ public class ReservationService {
     
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+        Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         
         LocalDate startDate = request.getStartDate();
