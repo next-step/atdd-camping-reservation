@@ -27,8 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 특징
  * - SpringBootTest(RANDOM_PORT): 내장 서버를 띄워 실제 HTTP 호출
  * - TestPropertySource(test.properties): 테스트용 H2 및 JPA 설정 적용
- * - DirtiesContext(BEFORE_EACH_TEST_METHOD): 각 테스트 케이스 간 애플리케이션 컨텍스트 격리
  * - @Sql: 테스트 데이터 시드(/data/test-data.sql) 주입
+ * - @Sql: 테스트 종료 후 TRUNCATE로 깨끗이 비우기
  * - RestAssured: 포트 설정 및 공통 헬퍼 제공
  *
  * 주의
@@ -39,8 +39,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(locations = "classpath:test-application.properties")
-@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+/** step2 리뷰 적용 - @DirtiesContext 대신 TRUNCATE 전략으로 격리
+ *  - 바꾸는 이유: @DirtiesContext는 매 테스트마다 스프링 컨텍스트를 재기동해서 느려짐
+ *  - @Sql로 시드 -> 테스트 -> TRUNCATE 흐름을 쓰면 컨텍스트 재기동 없이도 완전 격리가 가능함.
+ */
 @Sql(scripts = "/data/test-data.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(scripts = "/data/truncate.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 public abstract class AcceptanceTestBase {
 
     @LocalServerPort
