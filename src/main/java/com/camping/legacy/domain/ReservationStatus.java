@@ -8,4 +8,8 @@ public enum ReservationStatus {
     public boolean isCancelable() {
         return this == CONFIRMED;
     }
+
+    public boolean isUpdable() {
+        return this == CONFIRMED;
+    }
 }

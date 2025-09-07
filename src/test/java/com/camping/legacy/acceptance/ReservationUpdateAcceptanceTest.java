@@ -152,6 +152,40 @@ public class ReservationUpdateAcceptanceTest extends TestBase {
     }
 
     @Test
+    @DisplayName("(예약 변경 실패) 예약이 취소되면 예약 변경에 실패한다.")
+    void d1() {
+        // Given
+        String givenCustomerName = "홍길동";
+        String givenSiteNumber = "A-3";
+        LocalDate givenStartDate = LocalDate.now().plusDays(1);
+        LocalDate givenEndDate = givenStartDate.plusDays(1);
+        Long reservationId = this.createReservationAndGetId(givenCustomerName, givenSiteNumber, givenStartDate, givenEndDate);
+        given().log().all()
+                .contentType(ContentType.JSON)
+                .pathParam("id", reservationId)
+                .param("confirmationCode", ShareContext.CONFIRMMATION_CODE)
+                .delete("/api/reservations/{id}");
+        String givenUpdateCustomerName = "홍길순";
+        // When
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenUpdateCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
+        Response res2 = given().log().all()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .pathParam("id", reservationId)
+                .param("confirmationCode", ShareContext.CONFIRMMATION_CODE)
+                .put("/api/reservations/{id}");
+        // Then
+        res2.then().log().all()
+                .statusCode(400)
+                .body("message", containsString("수정할 수 없는 상태입니다."));
+    }
+
+    @Test
     @DisplayName("(예약 변경 실패) 예약자가 존재하지 않는 사이트 코드로 예약 변경을 시도하면 예약 변경에 실패한다.")
     void d2() {
         // Given

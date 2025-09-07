@@ -146,29 +146,26 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
-        if (!reservation.getConfirmationCode().equals(confirmationCode)) {
+        if(!reservation.isUpdatable()) {
+            throw new RuntimeException("수정할 수 없는 상태입니다.");
+        }
+
+        if(!reservation.isValidConfirmationCode(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
+        Campsite campsite = null;
         if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+            campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
         }
-
-        if (request.getStartDate() != null) {
-            reservation.setStartDate(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            reservation.setEndDate(request.getEndDate());
-        }
-
-        if (request.getCustomerName() != null) {
-            reservation.setCustomerName(request.getCustomerName());
-        }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
-        }
+        reservation.update(
+            request.getCustomerName(),
+            request.getStartDate(),
+            request.getEndDate(),
+            request.getPhoneNumber(),
+            campsite
+        );
 
         Reservation updated = reservationRepository.save(reservation);
         return ReservationResponse.from(updated);

@@ -52,6 +52,34 @@ public class Reservation {
         }
     }
 
+    public void update(
+            String customerName,
+            LocalDate startDate,
+            LocalDate endDate,
+            String phoneNumber,
+            Campsite campsite
+    ) {
+        if(customerName != null) {
+            this.setCustomerName(customerName);
+        }
+        if(startDate != null) {
+            this.setStartDate(startDate);
+        }
+        if(endDate != null) {
+            this.setEndDate(endDate);
+        }
+        if(phoneNumber != null) {
+            this.setPhoneNumber(phoneNumber);
+        }
+        if(campsite != null) {
+            this.setCampsite(campsite);
+        }
+    }
+
+    public boolean isUpdatable() {
+        return this.status.isUpdable();
+    }
+
     public boolean isCancelable() {
         return this.status.isCancelable();
     }
