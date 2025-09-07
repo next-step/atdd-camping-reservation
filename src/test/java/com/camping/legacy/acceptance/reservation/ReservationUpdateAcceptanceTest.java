@@ -97,7 +97,7 @@ public class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         );
 
         // then
-        예약_수정이_실패한다(예약_수정_응답, "이미 예약된 사이트입니다.");
+        예약_수정이_실패한다(예약_수정_응답, "해당 기간에 이미 예약이 존재합니다.");
     }
 
     @Test

@@ -122,7 +122,9 @@ public class ReservationService {
             .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
             .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-        conflictValidator.validateNoConflict(campsite, request.getStartDate(), request.getEndDate());
+        conflictValidator.validateNoConflictExcluding(
+            campsite, reservation, request.getStartDate(), request.getEndDate()
+        );
 
         reservation.update(
             confirmationCode,
