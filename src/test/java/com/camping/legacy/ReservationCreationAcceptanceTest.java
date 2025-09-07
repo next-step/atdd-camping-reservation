@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("NonAsciiCharacters")
-class CampingReservationAcceptanceTest extends BaseAcceptanceTest {
+class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
 
     @Test
     void 예약_생성_성공_시_예약_번호_받기() {
@@ -31,16 +31,16 @@ class CampingReservationAcceptanceTest extends BaseAcceptanceTest {
         reservationRequest.put("endDate", endDate.toString());
         reservationRequest.put("customerName", "김테스트");
         reservationRequest.put("phoneNumber", "010-1234-5678");
-        
+
         // when - 고객이 A-2 캠핑 구역을 예약하면
         ExtractableResponse<Response> response = given()
                 .contentType("application/json")
                 .body(reservationRequest)
-        .when()
+                .when()
                 .post("/api/reservations")
-        .then()
+                .then()
                 .extract();
-                
+
         // then - 예약이 완료되고 6자리 예약 확인 번호를 받는다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
         assertThat(response.jsonPath().getLong("id")).isNotNull();
