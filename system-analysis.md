@@ -35,8 +35,7 @@
 ### 비즈니스 규칙 구현 현황 (요구사항 대비)
 - **기간 중복 방지:** 구현 O
     - `existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(campsite, end, start)`
-- **동시성 제어:** 구현 **미흡**
-    - `Thread.sleep(100)`로 경합 유도, 별도의 락/격리 수준/유니크 인덱스 없음 → **동시 요청 시 중복 생성 가능성 매우 높음**
+- **동시성 제어:** 동시성 문제를 재현하기 위해 `Thread.sleep(100)`을 인위적으로 삽입해둠 (테스트에서 동시성 버그가 드러나도록 의도됨)
 - **취소 후 재예약:** 요구사항은 *취소는 중복 체크에서 제외*인데, **상태 조건 없이 단순 exists로 중복 검사** → **위반 가능성 높음**
 - **예약 30일 제한:** **미구현**
 - **과거 날짜 예약 불가:** **미구현**
@@ -53,6 +52,4 @@
     - 단일일: `existsByCampsiteAndReservationDate(...)`
     - 범위: `existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(...)`
 - `CampsiteService.isAvailable`(단일일 기준) vs `SiteService.isAvailable`(범위 기준) → **API마다 상이한 기준 사용**
-
----
 
