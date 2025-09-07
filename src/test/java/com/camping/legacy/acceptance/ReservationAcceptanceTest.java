@@ -553,4 +553,52 @@ class ReservationAcceptanceTest {
         // And: 사용자는 예약 취소 후 환불 불가라는 것을 알 수 있어야 한다.
         assertThat(refundType).isEqualTo("NON_REFUNDABLE");
     }
+
+    /**
+     * Scenario: 예약일 이전에 취소할 경우 전액 환불 정책이 적용된다.
+     * Given 내일 날짜(2025-09-05)로 'B-1' 사이트에 예약이 존재할 때
+     * When 사용자가 해당 예약을 취소하면
+     * Then 예약 취소는 성공적으로 처리된다.
+     * And 사용자는 예약 취소 후 전액 환불이 된 것을 알 수 있어야 한다.
+     */
+    @Test
+    void 예약일_이전에_취소하면_전액_환불_정책이_적용된다() throws Exception {
+        // Given: 내일 날짜로 'B-1' 사이트에 예약이 존재할 때
+        ReservationRequest initialRequest = ReservationRequest.builder()
+                .customerName("김환불")
+                .phoneNumber("010-2025-0905")
+                .startDate(LocalDate.of(2025, 9, 5))
+                .endDate(LocalDate.of(2025, 9, 6))
+                .siteNumber("B-1")
+                .numberOfPeople(2)
+                .build();
+
+        String createResponseBody = RestAssured
+                .given()
+                    .contentType(ContentType.JSON)
+                    .body(objectMapper.writeValueAsString(initialRequest))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(HttpStatus.CREATED.value())
+                    .extract().asString();
+
+        ReservationResponse initialResponse = objectMapper.readValue(createResponseBody, ReservationResponse.class);
+        Long reservationId = initialResponse.getId();
+        String confirmationCode = initialResponse.getConfirmationCode();
+
+        // When: 사용자가 해당 예약을 취소하면
+        String refundType = RestAssured
+                .given().log().all()
+                    .queryParam("confirmationCode", confirmationCode)
+                .when()
+                    .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                // Then: 예약 취소는 성공적으로 처리된다.
+                    .statusCode(HttpStatus.OK.value())
+                    .extract().path("refundType");
+
+        // And: 사용자는 예약 취소 후 전액 환불이 된 것을 알 수 있어야 한다.
+        assertThat(refundType).isEqualTo("FULL_REFUND");
+    }
 }
