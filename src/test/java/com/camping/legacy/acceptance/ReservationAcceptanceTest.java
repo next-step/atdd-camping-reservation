@@ -24,6 +24,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 @Sql("/data.sql")
@@ -315,5 +320,79 @@ class ReservationAcceptanceTest {
             softly.assertThat(newResponse.getConfirmationCode()).isNotEqualTo(confirmationCode);
             softly.assertThat(newResponse.getCustomerName()).isEqualTo("박새롬");
         });
+    }
+
+    /**
+     * Scenario: 여러 사용자가 동시에 동일한 예약을 요청할 경우, 단 하나의 요청만 성공한다.
+     * When 여러 사용자가 동시에 'A-1' 사이트에 동일한 날짜로 예약을 요청하면
+     * Then 오직 하나의 예약 요청만 성공하고, 나머지 요청은 모두 실패한다.
+     * And 해당 날짜에는 하나의 예약만 생긴다.
+     */
+    @Test
+    void 여러_사용자가_동시에_예약을_요청하면_하나만_성공한다() throws Exception {
+        // When: 여러 사용자가 동시에 'A-1' 사이트에 동일한 날짜로 예약을 요청하면
+        int numberOfThreads = 10;
+        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch finishLatch = new CountDownLatch(numberOfThreads);
+        List<Integer> statusCodes = new CopyOnWriteArrayList<>(); // Thread-safe list
+
+        LocalDate reservationDate = LocalDate.of(2025, 11, 1);
+
+        for (int i = 0; i < numberOfThreads; i++) {
+            int userIndex = i;
+            executorService.submit(() -> {
+                try {
+                    startLatch.await(); // Wait for the signal to start
+
+                    ReservationRequest request = ReservationRequest.builder()
+                            .customerName("User " + userIndex)
+                            .phoneNumber("010-1234-" + String.format("%04d", userIndex))
+                            .startDate(reservationDate)
+                            .endDate(reservationDate.plusDays(1))
+                            .siteNumber("A-1")
+                            .numberOfPeople(2)
+                            .build();
+
+                    int statusCode = RestAssured
+                            .given()
+                            .contentType(ContentType.JSON)
+                            .body(objectMapper.writeValueAsString(request))
+                            .when()
+                            .post("/api/reservations")
+                            .then()
+                            .extract().statusCode();
+
+                    statusCodes.add(statusCode);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    finishLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown(); // Signal all threads to start
+        finishLatch.await(); // Wait for all threads to finish
+        executorService.shutdown();
+
+        // Then: 오직 하나의 예약 요청만 성공하고, 나머지 요청은 모두 실패한다.
+        long successCount = statusCodes.stream().filter(code -> code == HttpStatus.CREATED.value()).count();
+        long conflictCount = statusCodes.stream().filter(code -> code == HttpStatus.CONFLICT.value()).count();
+
+        assertThat(successCount).isEqualTo(1);
+        assertThat(conflictCount).isEqualTo(numberOfThreads - 1);
+
+        // And: 해당 날짜에는 하나의 예약만 생긴다.
+        List<ReservationResponse> reservations = RestAssured
+                .given()
+                .queryParam("date", reservationDate.toString())
+                .when()
+                .get("/api/reservations")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().body().jsonPath().getList(".", ReservationResponse.class);
+
+        assertThat(reservations).hasSize(1);
     }
 }
