@@ -36,7 +36,8 @@ public class Reservation {
 
     private String phoneNumber;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private ReservationStatus status;
 
     @Column(length = 6)
     private String confirmationCode;
@@ -49,7 +50,7 @@ public class Reservation {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.status == null) {
-            this.status = "CONFIRMED";
+            this.status = ReservationStatus.CONFIRMED;
         }
     }
 

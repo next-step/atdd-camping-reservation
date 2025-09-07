@@ -56,6 +56,32 @@ public class ReservationCreateAcceptanceTest extends TestBase {
     }
 
     @Test
+    @DisplayName("예약 생성을 성공하면 예약의 상태는 `CONFIRMED`이다.")
+    void a2() {
+        // Given
+        String givenCustomerName = "홍길동";
+        String givenSiteNumber = "A-3";
+        LocalDate givenStartDate = Context.NOW_PLUS_1_DAY;
+        LocalDate givenEndDate = Context.NOW_PLUS_2_DAY;
+        ReservationRequest req = new ReservationRequestTestDataBuilder()
+                .withName(givenCustomerName)
+                .withSiteNumber(givenSiteNumber)
+                .withStartDate(givenStartDate)
+                .withEndDate(givenEndDate)
+                .build();
+        // When
+        Response res = given().log().all()
+                .contentType(ContentType.JSON)
+                .body(req)
+                .post("/api/reservations");
+        // Then
+        res.then().log().all()
+                .statusCode(201)
+                .body("id", notNullValue())
+                .body("status", equalTo("CONFIRMED"));
+    }
+
+    @Test
     @DisplayName("(예약 생성 실패) 존재하지 않는 사이트 번호면 예약에 실패한다.")
     void b() {
         // Given

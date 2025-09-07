@@ -2,6 +2,7 @@ package com.camping.legacy.service;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.domain.ReservationStatus;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
@@ -113,7 +114,8 @@ public class ReservationService {
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        if (reservation.getStatus().startsWith("CANCELLED")) {
+        ReservationStatus currentStatus = reservation.getStatus();
+        if (currentStatus == ReservationStatus.CANCELLED || currentStatus == ReservationStatus.CANCELLED_SAME_DAY) {
             throw new RuntimeException("이미 취소된 예약입니다.");
         }
 
@@ -123,10 +125,10 @@ public class ReservationService {
 
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
-            reservation.setStatus("CANCELLED_SAME_DAY");
+            reservation.setStatus(ReservationStatus.CANCELLED_SAME_DAY);
             reservation.setRefundPercent(0); // 당일 취소: 환불 불가
         } else {
-            reservation.setStatus("CANCELLED");
+            reservation.setStatus(ReservationStatus.CANCELLED);
             reservation.setRefundPercent(100); // 사전 취소: 전액 환불
         }
 
