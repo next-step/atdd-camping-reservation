@@ -2,6 +2,7 @@ package com.camping.legacy.service;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.domain.ReservationConflictValidator;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
@@ -21,18 +22,21 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
-
-    private static final int MAX_RESERVATION_DAYS = 30;
+    private final ReservationConflictValidator conflictValidator;
 
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
+
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
             .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+        conflictValidator.validateNoConflict(campsite, startDate, endDate);
 
         Reservation reservation = Reservation.builder()
             .customerName(request.getCustomerName())
-            .startDate(request.getStartDate())
-            .endDate(request.getEndDate())
+            .startDate(startDate)
+            .endDate(endDate)
             .campsite(campsite)
             .phoneNumber(request.getPhoneNumber())
             .build();
