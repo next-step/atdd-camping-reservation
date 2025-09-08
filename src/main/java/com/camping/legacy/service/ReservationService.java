@@ -61,10 +61,21 @@ public class ReservationService {
         if (endDate.isAfter(today.plusDays(30))) {
             throw new RuntimeException("오늘부터 30일 이내 날짜만 예약할 수 있습니다.");
         }
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
-        if (hasConflict) {
+
+        // 취소된 예약은 즉시 재예약 가능 하도록 중복 판단에서 제외
+        List<Reservation> overlaps =
+                reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                        campsite, endDate, startDate);
+
+        boolean hasActiveConflict = overlaps.stream()
+                .anyMatch(r -> {
+                    String s = r.getStatus();
+                    // null이면 활성된 것으로 간주
+                    return s == null
+                            || (!"CANCELLED".equals(s) && !"CANCELLED_SAME_DAY".equals(s));
+                });
+
+        if (hasActiveConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
         
