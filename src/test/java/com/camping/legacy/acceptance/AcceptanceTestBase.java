@@ -1,6 +1,6 @@
 package com.camping.legacy.acceptance;
 
-import com.camping.legacy.DatabaseCleanup;
+import com.camping.legacy.DataInitializer;
 import com.camping.legacy.config.TimeProvider;
 import io.restassured.RestAssured;
 import java.time.Clock;
@@ -23,7 +23,7 @@ public class AcceptanceTestBase {
     private int port;
 
     @Autowired
-    private DatabaseCleanup databaseCleanup;
+    private DataInitializer dataInitializer;
 
     @Autowired
     private TimeProvider timeProvider;
@@ -38,6 +38,6 @@ public class AcceptanceTestBase {
         // 테스트용 고정 시간 설정
         timeProvider.setClock(Clock.fixed(TODAY.atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
 
-        databaseCleanup.execute();
+        dataInitializer.execute();
     }
 }
