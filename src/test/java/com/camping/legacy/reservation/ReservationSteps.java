@@ -6,6 +6,8 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -248,5 +250,117 @@ public class ReservationSteps {
                 .then().log().all().extract();
 
         assertThat(response.jsonPath().getString("status")).isEqualTo("CANCELLED_SAME_DAY");
+    }
+
+    public static List<ExtractableResponse<Response>> 동시에_예약을_요청한다(
+            String customerName1, String phoneNumber1,
+            String customerName2, String phoneNumber2,
+            String startDate, String endDate, String siteNumber) {
+
+        var request1 = Map.of(
+                "customerName", customerName1,
+                "phoneNumber", phoneNumber1,
+                "startDate", startDate,
+                "endDate", endDate,
+                "siteNumber", siteNumber
+        );
+
+        var request2 = Map.of(
+                "customerName", customerName2,
+                "phoneNumber", phoneNumber2,
+                "startDate", startDate,
+                "endDate", endDate,
+                "siteNumber", siteNumber
+        );
+
+        CompletableFuture<ExtractableResponse<Response>> future1 =
+                CompletableFuture.supplyAsync(() ->
+                        given().log().all()
+                                .contentType("application/json")
+                                .body(request1)
+                                .when().post("/api/reservations")
+                                .then().log().all().extract()
+                );
+
+        CompletableFuture<ExtractableResponse<Response>> future2 =
+                CompletableFuture.supplyAsync(() ->
+                        given().log().all()
+                                .contentType("application/json")
+                                .body(request2)
+                                .when().post("/api/reservations")
+                                .then().log().all().extract()
+                );
+
+        return List.of(future1.join(), future2.join());
+    }
+
+    public static void 하나의_예약만_성공한다(List<ExtractableResponse<Response>> responses) {
+        long successCount = responses.stream()
+                .mapToInt(ExtractableResponse::statusCode)
+                .filter(status -> status == HttpStatus.CREATED.value())
+                .count();
+
+        assertThat(successCount).isEqualTo(1);
+    }
+
+    public static void 나머지_예약은_실패한다(List<ExtractableResponse<Response>> responses) {
+        long failureCount = responses.stream()
+                .mapToInt(ExtractableResponse::statusCode)
+                .filter(status -> status == HttpStatus.CONFLICT.value())
+                .count();
+
+        assertThat(failureCount).isEqualTo(1);
+    }
+
+    public static void 실패한_예약에_오류_메시지가_반환된다(
+            List<ExtractableResponse<Response>> responses, String expectedMessage) {
+
+        Optional<ExtractableResponse<Response>> failedResponse = responses.stream()
+                .filter(response -> response.statusCode() == HttpStatus.CONFLICT.value())
+                .findFirst();
+
+        assertThat(failedResponse).isPresent();
+        String actualMessage = failedResponse.get().jsonPath().getString("message");
+        assertThat(actualMessage).isEqualTo(expectedMessage);
+    }
+
+    public static Long 사이트에_취소된_예약이_존재한다(String siteNumber, String startDate, String endDate) {
+        // 먼저 예약 생성
+        var reservationRequest = Map.of(
+                "customerName", "기존고객",
+                "phoneNumber", "010-0000-0000",
+                "startDate", startDate,
+                "endDate", endDate,
+                "siteNumber", siteNumber
+        );
+
+        var createResponse = given().log().all()
+                .contentType("application/json")
+                .body(reservationRequest)
+                .when().post("/api/reservations")
+                .then().log().all()
+                .statusCode(HttpStatus.CREATED.value())
+                .extract();
+
+        Long reservationId = createResponse.jsonPath().getLong("id");
+        String confirmationCode = createResponse.jsonPath().getString("confirmationCode");
+
+        // 예약 취소
+        given().log().all()
+                .param("confirmationCode", confirmationCode)
+                .when().delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                .statusCode(HttpStatus.OK.value());
+
+        return reservationId;
+    }
+
+    public static void 취소된_예약은_중복_체크에서_제외된다(Long cancelledReservationId) {
+        var response = given().log().all()
+                .when().get("/api/reservations/" + cancelledReservationId)
+                .then().log().all().extract();
+
+        String status = response.jsonPath().getString("status");
+        assertThat(status).isIn("CANCELLED", "CANCELLED_SAME_DAY");
     }
 }
