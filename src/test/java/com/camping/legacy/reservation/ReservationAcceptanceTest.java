@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static com.camping.legacy.reservation.ReservationSteps.고객이_예약을_요청한다;
+import static com.camping.legacy.reservation.ReservationSteps.사이트에_예약이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A001이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CONFIRMED로_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약이_성공적으로_생성된다;
@@ -47,4 +48,19 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 //        예약이_실패한다(response);
 //        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다");
 //    }
+
+    @DisplayName("중복 예약 시도")
+    @Test
+    void 중복_예약_시도() {
+        // given
+        사이트에_예약이_존재한다("A-1", "2024-01-15", "2024-01-16");
+
+        // when
+        var response = 고객이_예약을_요청한다(
+                "이영희", "010-9876-5432", "2024-01-15", "2024-01-16", "A-1");
+
+        // then
+        예약이_실패한다(response);
+        오류_메시지가_반환된다(response, "해당 기간에 이미 예약이 존재합니다.");
+    }
 }
