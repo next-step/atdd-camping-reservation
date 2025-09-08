@@ -1,6 +1,7 @@
 package com.camping.legacy.service;
 
 import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.SiteAvailabilityResponse;
 import com.camping.legacy.dto.SiteResponse;
 import com.camping.legacy.dto.SiteSearchRequest;
@@ -71,19 +72,24 @@ public class SiteService {
                     continue;
                 }
             }
-            
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
-            
-            if (startAvailable && endAvailable) {
+
+            // 시작일, 종료일 뿐만 아니라 기간 전체에 겹치는 활성 예약이 하나라도 있으면 제외
+            List<Reservation> overlaps = reservationRepository
+                    .findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                            site, request.getEndDate(), request.getStartDate());
+
+            boolean hasActiveConflict = overlaps.stream().anyMatch(r -> {
+                String s = r.getStatus();
+                return s == null || (!"CANCELLED".equals(s) && !"CANCELLED_SAME_DAY".equals(s));
+            });
+
+            if (!hasActiveConflict) {
                 availableSites.add(SiteAvailabilityResponse.builder()
                         .siteId(site.getId())
                         .siteNumber(site.getSiteNumber())
                         .size(site.getSiteNumber().startsWith("A") ? "대형" : "소형")
                         .hasElectricity(site.getSiteNumber().startsWith("A"))
-                        .date(request.getStartDate())
+                        .date(request.getStartDate()) // 대표일 표기 유지
                         .available(true)
                         .maxPeople(site.getMaxPeople())
                         .description(site.getDescription())

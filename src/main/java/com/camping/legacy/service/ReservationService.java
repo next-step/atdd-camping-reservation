@@ -46,20 +46,21 @@ public class ReservationService {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
 
+        // 전화번호가 없으면 예약 거부
         if (request.getPhoneNumber() == null || request.getPhoneNumber().trim().isEmpty()) {
             throw new RuntimeException("전화번호를 입력해주세요.");
         }
 
-        LocalDate today = LocalDate.now();
-
         // 과거 날짜 금지: 시작/종료일 중 하나라도 오늘 이전이면 거부
+        LocalDate today = LocalDate.now();
         if (startDate.isBefore(today) || endDate.isBefore(today)) {
             throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
         }
 
         // 30일 제한: 종료일이 오늘+30일을 초과하면 거부
-        if (endDate.isAfter(today.plusDays(30))) {
-            throw new RuntimeException("오늘부터 30일 이내 날짜만 예약할 수 있습니다.");
+        LocalDate limit = today.plusDays(30);
+        if (startDate.isAfter(limit) || endDate.isAfter(limit)) {
+            throw new RuntimeException("오늘부터 30일 이내만 예약할 수 있습니다.");
         }
 
         // 취소된 예약은 즉시 재예약 가능 하도록 중복 판단에서 제외
