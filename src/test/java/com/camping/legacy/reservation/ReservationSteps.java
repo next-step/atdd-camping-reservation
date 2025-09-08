@@ -4,6 +4,7 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -362,5 +363,92 @@ public class ReservationSteps {
 
         String status = response.jsonPath().getString("status");
         assertThat(status).isIn("CANCELLED", "CANCELLED_SAME_DAY");
+    }
+
+    public static void 사이트가_기간동안_예약_가능하다(String siteNumber, String startDate, String endDate) {
+
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            var response = given().log().all()
+                    .param("date", date.toString())
+                    .when().get("/api/sites/" + siteNumber + "/availability")
+                    .then().log().all().extract();
+
+            // 하나라도 예약 불가능하면 테스트 실패
+            if (response.statusCode() != HttpStatus.OK.value() ||
+                    !response.jsonPath().getBoolean("available")) {
+                throw new AssertionError("사이트 " + siteNumber + "가 " + date + "에 예약 불가능합니다.");
+            }
+        }
+    }
+
+    public static void 사이트가_날짜에_예약_가능하다(String siteNumber, String date) {
+        var response = given().log().all()
+                .param("date", date)
+                .when().get("/api/sites/" + siteNumber + "/availability")
+                .then().log().all().extract();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getBoolean("available")).isTrue();
+    }
+
+    public static void 사이트가_날짜에_이미_예약되어_있다(String siteNumber, String date) {
+        // 특정 날짜에 기존 예약 생성
+        var existingReservation = Map.of(
+                "customerName", "기존고객",
+                "phoneNumber", "010-0000-0000",
+                "startDate", date,
+                "endDate", date,
+                "siteNumber", siteNumber
+        );
+
+        given().log().all()
+                .contentType("application/json")
+                .body(existingReservation)
+                .when().post("/api/reservations")
+                .then().log().all()
+                .statusCode(HttpStatus.CREATED.value());
+    }
+
+    public static ExtractableResponse<Response> 고객이_연박_예약을_요청한다(
+            String customerName, String phoneNumber, String startDate,
+            String endDate, String siteNumber) {
+
+        var reservationRequest = Map.of(
+                "customerName", customerName,
+                "phoneNumber", phoneNumber,
+                "startDate", startDate,
+                "endDate", endDate,
+                "siteNumber", siteNumber
+        );
+
+        return given().log().all()
+                .contentType("application/json")
+                .body(reservationRequest)
+                .when().post("/api/reservations")
+                .then().log().all().extract();
+    }
+
+    public static void 연박_예약이_성공적으로_생성된다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+        assertThat(response.jsonPath().getLong("id")).isNotNull();
+    }
+
+    public static void 전체_기간에_대한_예약이_생성된다(ExtractableResponse<Response> response, String startDate, String endDate) {
+        assertThat(response.jsonPath().getString("startDate")).isEqualTo(startDate);
+        assertThat(response.jsonPath().getString("endDate")).isEqualTo(endDate);
+    }
+
+    public static void 연박_예약이_실패한다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+    }
+
+    public static ExtractableResponse<Response> 고객이_30일_초과_연박_예약을_요청한다(
+            String customerName, String phoneNumber, String startDate,
+            String endDate, String siteNumber) {
+
+        return 고객이_연박_예약을_요청한다(customerName, phoneNumber, startDate, endDate, siteNumber);
     }
 }
