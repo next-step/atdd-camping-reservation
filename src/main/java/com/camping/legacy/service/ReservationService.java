@@ -25,7 +25,7 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
-    
+
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
