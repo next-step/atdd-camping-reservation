@@ -23,7 +23,8 @@ public class ReservationController {
     
     private final ReservationService reservationService;
     private final CalendarService calendarService;
-    
+
+    // 예약 생성. 영향도 높음. 버그 발생 가능성 높음.
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
         try {
@@ -32,10 +33,10 @@ public class ReservationController {
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getReservation(@PathVariable Long id) {
         try {
@@ -47,7 +48,8 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
-    
+
+    // 관리자가 보면 좋을듯. 영향도 낮음. 버그 발생 가능성도 낮음
     @GetMapping
     public ResponseEntity<List<ReservationResponse>> getReservations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -61,7 +63,8 @@ public class ReservationController {
             return ResponseEntity.ok(reservationService.getAllReservations());
         }
     }
-    
+
+    // 영향도 높고 버그 발생 가능성도 높음
     @DeleteMapping("/{id}")
     public ResponseEntity<?> cancelReservation(
             @PathVariable Long id,
@@ -77,7 +80,8 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
+    // 버그 발생 가능성 높고 영향도도 높을듯
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
             @PathVariable Long id,
@@ -92,14 +96,16 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
+    // 오류나면 영향도 좀 있을듯
     @GetMapping("/my")
     public ResponseEntity<List<ReservationResponse>> getMyReservations(
             @RequestParam String name,
             @RequestParam String phone) {
         return ResponseEntity.ok(reservationService.getReservationsByNameAndPhone(name, phone));
     }
-    
+
+    // 버그 발생 가능성 높을듯. 영향도는 중간
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> getReservationCalendar(
             @RequestParam Integer year,

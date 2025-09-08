@@ -9,12 +9,16 @@ import com.camping.legacy.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @Service
 @RequiredArgsConstructor
@@ -37,21 +41,27 @@ public class ReservationService {
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
-        
+
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
-        
+        LocalDate today = LocalDate.now();
+        if (startDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("오늘로부터 30일 이내로만 예약할 수 있습니다.");
+        }
+
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-        
+
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
-        
+
+
+
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
         } catch (InterruptedException e) {
@@ -85,7 +95,7 @@ public class ReservationService {
         List<Reservation> reservations = reservationRepository.findAll().stream()
                 .filter(r -> r.getStartDate() != null && r.getEndDate() != null)
                 .filter(r -> !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()))
-                .collect(Collectors.toList());
+                .toList();
         
         return reservations.stream()
                 .map(ReservationResponse::from)
