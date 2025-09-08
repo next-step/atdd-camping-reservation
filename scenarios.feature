@@ -163,7 +163,7 @@ Feature: 캠핑장 예약 수정
   Scenario: 존재하지 않는 캠핑장이므로 수정 실패
     Given 다음 예약이 존재한다:
       | id | customerName | siteNumber | startDate  | endDate    | confirmationCode |
-      | 1  | 김철수       | A-1        | 2025-01-15 | 2025-01-17 | ABC123           |
+      | 1  | 홍길동       | A-1        | 2025-01-15 | 2025-01-17 | ABC123           |
     When 고객이 예약 "1"을 확인 코드 "ABC123"으로 다음과 같이 수정 요청한다:
       | siteNumber |
       | X-999      |
@@ -215,7 +215,7 @@ Feature: 캠핑장 예약 취소
   Scenario: 잘못된 확인 코드로 취소 실패
     Given 다음 예약이 존재한다:
       | id | customerName | siteNumber | startDate  | endDate    | confirmationCode |
-      | 1  | 김철수       | A-1        | 2025-01-15 | 2025-01-17 | ABC123           |
+      | 1  | 홍길동       | A-1        | 2025-01-15 | 2025-01-17 | ABC123           |
     When 고객이 예약 "1"을 확인 코드 "WRONG123"으로 취소 요청한다
     Then 예약 취소가 실패한다
     And "확인 코드가 일치하지 않습니다" 오류 메시지가 반환된다
