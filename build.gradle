@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.2.0'
     id 'io.spring.dependency-management' version '1.1.4'
+    id 'jacoco'
 }
 
 group = 'com.camping'
@@ -9,6 +10,10 @@ version = '0.0.1-SNAPSHOT'
 
 java {
     sourceCompatibility = '17'
+}
+
+jacoco {
+    toolVersion = "0.8.10"
 }
 
 configurations {
@@ -40,6 +45,37 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-tasks.named('test') {
+tasks.test {
     useJUnitPlatform()
+    // 테스트 끝나면 자동으로 커버리지 리포트 생성
+    finalizedBy tasks.jacocoTestReport
+}
+
+// 리포트 설정 task
+jacocoTestReport {
+    dependsOn tasks.test
+    reports {
+        xml.required.set(true)   // 소나큐브 같은 CI 도구(코드커버리지 배지/분석) 연동용
+        html.required.set(true)  // 가독성 좋은 HTML 형태의 리포트
+        csv.required.set(false)  // CSV리포트는 일반적으로 많이 사용하지 않는다고 합니다.
+    }
+}
+
+// 테스트 커버리지가 기준치 이상인지 검증하는 Task
+tasks.named('jacocoTestCoverageVerification') {
+    dependsOn tasks.test
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.60
+            }
+        }
+    }
+}
+
+// check 단계에 커버리지 검증 포함
+tasks.named('check') {
+    dependsOn tasks.named('jacocoTestCoverageVerification')
 }
