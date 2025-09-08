@@ -262,6 +262,7 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
         // Then: 예약은 거부되고, 오류 메시지에 "30일 이내" 문구가 포함된다
         assertThat(res.statusCode()).isIn(HttpStatus.BAD_REQUEST.value(), HttpStatus.CONFLICT.value());
         assertThat(res.jsonPath().getString("message")).contains("30일 이내");
+
     }
 
 
@@ -325,6 +326,4 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
                 .as("조회 결과의 확인코드는 생성 시점에 발급된 코드와 동일해야 한다")
                 .isEqualTo(expectedConfirmationCode);
     }
-
-
 }

@@ -22,7 +22,7 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
          * How(어떻게): 먼저 특정 하루를 선점 예약한 뒤, 그 하루를 포함하는 구간으로 /api/sites/search 조회 요청을 보낸다
          */
         // Given: 특정 사이트의 중간 하루(conflict)가 이미 예약되어 있다
-        String siteNumber = anySiteNumber(); // 예: A001
+        String siteNumber = anySiteNumber(); // 예: A-1
         var conflict = LocalDate.now().plusDays(20);
         var created = createReservation("선점자", "010-0000-0000", siteNumber, conflict, conflict);
         assertThat(created.statusCode()).isEqualTo(HttpStatus.CREATED.value());
