@@ -49,8 +49,8 @@ class ReservationAcceptanceTest extends AcceptanceTestBase {
     @Test
     void reservationDateLimitTest() {
         // given - 30일 이후가 포함된 예약 요청
-        String startDate = TODAY.plusDays(28).toString();
-        String endDate = TODAY.plusDays(31).toString();
+        String startDate = LocalDate.now().plusDays(28).toString();
+        String endDate = LocalDate.now().plusDays(31).toString();
 
         Map<String, String> request = reservationRequest()
                 .withStartDate(startDate)

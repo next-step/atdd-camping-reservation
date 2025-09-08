@@ -1,5 +1,6 @@
 package com.camping.legacy.service;
 
+import com.camping.legacy.config.TimeProvider;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.ReservationRequest;
@@ -22,8 +23,8 @@ import org.thymeleaf.util.StringUtils;
 public class ReservationService {
 
     private static final int MAX_RESERVATION_DAYS = 30;
-    private static final LocalDate TODAY = LocalDate.now();
 
+    private final TimeProvider timeProvider;
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
 
@@ -34,6 +35,7 @@ public class ReservationService {
 
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
+        LocalDate today = timeProvider.now();
 
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
@@ -44,12 +46,12 @@ public class ReservationService {
             throw new RuntimeException("최대 예약 가능 기간을 초과했습니다.");
         }
 
-        if (startDate.isAfter(TODAY.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(
+        if (startDate.isAfter(today.plusDays(MAX_RESERVATION_DAYS)) || endDate.isAfter(
                 LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
             throw new RuntimeException("30일 이후의 날짜는 예약할 수 없습니다.");
         }
 
-        if (startDate.isBefore(TODAY)) {
+        if (startDate.isBefore(today)) {
             throw new RuntimeException("과거 날짜는 예약할 수 없습니다.");
         }
 
