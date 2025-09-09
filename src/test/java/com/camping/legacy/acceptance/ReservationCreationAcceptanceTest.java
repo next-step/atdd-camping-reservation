@@ -2,6 +2,7 @@ package com.camping.legacy.acceptance;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import io.restassured.response.ExtractableResponse;
@@ -21,10 +22,11 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
 
     @Test
     void 예약_생성_성공_시_예약_번호_받기() {
-        // given - A-2 캠핑 구역이 12월 25일부터 27일까지 비어있을 때
-        LocalDate startDate = LocalDate.now().plusDays(7);
-        LocalDate endDate = LocalDate.now().plusDays(9);
-        
+        // when - 고객이 A-2 캠핑 구역을 12월 25일부터 27일까지 예약하면
+        int currentYear = LocalDate.now().getYear();
+        LocalDate startDate = LocalDate.of(currentYear, 12, 25);
+        LocalDate endDate = LocalDate.of(currentYear, 12, 27);
+
         Map<String, Object> reservationRequest = new HashMap<>();
         reservationRequest.put("siteNumber", "A-2");
         reservationRequest.put("startDate", startDate.toString());
@@ -32,7 +34,6 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         reservationRequest.put("customerName", "김테스트");
         reservationRequest.put("phoneNumber", "010-1234-5678");
 
-        // when - 고객이 A-2 캠핑 구역을 예약하면
         ExtractableResponse<Response> response = given()
                 .contentType("application/json")
                 .body(reservationRequest)
@@ -53,9 +54,10 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
 
     @Test
     void 여러_명이_동시에_예약할_때_한_명만_성공() {
-        // given - A-1 캠핑 구역이 12월 25일부터 27일까지 비어있을 때
-        LocalDate startDate = LocalDate.now().plusDays(7);
-        LocalDate endDate = LocalDate.now().plusDays(9);
+        // when - 10명의 고객이 동시에 12월 25일부터 27일로 A-1 캠핑 구역을 예약하려고 하면
+        int currentYear = LocalDate.now().getYear();
+        LocalDate startDate = LocalDate.of(currentYear, 12, 25);
+        LocalDate endDate = LocalDate.of(currentYear, 12, 27);
         
         Map<String, Object> reservationRequest = new HashMap<>();
         reservationRequest.put("siteNumber", "A-1");
@@ -64,7 +66,6 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         reservationRequest.put("customerName", "동시테스트");
         reservationRequest.put("phoneNumber", "010-1111-1111");
         
-        // when - 10명의 고객이 동시에 같은 기간으로 A-1 캠핑 구역을 예약하려고 하면
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         CountDownLatch latch = new CountDownLatch(10);
         List<ExtractableResponse<Response>> responses = new ArrayList<>();
@@ -109,7 +110,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         
         long conflictCount = responses.stream()
                 .mapToInt(ExtractableResponse::statusCode)
-                .filter(status -> status == 409)
+                .filter(status -> status == CONFLICT.value())
                 .count();
         
         assertThat(successCount).isEqualTo(1);
@@ -120,9 +121,10 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 이미_예약된_캠핑_구역은_예약_불가() {
         // given - B-1 캠핑 구역이 12월 25일부터 27일까지 이미 예약되어 있을 때
-        LocalDate startDate = LocalDate.now().plusDays(10);
-        LocalDate endDate = LocalDate.now().plusDays(12);
-        
+        int currentYear = LocalDate.now().getYear();
+        LocalDate startDate = LocalDate.of(currentYear, 12, 25);
+        LocalDate endDate = LocalDate.of(currentYear, 12, 27);
+
         // 사전 예약 생성
         Map<String, Object> existingReservation = new HashMap<>();
         existingReservation.put("siteNumber", "B-1");
@@ -157,7 +159,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                 .extract();
         
         // then - "해당 기간에 이미 예약이 존재합니다"라는 안내 메시지가 나타난다
-        assertThat(response.statusCode()).isEqualTo(409);
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
     }
 }
