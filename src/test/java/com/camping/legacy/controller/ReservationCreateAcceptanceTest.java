@@ -65,7 +65,6 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         LocalDate today = LocalDate.of(2025, 9, 1);
         Map<String, Object> body = defaultCreateRequest();
         body.put("startDate", today.plusDays(28).format(yyyyMMdd));
-        ;
         body.put("endDate", today.plusDays(31).format(yyyyMMdd));
 
         // when
