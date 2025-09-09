@@ -270,4 +270,30 @@ public class ReservationTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
         assertThat(response.jsonPath().getLong("id")).isPositive();
     }
+
+    @Test
+    @DisplayName("연박 예약 시 전체 기간 가용성 확인 후 예약 가능 여부 결정")
+    void 연박_예약_전체_기간_가용성_확인() {
+        // Given: 일부 날짜가 이미 예약된 사이트
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = startDate.plusDays(2); // 3일 예약
+
+        // 중간 날짜 하나 예약
+        saveReservation("홍길동", startDate.plusDays(1), startDate.plusDays(1), site);
+
+        Map<String, String> newReservation = createReservationMap(
+                "김철수",
+                startDate,
+                endDate,
+                site.getSiteNumber(),
+                "010-0000-0000"
+        );
+
+        // When: 예약 요청
+        ExtractableResponse<Response> response = postReservation(newReservation);
+
+        // Then: 일부 날짜가 이미 예약되어 있으므로 예약 실패
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
+    }
 }
