@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
@@ -51,7 +52,7 @@ class SynchronicityAcceptanceTest {
         try {
             var tasks = IntStream.range(0, userCount)
                     .mapToObj(i -> (Callable<Integer>) () -> {
-                        ReservationRequest req = ReservationRequestFixture.builder()
+                        ReservationRequest request = ReservationRequestFixture.builder()
                                 .siteNumber(siteNumber)
                                 .startDate(start)
                                 .endDate(end)
@@ -62,7 +63,7 @@ class SynchronicityAcceptanceTest {
 
                         return RestAssured.given()
                                 .contentType(ContentType.JSON)
-                                .body(req)
+                                .body(request)
                                 .when()
                                 .post("/api/reservations")
                                 .then()
@@ -77,8 +78,8 @@ class SynchronicityAcceptanceTest {
             for (var f : futures) {
                 try {
                     int code = f.get();
-                    if (code == 201) created++;
-                    else if (code == 409) conflict++;
+                    if (code == HttpStatus.CREATED.value()) created++;
+                    else if (code == HttpStatus.CONFLICT.value()) conflict++;
                     else other++;
                 } catch (Exception e) {
                     other++;
