@@ -46,4 +46,22 @@ public class ReservationTestHelper {
                 .log().all()
                 .extract();
     }
+
+    public static ExtractableResponse<Response> sendReservationEditRequest(
+            Long reservationId,
+            String confirmationCode,
+            Map<String, Object> request
+    ) {
+        return RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .queryParam("confirmationCode", confirmationCode)
+                .body(request)
+                .log().all()
+                .when()
+                .put("/api/reservations/{id}", reservationId)
+                .then()
+                .log().all()
+                .extract();
+    }
 }
