@@ -77,6 +77,16 @@ public class ReservationTest {
                 .extract();
     }
 
+    private ExtractableResponse<Response> cancelReservation(Long reservationId) {
+        return RestAssured.given()
+                .log().all()
+                .contentType(ContentType.JSON)
+                .when()
+                .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                .extract();
+    }
+
     private void saveReservation(String customerName, LocalDate start, LocalDate end, Campsite campsite) {
         Reservation reservation = new Reservation();
         reservation.setCustomerName(customerName);
@@ -207,30 +217,57 @@ public class ReservationTest {
     }
 
     @Test
-    @DisplayName("당일 예약 취소할 경우 환불 불가 메시지를 안내한다.")
+    @DisplayName("당일 예약 취소할 경우 환불 불가 메시지를 안내한다")
     void 당일_취소_환불_불가() {
         LocalDate today = LocalDate.now();
 
-        Map<String, String> reservation = Map.of(
-                "customerName", CUSTOMER_NAME,
-                "startDate", today.toString(),
-                "endDate", today.plusDays(1).toString(),
-                "siteNumber", SITE_NUMBER,
-                "phoneNumber", PHONE_NUMBER
+        Map<String, String> reservation = createReservationMap(
+                CUSTOMER_NAME,
+                today,
+                today.plusDays(1),
+                SITE_NUMBER,
+                PHONE_NUMBER
         );
 
-        ExtractableResponse<Response> reservedResponse = postReservation(reservation);
-        Long reservationId = reservedResponse.jsonPath().getLong("id");
+        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
 
-        ExtractableResponse<Response> canceledResponse = RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(reservation)
-                .when()
-                .delete("/api/reservations/"+ reservationId)
-                .then().log().all()
-                .extract();
+        // When: 취소 요청
+        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId);
 
+        // Then: 당일 취소는 환불 불가
         assertStatusAndMessage(canceledResponse, HttpStatus.BAD_REQUEST.value(), "CANCELLED_SAME_DAY");
+    }
+
+    @Test
+    @DisplayName("취소된 예약 사이트는 즉시 재예약 가능하다")
+    void 취소된_예약_사이트_예약_가능() {
+        LocalDate today = LocalDate.now();
+
+        Map<String, String> reservation = createReservationMap(
+                CUSTOMER_NAME,
+                today,
+                today.plusDays(1),
+                SITE_NUMBER,
+                PHONE_NUMBER
+        );
+
+        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+
+        // When: 예약 취소
+        cancelReservation(reservationId);
+
+        // Then: 다른 고객이 같은 날짜/사이트로 예약 가능
+        Map<String, String> newReservation = createReservationMap(
+                "김철수",
+                today,
+                today.plusDays(1),
+                SITE_NUMBER,
+                "010-0000-0000"
+        );
+
+        ExtractableResponse<Response> response = postReservation(newReservation);
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+        assertThat(response.jsonPath().getLong("id")).isPositive();
     }
 }
