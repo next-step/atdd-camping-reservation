@@ -205,4 +205,32 @@ public class ReservationTest {
 
         assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "예약 기간을 선택해주세요.");
     }
+
+    @Test
+    @DisplayName("당일 예약 취소할 경우 환불 불가 메시지를 안내한다.")
+    void 당일_취소_환불_불가() {
+        LocalDate today = LocalDate.now();
+
+        Map<String, String> reservation = Map.of(
+                "customerName", CUSTOMER_NAME,
+                "startDate", today.toString(),
+                "endDate", today.plusDays(1).toString(),
+                "siteNumber", SITE_NUMBER,
+                "phoneNumber", PHONE_NUMBER
+        );
+
+        ExtractableResponse<Response> reservedResponse = postReservation(reservation);
+        Long reservationId = reservedResponse.jsonPath().getLong("id");
+
+        ExtractableResponse<Response> canceledResponse = RestAssured.given()
+                .log().all()
+                .contentType(ContentType.JSON)
+                .body(reservation)
+                .when()
+                .delete("/api/reservations/"+ reservationId)
+                .then().log().all()
+                .extract();
+
+        assertStatusAndMessage(canceledResponse, HttpStatus.BAD_REQUEST.value(), "CANCELLED_SAME_DAY");
+    }
 }
