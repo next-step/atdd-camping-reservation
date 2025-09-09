@@ -1,0 +1,105 @@
+Feature: 예약 생성
+  고객이 캠핑 사이트를 예약할 때 비즈니스 규칙이 적용되어야 한다
+
+  Scenario: 정상적인 예약 생성
+    Given 예약 가능한 캠핑 사이트 "A001"이 존재한다
+    And 오늘 날짜가 "2024-01-01"이다
+    When 고객이 다음 정보로 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 김철수       | 010-1234-5678 | 2024-01-15 | 2024-01-16 | A001       |
+    Then 예약이 성공적으로 생성된다
+    And 6자리 확인코드가 생성된다
+    And 예약 상태가 "CONFIRMED"로 설정된다
+
+  Scenario: 30일 초과 예약 시도
+    Given 오늘 날짜가 "2024-01-01"이다
+    When 고객이 31일 후 날짜로 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 김철수       | 010-1234-5678 | 2024-02-01 | 2024-02-02 | A001       |
+    Then 예약이 실패한다
+    And "30일 이내에만 예약 가능합니다" 오류 메시지가 반환된다
+
+  Scenario: 중복 예약 시도
+    Given 사이트 "A001"에 "2024-01-15"부터 "2024-01-16"까지 예약이 존재한다
+    When 고객이 동일한 기간으로 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 이영희       | 010-9876-5432 | 2024-01-15 | 2024-01-16 | A001       |
+    Then 예약이 실패한다
+    And "해당 기간에 이미 예약이 존재합니다" 오류 메시지가 반환된다
+
+Feature: 예약 조회 및 관리
+  예약 정보 조회와 취소 기능
+
+  Scenario: 예약 ID로 조회
+    Given 예약 ID "1"인 예약이 존재한다
+    When 예약 ID "1"로 조회한다
+    Then 해당 예약 정보가 반환된다
+    And 고객명, 사이트 번호, 예약 기간이 포함된다
+
+  Scenario: 고객명으로 예약 조회
+    Given 고객 "김철수"의 예약이 존재한다
+    When 고객명 "김철수"로 예약을 조회한다
+    Then 해당 고객의 모든 예약이 반환된다
+
+  Scenario: 확인코드로 예약 취소
+    Given 확인코드 "ABC123"인 예약이 존재한다
+    When 확인코드 "ABC123"으로 예약을 취소한다
+    Then 예약이 취소된다
+    And 예약 상태가 "CANCELLED"로 변경된다
+
+  Scenario: 당일 예약 취소
+    Given 오늘 날짜가 "2024-01-15"이다
+    And "2024-01-15" 시작일인 예약이 존재한다
+    When 해당 예약을 취소한다
+    Then 예약 상태가 "CANCELLED_SAME_DAY"로 설정된다
+
+Feature: 동시성 제어
+  동시에 여러 사용자가 같은 사이트에 예약을 시도할 때 하나만 성공해야 한다
+
+  Scenario: 동시 예약 요청 처리
+    Given 예약 가능한 캠핑 사이트 "A001"이 존재한다
+    And 오늘 날짜가 "2024-01-01"이다
+    When 2명의 고객이 동시에 같은 사이트, 같은 기간으로 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 김철수       | 010-1111-1111 | 2024-01-15 | 2024-01-16 | A001       |
+      | 이영희       | 010-2222-2222 | 2024-01-15 | 2024-01-16 | A001       |
+    Then 하나의 예약만 성공한다
+    And 나머지 예약은 실패한다
+    And 실패한 예약에 대해 "해당 기간에 이미 예약이 존재합니다" 오류 메시지가 반환된다
+
+  Scenario: 취소된 예약 사이트 재예약
+    Given 사이트 "A001"에 취소된 예약(CANCELLED 상태)이 존재한다
+    When 고객이 동일한 기간으로 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 박민수       | 010-3333-3333 | 2024-01-15 | 2024-01-16 | A001       |
+    Then 예약이 성공적으로 생성된다
+    And 취소된 예약은 중복 체크에서 제외된다
+
+Feature: 연박 예약
+  연박 예약 시 전체 기간의 가용성을 확인해야 한다
+
+  Scenario: 정상적인 연박 예약
+    Given 사이트 "A001"이 "2024-01-15"부터 "2024-01-17"까지 모든 날짜에 예약 가능하다
+    When 고객이 연박 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 최영수       | 010-4444-4444 | 2024-01-15 | 2024-01-17 | A001       |
+    Then 연박 예약이 성공적으로 생성된다
+    And 전체 기간에 대한 예약이 생성된다
+
+  Scenario: 연박 기간 중 일부 날짜 예약 불가
+    Given 사이트 "A001"이 "2024-01-15"에는 예약 가능하다
+    And 사이트 "A001"이 "2024-01-16"에는 이미 예약되어 있다
+    And 사이트 "A001"이 "2024-01-17"에는 예약 가능하다
+    When 고객이 연박 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 정민호       | 010-5555-5555 | 2024-01-15 | 2024-01-17 | A001       |
+    Then 연박 예약이 실패한다
+    And "해당 기간에 이미 예약이 존재합니다" 오류 메시지가 반환된다
+
+  Scenario: 연박 예약 30일 제한 확인
+    Given 오늘 날짜가 "2024-01-01"이다
+    When 고객이 30일을 초과하는 연박 예약을 요청한다:
+      | customerName | phoneNumber   | startDate  | endDate    | siteNumber |
+      | 한지민       | 010-6666-6666 | 2024-01-30 | 2024-02-05 | A001       |
+    Then 연박 예약이 실패한다
+    And "30일 이내에만 예약 가능합니다" 오류 메시지가 반환된다
