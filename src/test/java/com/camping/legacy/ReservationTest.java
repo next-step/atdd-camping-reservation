@@ -27,9 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class ReservationTest {
 
+    private static final String CUSTOMER_NAME = "홍길동";
+    private static final String PHONE_NUMBER = "010-1234-5678";
+    private static final String SITE_NUMBER = "A-1";
+
     private LocalDate startDate;
     private LocalDate endDate;
     private Campsite site;
+
     @Autowired
     private CampsiteRepository campsiteRepository;
     @Autowired
@@ -37,43 +42,66 @@ public class ReservationTest {
 
     @BeforeEach
     void setUp() {
-        startDate = LocalDate.now().plusDays(1);  // 내일
+        startDate = LocalDate.now().plusDays(1);
         endDate = startDate.plusDays(3);
 
         campsiteRepository.deleteAll();
+        reservationRepository.deleteAll();
 
         site = new Campsite();
-        site.setSiteNumber("A-1");
+        site.setSiteNumber(SITE_NUMBER);
         site.setDescription("대형 사이트 - 전기 있음, 화장실 인근");
         site.setMaxPeople(6);
         campsiteRepository.save(site);
+    }
 
-        reservationRepository.deleteAll();
+    private Map<String, String> createReservationMap(String customerName, LocalDate start, LocalDate end,
+                                                     String siteNumber, String phone) {
+        return Map.of(
+                "customerName", customerName,
+                "startDate", start.toString(),
+                "endDate", end.toString(),
+                "siteNumber", siteNumber,
+                "phoneNumber", phone
+        );
+    }
+
+    private ExtractableResponse<Response> postReservation(Map<String, String> reservation) {
+        return RestAssured.given()
+                .log().all()
+                .contentType(ContentType.JSON)
+                .body(reservation)
+                .when()
+                .post("/api/reservations")
+                .then().log().all()
+                .extract();
+    }
+
+    private void saveReservation(String customerName, LocalDate start, LocalDate end, Campsite campsite) {
+        Reservation reservation = new Reservation();
+        reservation.setCustomerName(customerName);
+        reservation.setStartDate(start);
+        reservation.setEndDate(end);
+        reservation.setReservationDate(LocalDate.now().plusDays(7));
+        reservation.setCampsite(campsite);
+        reservation.setPhoneNumber(PHONE_NUMBER);
+        reservation.setStatus("CONFIRMED");
+        reservation.setConfirmationCode("ABC123");
+        reservation.setCreatedAt(LocalDateTime.now());
+        reservationRepository.save(reservation);
+    }
+
+    private void assertStatusAndMessage(ExtractableResponse<Response> response, int status, String message) {
+        assertThat(response.statusCode()).isEqualTo(status);
+        assertThat(response.jsonPath().getString("message")).isEqualTo(message);
     }
 
     @Test
     @DisplayName("고객이 빈 사이트를 예약할 수 있다")
     void 예약_생성_성공() {
-        // Given: 비어있는 사이트 정보
-        Map<String, String> map = Map.of(
-                "customerName", "홍길동",
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "siteNumber", "A-1",
-                "phoneNumber", "010-1234-5678"
-        );
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
+        ExtractableResponse<Response> response = postReservation(reservation);
 
-        // When: 예약을 요청
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(map)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-
-        // Then: 예약이 성공적으로 생성되었는지 검증 (상태 코드 201, 응답 데이터 등)
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
         assertThat(response.jsonPath().getLong("id")).isPositive();
     }
@@ -81,88 +109,45 @@ public class ReservationTest {
     @Test
     @DisplayName("고객이 이미 예약된 사이트를 예약할 수 없다")
     void 이미_예약된_사이트_예약_생성_실패() {
-        // Given: 예약 생성
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName("홍길동");
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setReservationDate(LocalDate.now().plusDays(7));
-        reservation.setCampsite(site);  // Campsite 엔티티 연결
-        reservation.setPhoneNumber("010-1234-5678");
-        reservation.setStatus("CONFIRMED");
-        reservation.setConfirmationCode("ABC123");
-        reservation.setCreatedAt(LocalDateTime.now());
+        saveReservation(CUSTOMER_NAME, startDate, endDate, site);
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
 
-        reservationRepository.save(reservation);
+        ExtractableResponse<Response> response = postReservation(reservation);
 
-        Map<String, String> map = Map.of(
-                "customerName", "홍길동",
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "siteNumber", "A-1",
-                "phoneNumber", "010-1234-5678"
-        );
-
-        // When: 예약을 요청
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(map)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-
-        // Then: 예약이 성공적으로 생성되었는지 검증 (상태 코드 201, 응답 데이터 등)
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
+        assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "해당 기간에 이미 예약이 존재합니다.");
     }
 
     @Test
     @DisplayName("동시에 같은 사이트를 예약하면 하나만 성공해야 한다")
     void 동시_예약_처리() throws InterruptedException {
-        // Given
         int threadCount = 5;
-        CountDownLatch startLatch = new CountDownLatch(1); // 출발 신호
-        CountDownLatch doneLatch = new CountDownLatch(threadCount); // 완료 신호
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
         List<Integer> statusCodes = new CopyOnWriteArrayList<>();
 
-        Map<String, String> reservation = Map.of(
-                "customerName", "홍길동",
-                "startDate", startDate.toString(),
-                "endDate", endDate.toString(),
-                "siteNumber", "A-1",
-                "phoneNumber", "010-1234-5678"
-        );
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
 
-        // When
-        for (int i = 0; i < threadCount; i++) {
-            new Thread(() -> {
-                try {
-                    startLatch.await(); // 모든 스레드가 동시에 출발하도록 대기
-                    int statusCode = RestAssured.given()
-                            .contentType(ContentType.JSON)
-                            .body(reservation)
-                            .when()
-                            .post("/api/reservations")
-                            .getStatusCode();
-                    statusCodes.add(statusCode);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    doneLatch.countDown(); // 끝났음을 알림
-                }
-            }).start();
-        }
+        Runnable task = () -> {
+            try {
+                startLatch.await();
+                int status = postReservation(reservation).statusCode();
+                statusCodes.add(status);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } finally {
+                doneLatch.countDown();
+            }
+        };
 
-        startLatch.countDown(); // 모든 스레드 동시에 출발
-        doneLatch.await();      // 모든 요청이 끝날 때까지 대기
+        for (int i = 0; i < threadCount; i++) new Thread(task).start();
 
-        // Then
-        long successCount = statusCodes.stream().filter(code -> code == 201).count();
-        long failCount = statusCodes.stream().filter(code -> code == 409).count();
+        startLatch.countDown();
+        doneLatch.await();
 
-        assertThat(successCount).isEqualTo(1);
-        assertThat(failCount).isEqualTo(threadCount - 1);
+        long success = statusCodes.stream().filter(c -> c == 201).count();
+        long fail = statusCodes.stream().filter(c -> c == 409).count();
+
+        assertThat(success).isEqualTo(1);
+        assertThat(fail).isEqualTo(threadCount - 1);
     }
 }
