@@ -150,4 +150,17 @@ public class ReservationTest {
         assertThat(success).isEqualTo(1);
         assertThat(fail).isEqualTo(threadCount - 1);
     }
+
+    @Test
+    @DisplayName("예약은 오늘로부터 30일 이내에만 가능해야 한다")
+    void 예약_30일_이내() {
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME,
+                LocalDate.now().plusDays(31),
+                LocalDate.now().plusDays(34),
+                SITE_NUMBER, PHONE_NUMBER);
+
+        ExtractableResponse<Response> response = postReservation(reservation);
+
+        assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "예약은 오늘부터 30일 이내에만 가능합니다.");
+    }
 }
