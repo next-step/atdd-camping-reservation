@@ -17,7 +17,10 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -113,5 +116,53 @@ public class ReservationTest {
         // Then: 예약이 성공적으로 생성되었는지 검증 (상태 코드 201, 응답 데이터 등)
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
+    }
+
+    @Test
+    @DisplayName("동시에 같은 사이트를 예약하면 하나만 성공해야 한다")
+    void 동시_예약_처리() throws InterruptedException {
+        // Given
+        int threadCount = 5;
+        CountDownLatch startLatch = new CountDownLatch(1); // 출발 신호
+        CountDownLatch doneLatch = new CountDownLatch(threadCount); // 완료 신호
+        List<Integer> statusCodes = new CopyOnWriteArrayList<>();
+
+        Map<String, String> reservation = Map.of(
+                "customerName", "홍길동",
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString(),
+                "siteNumber", "A-1",
+                "phoneNumber", "010-1234-5678"
+        );
+
+        // When
+        for (int i = 0; i < threadCount; i++) {
+            new Thread(() -> {
+                try {
+                    startLatch.await(); // 모든 스레드가 동시에 출발하도록 대기
+                    int statusCode = RestAssured.given()
+                            .contentType(ContentType.JSON)
+                            .body(reservation)
+                            .when()
+                            .post("/api/reservations")
+                            .getStatusCode();
+                    statusCodes.add(statusCode);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                } finally {
+                    doneLatch.countDown(); // 끝났음을 알림
+                }
+            }).start();
+        }
+
+        startLatch.countDown(); // 모든 스레드 동시에 출발
+        doneLatch.await();      // 모든 요청이 끝날 때까지 대기
+
+        // Then
+        long successCount = statusCodes.stream().filter(code -> code == 201).count();
+        long failCount = statusCodes.stream().filter(code -> code == 409).count();
+
+        assertThat(successCount).isEqualTo(1);
+        assertThat(failCount).isEqualTo(threadCount - 1);
     }
 }
