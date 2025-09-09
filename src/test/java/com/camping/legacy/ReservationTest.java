@@ -31,7 +31,6 @@ public class ReservationTest {
     private static final String PHONE_NUMBER = "010-1234-5678";
     private static final String SITE_NUMBER = "A-1";
 
-    private LocalDate startDate;
     private LocalDate endDate;
     private Campsite site;
 
@@ -42,9 +41,6 @@ public class ReservationTest {
 
     @BeforeEach
     void setUp() {
-        startDate = LocalDate.now().plusDays(1);
-        endDate = startDate.plusDays(3);
-
         campsiteRepository.deleteAll();
         reservationRepository.deleteAll();
 
@@ -109,7 +105,7 @@ public class ReservationTest {
     @Test
     @DisplayName("고객이 빈 사이트를 예약할 수 있다")
     void 예약_생성_성공() {
-        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), SITE_NUMBER, PHONE_NUMBER);
         ExtractableResponse<Response> response = postReservation(reservation);
 
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -119,8 +115,8 @@ public class ReservationTest {
     @Test
     @DisplayName("고객이 이미 예약된 사이트를 예약할 수 없다")
     void 이미_예약된_사이트_예약_생성_실패() {
-        saveReservation(CUSTOMER_NAME, startDate, endDate, site);
-        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
+        saveReservation(CUSTOMER_NAME, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), site);
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), SITE_NUMBER, PHONE_NUMBER);
 
         ExtractableResponse<Response> response = postReservation(reservation);
 
@@ -135,7 +131,7 @@ public class ReservationTest {
         CountDownLatch doneLatch = new CountDownLatch(threadCount);
         List<Integer> statusCodes = new CopyOnWriteArrayList<>();
 
-        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, startDate, endDate, SITE_NUMBER, PHONE_NUMBER);
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), SITE_NUMBER, PHONE_NUMBER);
 
         Runnable task = () -> {
             try {
@@ -295,5 +291,32 @@ public class ReservationTest {
         // Then: 일부 날짜가 이미 예약되어 있으므로 예약 실패
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
+    }
+
+    @Test
+    @DisplayName("예약자는 본인만 예약을 취소할 수 있다")
+    void 예약_취소_본인_확인() {
+        // Given: 예약 생성
+        Map<String, String> reservation = createReservationMap(
+                "홍길동",
+                LocalDate.now().plusDays(1),
+                LocalDate.now().plusDays(3),
+                site.getSiteNumber(),
+                "010-0000-0000"
+        );
+        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+
+        // When: 다른 사용자가 취소 시도
+        ExtractableResponse<Response> response2 = RestAssured.given()
+                .log().all()
+                .contentType(ContentType.JSON)
+                .when()
+                .delete("/api/reservations/" + reservationId)
+                .then().log().all()
+                .extract();
+
+        // Then: 본인이 아니므로 취소 불가
+        assertThat(response2.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(response2.jsonPath().getString("message")).isEqualTo("예약자 본인만 수정/취소가 가능합니다.");
     }
 }
