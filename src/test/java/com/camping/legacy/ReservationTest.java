@@ -176,4 +176,33 @@ public class ReservationTest {
 
         assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "오늘 날짜 이후로 예약이 가능합니다.");
     }
+
+    @Test
+    @DisplayName("종료일이 시작일보다 이전일 수 없다")
+    void 종료일_이전_불가() {
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME,
+                LocalDate.now().plusDays(3),
+                LocalDate.now().plusDays(1),
+                SITE_NUMBER, PHONE_NUMBER);
+
+        ExtractableResponse<Response> response = postReservation(reservation);
+
+        assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "종료일이 시작일보다 이전일 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("시작일과 종료일은 빈 값일 수 없다")
+    void 시작_종료_빈값_불가() {
+        Map<String, String> reservation = Map.of(
+                "customerName", CUSTOMER_NAME,
+                "startDate", "",
+                "endDate", "",
+                "siteNumber", SITE_NUMBER,
+                "phoneNumber", PHONE_NUMBER
+        );
+
+        ExtractableResponse<Response> response = postReservation(reservation);
+
+        assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "예약 기간을 선택해주세요.");
+    }
 }
