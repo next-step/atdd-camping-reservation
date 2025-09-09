@@ -38,6 +38,11 @@ public final class ReservationRequestFixture {
         return this;
     }
 
+    public ReservationRequestFixture phoneNumber(String val) {
+        this.phoneNumber = val;
+        return this;
+    }
+
     public ReservationRequest build() {
         return new ReservationRequest(
                 customerName,

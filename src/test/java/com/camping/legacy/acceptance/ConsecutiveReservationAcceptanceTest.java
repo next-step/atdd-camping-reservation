@@ -53,7 +53,7 @@ class ConsecutiveReservationAcceptanceTest {
                 .extract();
 
         // then: 예약이 성공한다
-        assertThat(response.statusCode()).as("예약이 성공한다 (201 응답)").isEqualTo(HttpStatus.CREATED.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
     }
 
     @DisplayName("한 사용자가 연속된 날짜로 예약을 시도할 때 일부 날짜가 이미 예약되어 있으면 예약이 실패하는지")
@@ -98,6 +98,6 @@ class ConsecutiveReservationAcceptanceTest {
                 .extract();
 
         // then: 예약이 실패한다
-        assertThat(response.statusCode()).as("예약이 실패한다 (409 응답)").isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
     }
 }
