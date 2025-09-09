@@ -163,4 +163,17 @@ public class ReservationTest {
 
         assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "예약은 오늘부터 30일 이내에만 가능합니다.");
     }
+
+    @Test
+    @DisplayName("예약은 과거 날짜가 아니어야 한다")
+    void 예약_과거_불가() {
+        Map<String, String> reservation = createReservationMap(CUSTOMER_NAME,
+                LocalDate.now().minusDays(10),
+                LocalDate.now().minusDays(7),
+                SITE_NUMBER, PHONE_NUMBER);
+
+        ExtractableResponse<Response> response = postReservation(reservation);
+
+        assertStatusAndMessage(response, HttpStatus.CONFLICT.value(), "오늘 날짜 이후로 예약이 가능합니다.");
+    }
 }
