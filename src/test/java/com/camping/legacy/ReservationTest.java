@@ -148,7 +148,7 @@ public class ReservationTest extends AbstractIntegrationTest {
         String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 취소 요청
-        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId, confirmationCode);
+        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId, confirmationCode, CUSTOMER_NAME);
 
         // Then: 당일 취소는 환불 불가
         assertThat(canceledResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -173,7 +173,7 @@ public class ReservationTest extends AbstractIntegrationTest {
         String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 예약 취소
-        cancelReservation(reservationId, confirmationCode);
+        cancelReservation(reservationId, confirmationCode, CUSTOMER_NAME);
 
         // Then: 다른 고객이 같은 날짜/사이트로 예약 가능
         Map<String, String> newReservation = createReservationMap(
@@ -227,19 +227,15 @@ public class ReservationTest extends AbstractIntegrationTest {
                 site.getSiteNumber(),
                 "010-0000-0000"
         );
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 다른 사용자가 취소 시도
-        ExtractableResponse<Response> response2 = RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .when()
-                .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response2 = cancelReservation(reservationId, confirmationCode, "홍길순");
 
         // Then: 본인이 아니므로 취소 불가
-        assertThat(response2.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(response2.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response2.jsonPath().getString("message")).isEqualTo("예약자 본인만 수정/취소가 가능합니다.");
     }
 }

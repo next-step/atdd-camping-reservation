@@ -66,9 +66,9 @@ public class ReservationController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> cancelReservation(
             @PathVariable Long id,
-            @RequestParam String confirmationCode) {
+            @RequestParam String confirmationCode, @RequestParam String customerName) {
         try {
-            Reservation reservation = reservationService.cancelReservation(id, confirmationCode);
+            Reservation reservation = reservationService.cancelReservation(id, confirmationCode, customerName);
             Map<String, String> response = new HashMap<>();
             String canceledMessage = "예약이 취소되었습니다.";
             if(reservation.getStatus() == "CANCELLED_SAME_DAY") {

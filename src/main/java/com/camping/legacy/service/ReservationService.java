@@ -107,14 +107,18 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public Reservation cancelReservation(Long id, String confirmationCode) {
+    public Reservation cancelReservation(Long id, String confirmationCode, String customerName) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
+        if (!reservation.getCustomerName().equals(customerName)) {
+            throw new RuntimeException("예약자 본인만 수정/취소가 가능합니다.");
+        }
+
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
