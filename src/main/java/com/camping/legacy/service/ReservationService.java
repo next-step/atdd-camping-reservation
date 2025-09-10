@@ -38,7 +38,7 @@ public class ReservationService {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
 
-        if (startDate.isAfter(LocalDate.now().plusDays(30))) {
+        if (startDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
             throw new RuntimeException("예약은 오늘부터 30일 이내에만 가능합니다.");
         }
 
@@ -53,9 +53,9 @@ public class ReservationService {
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                campsite, endDate, startDate, "CANCELLED");
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }

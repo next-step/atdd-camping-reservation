@@ -162,7 +162,7 @@ public class ReservationTest extends AbstractIntegrationTest {
 
         Map<String, String> reservation = createReservationMap(
                 CUSTOMER_NAME,
-                today,
+                today.plusDays(1),
                 today.plusDays(1),
                 SITE_NUMBER,
                 PHONE_NUMBER
@@ -178,7 +178,7 @@ public class ReservationTest extends AbstractIntegrationTest {
         // Then: 다른 고객이 같은 날짜/사이트로 예약 가능
         Map<String, String> newReservation = createReservationMap(
                 "김철수",
-                today,
+                today.plusDays(1),
                 today.plusDays(1),
                 SITE_NUMBER,
                 "010-0000-0000"
