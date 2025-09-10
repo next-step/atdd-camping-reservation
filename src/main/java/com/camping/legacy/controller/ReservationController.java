@@ -1,5 +1,6 @@
 package com.camping.legacy.controller;
 
+import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
@@ -67,9 +68,13 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestParam String confirmationCode) {
         try {
-            reservationService.cancelReservation(id, confirmationCode);
+            Reservation reservation = reservationService.cancelReservation(id, confirmationCode);
             Map<String, String> response = new HashMap<>();
-            response.put("message", "예약이 취소되었습니다.");
+            String canceledMessage = "예약이 취소되었습니다.";
+            if(reservation.getStatus() == "CANCELLED_SAME_DAY") {
+                canceledMessage = "예약이 취소되었습니다. 예약 당일 취소는 환불이 불가능 합니다.";
+            }
+            response.put("message", canceledMessage);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

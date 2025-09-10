@@ -107,7 +107,7 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode) {
+    public Reservation cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         
@@ -122,7 +122,7 @@ public class ReservationService {
             reservation.setStatus("CANCELLED");
         }
         
-        reservationRepository.save(reservation);
+        return reservationRepository.save(reservation);
     }
     
     // 고객 이름으로 예약 조회

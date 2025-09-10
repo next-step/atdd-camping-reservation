@@ -151,7 +151,8 @@ public class ReservationTest extends AbstractIntegrationTest {
         ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId, confirmationCode);
 
         // Then: 당일 취소는 환불 불가
-        assertStatusAndMessage(canceledResponse, HttpStatus.OK.value(), "CANCELLED_SAME_DAY");
+        assertThat(canceledResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertStatusAndMessage(canceledResponse, HttpStatus.OK.value(), "예약이 취소되었습니다. 예약 당일 취소는 환불이 불가능 합니다.");
     }
 
     @Test
