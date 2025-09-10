@@ -37,6 +37,10 @@ public class ReservationService {
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
+
+        if (startDate.isAfter(LocalDate.now().plusDays(30))) {
+            throw new RuntimeException("예약은 오늘부터 30일 이내에만 가능합니다.");
+        }
         
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
