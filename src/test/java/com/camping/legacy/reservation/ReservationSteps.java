@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationSteps {
 
-    public static void 예약_가능한_캠핑_사이트_A001이_존재한다() {
+    public static void 예약_가능한_캠핑_사이트_A1이_존재한다() {
         // 테스트 환경에서는 기본 데이터로 A-1 사이트가 이미 존재한다고 가정
     }
 

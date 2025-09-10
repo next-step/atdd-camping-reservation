@@ -46,7 +46,7 @@ public class SiteSteps {
                 .then().log().all().extract();
     }
 
-    public static void 사이트_A001에_예약이_존재한다(String date) {
+    public static void 사이트_A1에_예약이_존재한다(String date) {
         var reservationRequest = Map.of(
                 "siteNumber", "A-1",
                 "startDate", date,
@@ -64,20 +64,20 @@ public class SiteSteps {
         assertThat(response.statusCode()).isEqualTo(201);
     }
 
-    public static void 사이트_A002는_예약이_없다() {
+    public static void 사이트_A2는_예약이_없다() {
     }
 
-    public static void A002_사이트가_가용_사이트로_반환된다(ExtractableResponse<Response> response) {
+    public static void A2_사이트가_가용_사이트로_반환된다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).contains("A-2");
     }
 
-    public static void A001_사이트는_반환되지_않는다(ExtractableResponse<Response> response) {
+    public static void A1_사이트는_반환되지_않는다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
     }
 
-    public static void 사이트_A001에_기간_예약이_존재한다(String startDate, String endDate) {
+    public static void 사이트_A1에_기간_예약이_존재한다(String startDate, String endDate) {
         var reservationRequest = Map.of(
                 "siteNumber", "A-1",
                 "startDate", startDate,
@@ -101,13 +101,13 @@ public class SiteSteps {
                 .then().log().all().extract();
     }
 
-    public static void A002_사이트만_반환된다(ExtractableResponse<Response> response) {
+    public static void A2_사이트만_반환된다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).hasSize(1);
         assertThat(availableSites).contains("A-2");
     }
 
-    public static void A001_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
+    public static void A1_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
     }

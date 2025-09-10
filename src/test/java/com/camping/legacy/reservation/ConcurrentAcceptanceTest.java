@@ -9,7 +9,7 @@ import static com.camping.legacy.reservation.ReservationSteps.나머지_예약�
 import static com.camping.legacy.reservation.ReservationSteps.동시에_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트에_취소된_예약이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.실패한_예약에_오류_메시지가_반환된다;
-import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A001이_존재한다;
+import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A1이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약이_성공적으로_생성된다;
 import static com.camping.legacy.reservation.ReservationSteps.오늘_날짜가_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.취소된_예약은_중복_체크에서_제외된다;
@@ -21,7 +21,7 @@ public class ConcurrentAcceptanceTest extends AcceptanceTest {
     @Test
     void 동시_예약_요청_처리() {
         // given
-        예약_가능한_캠핑_사이트_A001이_존재한다();
+        예약_가능한_캠핑_사이트_A1이_존재한다();
         오늘_날짜가_설정된다("2024-01-01");
 
         // when
