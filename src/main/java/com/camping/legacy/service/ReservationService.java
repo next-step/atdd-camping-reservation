@@ -46,7 +46,7 @@ public class ReservationService {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
 
-        if (startDate.isAfter(currentDate.plusDays(MAX_RESERVATION_DAYS))) {
+        if (endDate.isAfter(startDate.plusDays(MAX_RESERVATION_DAYS))) {
             throw new RuntimeException("30일 이내에만 예약 가능합니다.");
         }
 

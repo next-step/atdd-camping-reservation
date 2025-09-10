@@ -50,21 +50,24 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         예약_상태가_CONFIRMED로_설정된다(response);
     }
 
-    // todo: 버그 30일 제한 검증 로직을 추가해야 함
-//    @DisplayName("30일 초과 예약 시도")
-//    @Test
-//    void 예약_30일_초과_시도() {
-//        // given
-//        오늘_날짜가_설정된다("2024-01-01");
-//
-//        // when
-//        var response = 고객이_예약을_요청한다(
-//                "김철수", "010-1234-5678", "2024-02-01", "2024-02-02", "A-1");
-//
-//        // then
-//        예약이_실패한다(response);
-//        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다");
-//    }
+    @DisplayName("30일 초과 예약 시도")
+    @Test
+    void 예약_30일_초과_시도() {
+        // given
+        오늘_날짜가_설정된다(LocalDate.now().toString());
+
+        // when
+        var response = 고객이_예약을_요청한다(
+                "김철수",
+                "010-1234-5678",
+                LocalDate.now().toString(),
+                LocalDate.now().plusDays(32).toString(),
+                "A-1");
+
+        // then
+        예약이_실패한다(response);
+        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다.");
+    }
 
     @DisplayName("중복 예약 시도")
     @Test

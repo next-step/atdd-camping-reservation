@@ -4,6 +4,8 @@ import com.camping.legacy.utils.AcceptanceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static com.camping.legacy.reservation.ReservationSteps.고객이_30일_초과_연박_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객이_연박_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트가_기간동안_예약_가능하다;
@@ -53,11 +55,11 @@ public class ConsecutiveReservationAcceptanceTest extends AcceptanceTest {
     @Test
     void 연박_예약_30일_제한_확인() {
         // given
-        오늘_날짜가_설정된다("2024-01-01");
+        오늘_날짜가_설정된다(LocalDate.now().toString());
 
         // when
         var response = 고객이_30일_초과_연박_예약을_요청한다(
-                "한지민", "010-6666-6666", "2024-01-30", "2024-02-05", "A-1");
+                "한지민", "010-6666-6666", LocalDate.now().toString(), LocalDate.now().plusDays(31).toString(), "A-1");
 
         // then
         연박_예약이_실패한다(response);
