@@ -26,7 +26,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public synchronized ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
@@ -37,7 +37,15 @@ public class ReservationService {
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
         }
-        
+
+        if (startDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("예약은 오늘부터 30일 이내에만 가능합니다.");
+        }
+
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("오늘 날짜 이후로 예약이 가능합니다.");
+        }
+
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
@@ -45,9 +53,9 @@ public class ReservationService {
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                campsite, endDate, startDate, "CANCELLED");
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
@@ -99,14 +107,18 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode) {
+    public Reservation cancelReservation(Long id, String confirmationCode, String customerName) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
+        if (!reservation.getCustomerName().equals(customerName)) {
+            throw new RuntimeException("예약자 본인만 수정/취소가 가능합니다.");
+        }
+
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
@@ -114,7 +126,7 @@ public class ReservationService {
             reservation.setStatus("CANCELLED");
         }
         
-        reservationRepository.save(reservation);
+        return reservationRepository.save(reservation);
     }
     
     // 고객 이름으로 예약 조회

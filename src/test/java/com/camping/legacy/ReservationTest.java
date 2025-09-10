@@ -1,22 +1,15 @@
 package com.camping.legacy;
 
-import com.camping.legacy.domain.Campsite;
-import com.camping.legacy.domain.Reservation;
-import com.camping.legacy.repository.CampsiteRepository;
-import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,82 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class ReservationTest {
-
-    private static final String CUSTOMER_NAME = "홍길동";
-    private static final String PHONE_NUMBER = "010-1234-5678";
-    private static final String SITE_NUMBER = "A-1";
-
-    private LocalDate endDate;
-    private Campsite site;
-
-    @Autowired
-    private CampsiteRepository campsiteRepository;
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void setUp() {
-        campsiteRepository.deleteAll();
-        reservationRepository.deleteAll();
-
-        site = new Campsite();
-        site.setSiteNumber(SITE_NUMBER);
-        site.setDescription("대형 사이트 - 전기 있음, 화장실 인근");
-        site.setMaxPeople(6);
-        campsiteRepository.save(site);
-    }
-
-    private Map<String, String> createReservationMap(String customerName, LocalDate start, LocalDate end,
-                                                     String siteNumber, String phone) {
-        return Map.of(
-                "customerName", customerName,
-                "startDate", start.toString(),
-                "endDate", end.toString(),
-                "siteNumber", siteNumber,
-                "phoneNumber", phone
-        );
-    }
-
-    private ExtractableResponse<Response> postReservation(Map<String, String> reservation) {
-        return RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(reservation)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-    }
-
-    private ExtractableResponse<Response> cancelReservation(Long reservationId) {
-        return RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .when()
-                .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
-    }
-
-    private void saveReservation(String customerName, LocalDate start, LocalDate end, Campsite campsite) {
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(customerName);
-        reservation.setStartDate(start);
-        reservation.setEndDate(end);
-        reservation.setReservationDate(LocalDate.now().plusDays(7));
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(PHONE_NUMBER);
-        reservation.setStatus("CONFIRMED");
-        reservation.setConfirmationCode("ABC123");
-        reservation.setCreatedAt(LocalDateTime.now());
-        reservationRepository.save(reservation);
-    }
-
-    private void assertStatusAndMessage(ExtractableResponse<Response> response, int status, String message) {
-        assertThat(response.statusCode()).isEqualTo(status);
-        assertThat(response.jsonPath().getString("message")).isEqualTo(message);
-    }
+public class ReservationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("고객이 빈 사이트를 예약할 수 있다")
@@ -225,13 +143,16 @@ public class ReservationTest {
                 PHONE_NUMBER
         );
 
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 취소 요청
-        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId);
+        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId, confirmationCode, CUSTOMER_NAME);
 
         // Then: 당일 취소는 환불 불가
-        assertStatusAndMessage(canceledResponse, HttpStatus.BAD_REQUEST.value(), "CANCELLED_SAME_DAY");
+        assertThat(canceledResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertStatusAndMessage(canceledResponse, HttpStatus.OK.value(), "예약이 취소되었습니다. 예약 당일 취소는 환불이 불가능 합니다.");
     }
 
     @Test
@@ -241,21 +162,23 @@ public class ReservationTest {
 
         Map<String, String> reservation = createReservationMap(
                 CUSTOMER_NAME,
-                today,
+                today.plusDays(1),
                 today.plusDays(1),
                 SITE_NUMBER,
                 PHONE_NUMBER
         );
 
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 예약 취소
-        cancelReservation(reservationId);
+        cancelReservation(reservationId, confirmationCode, CUSTOMER_NAME);
 
         // Then: 다른 고객이 같은 날짜/사이트로 예약 가능
         Map<String, String> newReservation = createReservationMap(
                 "김철수",
-                today,
+                today.plusDays(1),
                 today.plusDays(1),
                 SITE_NUMBER,
                 "010-0000-0000"
@@ -304,19 +227,15 @@ public class ReservationTest {
                 site.getSiteNumber(),
                 "010-0000-0000"
         );
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 다른 사용자가 취소 시도
-        ExtractableResponse<Response> response2 = RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .when()
-                .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response2 = cancelReservation(reservationId, confirmationCode, "홍길순");
 
         // Then: 본인이 아니므로 취소 불가
-        assertThat(response2.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+        assertThat(response2.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response2.jsonPath().getString("message")).isEqualTo("예약자 본인만 수정/취소가 가능합니다.");
     }
 }

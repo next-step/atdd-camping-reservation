@@ -98,7 +98,7 @@ public class SiteService {
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다: " + siteNumber));
         
-        return !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, date, date);
+        return !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                campsite, date, date, "CANCELLED");
     }
 }
