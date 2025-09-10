@@ -203,7 +203,7 @@ public class ReservationSteps {
                 "customerName", "김철수",
                 "phoneNumber", "010-1234-5678",
                 "startDate", startDate,
-                "endDate", "2024-01-16",
+                "endDate", LocalDate.now(),
                 "siteNumber", "A-1"
         );
 

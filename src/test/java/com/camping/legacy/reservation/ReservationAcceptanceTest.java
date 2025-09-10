@@ -4,16 +4,21 @@ import com.camping.legacy.utils.AcceptanceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static com.camping.legacy.reservation.ReservationSteps.고객명_사이트번호_예약기간이_포함된다;
 import static com.camping.legacy.reservation.ReservationSteps.고객명으로_예약을_조회한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객의_예약이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객이_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트에_예약이_존재한다;
+import static com.camping.legacy.reservation.ReservationSteps.시작일인_예약이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_ID로_조회한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A1이_존재한다;
+import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CANCELLED_SAME_DAY로_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CANCELLED로_변경된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CONFIRMED로_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_정보가_반환된다;
+import static com.camping.legacy.reservation.ReservationSteps.예약을_취소한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약이_성공적으로_생성된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약이_실패한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약이_존재한다;
@@ -123,24 +128,23 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         예약_상태가_CANCELLED로_변경된다(reservationId);
     }
 
-    // todo: 시간을 주입받아 테스트할 수 있도록 변경해야 함
-//    @DisplayName("당일 예약을 취소한다.")
-//    @Test
-//    void 당일_예약_취소() {
-//        // given
-//        오늘_날짜가_설정된다("2024-01-15");
-//        Long reservationId = 시작일인_예약이_존재한다("2024-01-15");
-//
-//        var getResponse = given().log().all()
-//                .when().get("/api/reservations/" + reservationId)
-//                .then().log().all().extract();
-//        String confirmationCode = getResponse.jsonPath().getString("confirmationCode");
-//
-//        // when
-//        var response = 예약을_취소한다(reservationId, confirmationCode);
-//
-//        // then
-//        예약이_취소된다(response);
-//        예약_상태가_CANCELLED_SAME_DAY로_설정된다(reservationId);
-//    }
+    @DisplayName("당일 예약을 취소한다.")
+    @Test
+    void 당일_예약_취소() {
+        // given
+        오늘_날짜가_설정된다(LocalDate.now().toString());
+        Long reservationId = 시작일인_예약이_존재한다(LocalDate.now().toString());
+
+        var getResponse = given().log().all()
+                .when().get("/api/reservations/" + reservationId)
+                .then().log().all().extract();
+        String confirmationCode = getResponse.jsonPath().getString("confirmationCode");
+
+        // when
+        var response = 예약을_취소한다(reservationId, confirmationCode);
+
+        // then
+        예약이_취소된다(response);
+        예약_상태가_CANCELLED_SAME_DAY로_설정된다(reservationId);
+    }
 }

@@ -48,8 +48,7 @@ Feature: 예약 조회 및 관리
     And 예약 상태가 "CANCELLED"로 변경된다
 
   Scenario: 당일 예약 취소
-    Given 오늘 날짜가 "2024-01-15"이다
-    And "2024-01-15" 시작일인 예약이 존재한다
+    Given 오늘 시작하는 예약이 존재한다
     When 해당 예약을 취소한다
     Then 예약 상태가 "CANCELLED_SAME_DAY"로 설정된다
 
