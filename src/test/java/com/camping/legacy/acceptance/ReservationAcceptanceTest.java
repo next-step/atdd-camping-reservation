@@ -1,5 +1,6 @@
 package com.camping.legacy.acceptance;
 
+import static com.camping.legacy.acceptance.ReservationHelper.예약_생성_요청;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.camping.legacy.dto.ReservationRequest;
@@ -9,6 +10,8 @@ import com.camping.legacy.test_utils.CleanUp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,20 +77,10 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String responseBody = RestAssured
-                .given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(objectMapper.writeValueAsString(request))
-                .when()
-                .post("/api/reservations")
-                .then()
-                .log().all()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract().asString();
+        ExtractableResponse<Response> extractedResponse = 예약_생성_요청(request, HttpStatus.CREATED);
 
         // then
-        ReservationResponse response = objectMapper.readValue(responseBody, ReservationResponse.class);
+        ReservationResponse response = extractedResponse.as(ReservationResponse.class);
 
         SoftAssertions.assertSoftly(softly -> {
             softly.assertThat(response.getConfirmationCode()).hasSize(6);
@@ -111,16 +104,7 @@ class ReservationAcceptanceTest {
                 .siteNumber("A-1")
                 .numberOfPeople(2)
                 .build();
-
-        // todo : 테스트 헬퍼 메서드 같은 걸로 분리해보기
-        RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value());
+        예약_생성_요청(initialRequest, HttpStatus.CREATED);
 
         // When: 다른 사용자가 사이트 'A-1'에 대해 2025-09-10일을 포함하는 기간으로 예약을 요청하면
         ReservationRequest conflictingRequest = ReservationRequest.builder()
@@ -131,21 +115,10 @@ class ReservationAcceptanceTest {
                 .siteNumber("A-1")
                 .numberOfPeople(3)
                 .build();
-
-        String errorMessage = RestAssured
-                .given()
-                    .log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(conflictingRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .log().all()
-                    .statusCode(HttpStatus.CONFLICT.value())
-                    .extract().path("message");
+        String message = 예약_생성_요청(conflictingRequest, HttpStatus.CONFLICT).path("message");
 
         // Then: "해당 기간에 이미 예약이 존재합니다."와 같은 메시지와 함께 예약이 실패한다.
-        assertThat(errorMessage).contains("해당 기간에 이미 예약이 존재합니다.");
+        assertThat(message).contains("해당 기간에 이미 예약이 존재합니다.");
     }
 
     /**
@@ -165,20 +138,10 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String errorMessage = RestAssured
-                .given()
-                    .log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(request))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .log().all()
-                    .statusCode(HttpStatus.BAD_REQUEST.value())
-                .extract().path("message");
+        String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
 
         // Then: "유효하지 않은 날짜입니다."와 같은 메시지와 함께 예약은 실패한다.
-        assertThat(errorMessage).contains("유효하지 않은 날짜입니다.");
+        assertThat(message).contains("유효하지 않은 날짜입니다.");
     }
 
 
@@ -199,20 +162,10 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String errorMessage = RestAssured
-                .given()
-                    .log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(request))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .log().all()
-                    .statusCode(HttpStatus.BAD_REQUEST.value())
-                .extract().path("message");
+        String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
 
         // Then: "종료일이 시작일보다 이전일 수 없습니다."와 같은 메시지와 함께 예약이 실패한다.
-        assertThat(errorMessage).contains("종료일이 시작일보다 이전일 수 없습니다.");
+        assertThat(message).contains("종료일이 시작일보다 이전일 수 없습니다.");
     }
 
     /**
@@ -232,20 +185,10 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String errorMessage = RestAssured
-                .given()
-                    .log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(request))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .log().all()
-                    .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .extract().path("message");
+        String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
 
         // Then: "30일 이내 기간으로만 예약이 가능합니다."와 같은 메시지와 함께 예약이 실패한다.
-        assertThat(errorMessage).contains("30일 이내 기간으로만 예약이 가능합니다.");
+        assertThat(message).contains("30일 이내 기간으로만 예약이 가능합니다.");
     }
 
     /**
@@ -268,17 +211,7 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String initialResponseBody = RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
-
-        ReservationResponse initialResponse = objectMapper.readValue(initialResponseBody, ReservationResponse.class);
+        ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
         Long reservationId = initialResponse.getId();
         String confirmationCode = initialResponse.getConfirmationCode();
 
@@ -301,20 +234,9 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(3)
                 .build();
 
-        String newResponseBody = RestAssured
-                .given().log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(newRequest))
-                .when()
-                    .post("/api/reservations")
-                .then().log().all()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
+        ReservationResponse newResponse = 예약_생성_요청(newRequest, HttpStatus.CREATED).as(ReservationResponse.class);
 
-        // Then: 예약은 성공적으로 처리된다.
-        ReservationResponse newResponse = objectMapper.readValue(newResponseBody, ReservationResponse.class);
-
-        // And: 'A-1' 사이트의 취소된 예약 날짜에 새로운 사용자 정보로 예약이 생긴다.
+        // Then: 'A-1' 사이트의 취소된 예약 날짜에 새로운 사용자 정보로 예약이 생긴다.
         SoftAssertions.assertSoftly(softly -> {
             softly.assertThat(newResponse.getConfirmationCode()).isNotNull();
             softly.assertThat(newResponse.getConfirmationCode()).isNotEqualTo(confirmationCode);
@@ -398,13 +320,14 @@ class ReservationAcceptanceTest {
 
     /**
      * Scenario: 사용자가 올바른 확인 코드로 자신의 예약을 성공적으로 취소한다.
-     * When 사용자가 취소하고 싶은 예약의 예약 ID와 확인 코드로 취소를 요청하면
+     * Given 사용자가 특정 날짜에 예약을 요청한 뒤
+     * When 해당 예약의 예약 ID와 확인 코드로 취소를 요청하면
      * Then 예약 취소는 성공적으로 처리된다.
      * And 취소된 사이트와 날짜는 이제 다른 사용자가 예약할 수 있는 상태가 된다.
      */
     @Test
     void 사용자가_올바른_확인_코드로_자신의_예약을_성공적으로_취소한다() throws Exception {
-        // Given: 특정 날짜에 예약이 생성되어 있음
+        // Given: 사용자가 특정 날짜에 예약을 요청한 뒤
         ReservationRequest initialRequest = ReservationRequest.builder()
                 .customerName("김취소")
                 .phoneNumber("010-4321-8765")
@@ -414,21 +337,12 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(4)
                 .build();
 
-        String responseBody = RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
-
-        ReservationResponse initialResponse = objectMapper.readValue(responseBody, ReservationResponse.class);
+        ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
         Long reservationId = initialResponse.getId();
         String confirmationCode = initialResponse.getConfirmationCode();
 
-        // When: 사용자가 예약 ID와 올바른 확인 코드로 취소를 요청하면
+        // When: 해당 예약의 예약 ID와 확인 코드로 취소를 요청하면
+        // Then: 예약 취소는 성공적으로 처리된다.
         RestAssured
                 .given().log().all()
                     .queryParam("confirmationCode", confirmationCode)
@@ -437,9 +351,7 @@ class ReservationAcceptanceTest {
                 .then().log().all()
                     .statusCode(HttpStatus.OK.value());
 
-        // Then: 예약 취소는 성공적으로 처리된다. (위의 statusCode(200) 검증으로 확인)
-
-        // And: 취소된 사이트와 날짜는 이제 다른 사용자가 예약할 수 있는 상태가 된다.
+        // And: 취소된 사이트와 날짜에 다른 사용자가 예약을 요청하면 성공한다.
         ReservationRequest newRequest = ReservationRequest.builder()
                 .customerName("박새롬")
                 .phoneNumber("010-1111-1111")
@@ -448,15 +360,7 @@ class ReservationAcceptanceTest {
                 .siteNumber("B-2")
                 .numberOfPeople(3)
                 .build();
-
-        RestAssured
-                .given().log().all()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(newRequest))
-                .when()
-                    .post("/api/reservations")
-                .then().log().all()
-                    .statusCode(HttpStatus.CREATED.value());
+        예약_생성_요청(newRequest, HttpStatus.CREATED).as(ReservationResponse.class);
     }
 
     /**
@@ -477,17 +381,7 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String responseBody = RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
-
-        ReservationResponse initialResponse = objectMapper.readValue(responseBody, ReservationResponse.class);
+        ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
         Long reservationId = initialResponse.getId();
 
         // When: 사용자가 해당 예약 ID와 유효하지 않은 확인 코드로 취소를 요청하면
@@ -525,17 +419,7 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String createResponseBody = RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
-
-        ReservationResponse initialResponse = objectMapper.readValue(createResponseBody, ReservationResponse.class);
+        ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
         Long reservationId = initialResponse.getId();
         String confirmationCode = initialResponse.getConfirmationCode();
 
@@ -573,17 +457,7 @@ class ReservationAcceptanceTest {
                 .numberOfPeople(2)
                 .build();
 
-        String createResponseBody = RestAssured
-                .given()
-                    .contentType(ContentType.JSON)
-                    .body(objectMapper.writeValueAsString(initialRequest))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(HttpStatus.CREATED.value())
-                    .extract().asString();
-
-        ReservationResponse initialResponse = objectMapper.readValue(createResponseBody, ReservationResponse.class);
+        ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
         Long reservationId = initialResponse.getId();
         String confirmationCode = initialResponse.getConfirmationCode();
 
