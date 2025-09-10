@@ -1,4 +1,4 @@
-package com.camping.legacy.acceptance.reservation.fixture;
+package com.camping.legacy.acceptance.reservation.support.fixture;
 
 import com.camping.legacy.dto.ReservationRequest;
 

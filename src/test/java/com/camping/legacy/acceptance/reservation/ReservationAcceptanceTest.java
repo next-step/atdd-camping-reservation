@@ -3,39 +3,41 @@ package com.camping.legacy.acceptance.reservation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.camping.legacy.acceptance.BaseAcceptanceTest;
-import com.camping.legacy.acceptance.reservation.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.reservation.support.db.CampsiteSeed;
+import com.camping.legacy.acceptance.reservation.support.fixture.ReservationRequestFixture;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.jdbc.Sql;
 
-@Sql(statements = {
-        "TRUNCATE TABLE reservations",
-        "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
-}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class ReservationAcceptanceTest extends BaseAcceptanceTest {
+
+    static final String DEFAULT_SITE_NUMBER = "A-1";
+
+    @BeforeEach
+    void setUpDefaultSite() {
+        CampsiteSeed.ensure(jdbc, DEFAULT_SITE_NUMBER);
+    }
+
     @DisplayName("예약 생성 API가 잘 동작하는지")
     @Test
     void reservationTest() {
         // when: 사용자가 필수 정보를 모두 입력하고 예약을 시도한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
         final String customerName = "TEST";
         final String phoneNumber = "010-0000-0000";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName(customerName)
@@ -59,14 +61,12 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @ParameterizedTest
     @NullAndEmptySource
     void reservationTestWithMissingCustomerName(String missingCustomerName) {
-        // when: 사용자가 필수 정보(이름)를 누락하고 예약을 시도한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
         final String phoneNumber = "010-0000-0000";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName(missingCustomerName)
@@ -91,12 +91,11 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @NullSource
     void reservationTestWithMissingInfo(LocalDate emptyDate) {
         // when: 사용자가 필수 정보(날짜)를 누락하고 예약을 시도한다
-        final String siteNumber = "A-1";
         final String customerName = "TEST";
         final String phoneNumber = "010-0000-0000";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(emptyDate)
                 .endDate(emptyDate)
                 .customerName(customerName)
@@ -155,10 +154,9 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
         final String customerName = "TEST";
-        final String siteNumber = "A-1";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName(customerName)
@@ -182,14 +180,13 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void reservationTestWithTooFarDate() {
         // when: 사용자가 필수 정보를 모두 입력하고 오늘로부터 30일 이후 시점에 예약을 시도한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now().plusDays(31);
         final LocalDate end = start.plusDays(1);
         final String customerName = "TEST";
         final String phoneNumber = "010-0000-0000";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName(customerName)
@@ -213,14 +210,13 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void reservationTestWithInvalidDateRange() {
         // when: 사용자가 필수 정보를 모두 입력하고 시작일이 종료일보다 이후인 날짜로 예약을 시도한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now().plusDays(5);
         final LocalDate end = start.minusDays(1);
         final String customerName = "TEST";
         final String phoneNumber = "010-0000-0000";
 
         ReservationRequest request = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName(customerName)
@@ -244,12 +240,11 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void reservationTestWithDuplicateBooking() {
         // given: 특정 사이트와 기간에 예약이 존재한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
 
         ReservationRequest existingRequest = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName("EXISTING")
@@ -267,7 +262,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
 
         // when: 사용자가 필수 정보를 모두 입력하고 예약을 시도한다
         ReservationRequest newRequest = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName("NEW")
@@ -291,12 +286,11 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void reservationTestWithCancelledBooking() {
         // given: 특정 사이트와 기간에 취소된 예약이 존재한다
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
 
         ReservationRequest existingRequest = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName("EXISTING")
@@ -326,7 +320,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
 
         // when: 사용자가 필수 정보를 모두 입력하고 예약을 시도한다
         ReservationRequest newRequest = ReservationRequestFixture.builder()
-                .siteNumber(siteNumber)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .startDate(start)
                 .endDate(end)
                 .customerName("NEW")
