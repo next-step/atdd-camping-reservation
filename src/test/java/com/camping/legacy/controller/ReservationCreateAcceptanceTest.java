@@ -7,10 +7,12 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,15 +22,19 @@ import java.util.stream.IntStream;
 
 import static com.camping.legacy.controller.ReservationTestHelper.*;
 import static com.camping.legacy.util.DateTimeUtil.yyyyMMdd;
+import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ReservationCreateAcceptanceTest extends AcceptanceTest {
     @Autowired
     private CampsiteRepository campsiteRepository;
+    private final LocalDate today = LocalDate.of(2025, 9, 1);
 
     @BeforeEach
     void setUpData() {
         campsiteRepository.save(new Campsite("A-1", "A-1", 3));
+        Mockito.when(clock.instant())
+                .thenReturn(today.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     @Test
@@ -56,7 +62,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).isEqualTo("과거 날짜로는 예약할 수 없습니다.");
+        assertThat(response.jsonPath().getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다.");
     }
 
     @Test

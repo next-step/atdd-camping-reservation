@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -22,10 +24,15 @@ public class ReservationService {
     
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final Clock clock;
     
     private static final int MAX_RESERVATION_DAYS = 30;
 
     public ReservationResponse createReservation(ReservationRequest request) {
+        LocalDate today = LocalDate.now(clock);
+        if (request.startDate().isBefore(today)) {
+            throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+        }
         String siteNumber = request.siteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
