@@ -1,22 +1,15 @@
 package com.camping.legacy;
 
-import com.camping.legacy.domain.Campsite;
-import com.camping.legacy.domain.Reservation;
-import com.camping.legacy.repository.CampsiteRepository;
-import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,82 +18,7 @@ import java.util.concurrent.CountDownLatch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-public class ReservationTest {
-
-    private static final String CUSTOMER_NAME = "홍길동";
-    private static final String PHONE_NUMBER = "010-1234-5678";
-    private static final String SITE_NUMBER = "A-1";
-
-    private LocalDate endDate;
-    private Campsite site;
-
-    @Autowired
-    private CampsiteRepository campsiteRepository;
-    @Autowired
-    private ReservationRepository reservationRepository;
-
-    @BeforeEach
-    void setUp() {
-        campsiteRepository.deleteAll();
-        reservationRepository.deleteAll();
-
-        site = new Campsite();
-        site.setSiteNumber(SITE_NUMBER);
-        site.setDescription("대형 사이트 - 전기 있음, 화장실 인근");
-        site.setMaxPeople(6);
-        campsiteRepository.save(site);
-    }
-
-    private Map<String, String> createReservationMap(String customerName, LocalDate start, LocalDate end,
-                                                     String siteNumber, String phone) {
-        return Map.of(
-                "customerName", customerName,
-                "startDate", start.toString(),
-                "endDate", end.toString(),
-                "siteNumber", siteNumber,
-                "phoneNumber", phone
-        );
-    }
-
-    private ExtractableResponse<Response> postReservation(Map<String, String> reservation) {
-        return RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .body(reservation)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-    }
-
-    private ExtractableResponse<Response> cancelReservation(Long reservationId) {
-        return RestAssured.given()
-                .log().all()
-                .contentType(ContentType.JSON)
-                .when()
-                .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                .extract();
-    }
-
-    private void saveReservation(String customerName, LocalDate start, LocalDate end, Campsite campsite) {
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(customerName);
-        reservation.setStartDate(start);
-        reservation.setEndDate(end);
-        reservation.setReservationDate(LocalDate.now().plusDays(7));
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(PHONE_NUMBER);
-        reservation.setStatus("CONFIRMED");
-        reservation.setConfirmationCode("ABC123");
-        reservation.setCreatedAt(LocalDateTime.now());
-        reservationRepository.save(reservation);
-    }
-
-    private void assertStatusAndMessage(ExtractableResponse<Response> response, int status, String message) {
-        assertThat(response.statusCode()).isEqualTo(status);
-        assertThat(response.jsonPath().getString("message")).isEqualTo(message);
-    }
+public class ReservationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("고객이 빈 사이트를 예약할 수 있다")
