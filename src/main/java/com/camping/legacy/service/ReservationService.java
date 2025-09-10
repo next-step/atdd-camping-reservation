@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -26,7 +25,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResponse createReservation(ReservationRequest request, LocalDate currentDate) {
         String siteNumber = request.getSiteNumber();
 
         Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
@@ -45,6 +44,10 @@ public class ReservationService {
         
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
+        }
+
+        if (startDate.isAfter(currentDate.plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("30일 이내에만 예약 가능합니다.");
         }
 
         boolean hasConflict = reservationRepository.existsActiveByCampsiteAndDateRange(
@@ -100,7 +103,7 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode) {
+    public void cancelReservation(Long id, String confirmationCode, LocalDate currentDate) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         
@@ -108,8 +111,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
-        if (reservation.getStartDate().equals(today)) {
+        if (reservation.getStartDate().equals(currentDate)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");

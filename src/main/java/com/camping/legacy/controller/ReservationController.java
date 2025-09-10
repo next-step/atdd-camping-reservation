@@ -27,7 +27,7 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
         try {
-            ReservationResponse response = reservationService.createReservation(request);
+            ReservationResponse response = reservationService.createReservation(request, LocalDate.now());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
@@ -67,7 +67,7 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestParam String confirmationCode) {
         try {
-            reservationService.cancelReservation(id, confirmationCode);
+            reservationService.cancelReservation(id, confirmationCode, LocalDate.now());
             Map<String, String> response = new HashMap<>();
             response.put("message", "예약이 취소되었습니다.");
             return ResponseEntity.ok(response);
