@@ -33,6 +33,11 @@ public class ReservationService {
         if (request.startDate().isBefore(today)) {
             throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
         }
+
+        if(request.endDate().isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("예약은 오늘부터 30일 이내의 날짜로만 가능합니다.");
+        }
+
         String siteNumber = request.siteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
