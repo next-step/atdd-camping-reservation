@@ -90,6 +90,14 @@ public abstract class AbstractIntegrationTest {
         reservationRepository.save(reservation);
     }
 
+    protected ExtractableResponse<Response> getAvailability(String siteNumber, LocalDate date) {
+        return RestAssured
+                .when()
+                .get("/api/sites/" + siteNumber + "/availability?date=" + date)
+                .then().log().all()
+                .extract();
+    }
+
     protected void assertStatusAndMessage(ExtractableResponse<Response> response, int status, String message) {
         assertThat(response.statusCode()).isEqualTo(status);
         assertThat(response.jsonPath().getString("message")).isEqualTo(message);

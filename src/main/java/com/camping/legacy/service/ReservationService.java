@@ -26,7 +26,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public synchronized ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
