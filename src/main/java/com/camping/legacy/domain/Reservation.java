@@ -9,7 +9,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reservations")
+@Table(name = "reservations",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"campsite_id", "start_date", "end_date", "status"}))
 @Getter
 @Setter
 @NoArgsConstructor
