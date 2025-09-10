@@ -30,6 +30,7 @@ public class ReservationService {
 
     public ReservationResponse createReservation(ReservationRequest request) {
         LocalDate today = LocalDate.now(clock);
+
         if (request.startDate().isBefore(today)) {
             throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
         }
@@ -45,8 +46,8 @@ public class ReservationService {
         LocalDate startDate = request.startDate();
         LocalDate endDate = request.endDate();
         
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                campsite, endDate, startDate, "CANCELLED");
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
