@@ -1,8 +1,9 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.camping.legacy.acceptance.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.BaseAcceptanceTest;
+import com.camping.legacy.acceptance.reservation.fixture.ReservationRequestFixture;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -18,22 +19,11 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Sql(statements = {
         "TRUNCATE TABLE reservations",
         "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class ReservationAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-    }
-
+class ReservationAcceptanceTest extends BaseAcceptanceTest {
     @DisplayName("예약 생성 API가 잘 동작하는지")
     @Test
     void reservationTest() {

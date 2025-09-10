@@ -1,6 +1,7 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
-import com.camping.legacy.acceptance.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.BaseAcceptanceTest;
+import com.camping.legacy.acceptance.reservation.fixture.ReservationRequestFixture;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -19,22 +20,11 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment =  SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Sql(statements = {
         "TRUNCATE TABLE reservations",
         "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class SynchronicityAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-    }
-
+class SynchronicityAcceptanceTest extends BaseAcceptanceTest {
     @DisplayName("여러 사용자가 동시에 같은 사이트를 예약하면 하나의 예약만 잘 성공하는지")
     @Test
     @Timeout(10)

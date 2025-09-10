@@ -1,17 +1,17 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.camping.legacy.acceptance.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.BaseAcceptanceTest;
+import com.camping.legacy.acceptance.reservation.fixture.ReservationRequestFixture;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import java.time.LocalDate;
-import org.junit.jupiter.api.BeforeEach;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -20,17 +20,7 @@ import org.springframework.test.context.jdbc.Sql;
         "TRUNCATE TABLE reservations",
         "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
 }, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class ConsecutiveReservationAcceptanceTest {
-
-    @LocalServerPort
-    int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-    }
-
+class ConsecutiveReservationAcceptanceTest extends BaseAcceptanceTest {
     @DisplayName("한 사용자가 연속된 날짜로 예약을 시도하면 모두 성공하는지")
     @Test
     void reservationWithConsecutiveDates() {
