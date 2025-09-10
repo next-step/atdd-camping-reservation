@@ -3,6 +3,7 @@ package com.camping.legacy.acceptance.reservation;
 import com.camping.legacy.acceptance.BaseAcceptanceTest;
 import com.camping.legacy.acceptance.reservation.support.db.CampsiteSeed;
 import com.camping.legacy.acceptance.reservation.support.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.reservation.support.http.ReservationApi;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -52,13 +53,7 @@ class SynchronicityAcceptanceTest extends BaseAcceptanceTest {
 
                         barrier.await();
 
-                        return RestAssured.given()
-                                .contentType(ContentType.JSON)
-                                .body(request)
-                                .when()
-                                .post("/api/reservations")
-                                .then()
-                                .extract()
+                        return ReservationApi.post(request)
                                 .statusCode();
                     })
                     .toList();

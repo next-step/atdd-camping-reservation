@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.camping.legacy.acceptance.BaseAcceptanceTest;
 import com.camping.legacy.acceptance.reservation.support.db.CampsiteSeed;
 import com.camping.legacy.acceptance.reservation.support.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.reservation.support.http.ReservationApi;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -44,14 +45,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 성공한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -73,14 +67,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -102,14 +89,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -133,14 +113,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -163,14 +136,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(missingPhoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -193,14 +159,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -223,14 +182,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber(phoneNumber)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -251,14 +203,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber("010-0000-0000")
                 .build();
 
-        RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(existingRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value());
+        ReservationApi.post(existingRequest, HttpStatus.CREATED);
 
         // when: 사용자가 필수 정보를 모두 입력하고 예약을 시도한다
         ReservationRequest newRequest = ReservationRequestFixture.builder()
@@ -269,14 +214,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber("010-1111-1111")
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(newRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(newRequest);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -297,26 +235,12 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber("010-0000-0000")
                 .build();
 
-        var existingResponse = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(existingRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract();
+        var existingResponse = ReservationApi.post(existingRequest);
 
         Long reservationId = existingResponse.jsonPath().getLong("id");
         String confirmationCode = existingResponse.jsonPath().getString("confirmationCode");
 
-        RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .when()
-                .delete("/api/reservations/{id}?confirmationCode={code}", reservationId, confirmationCode)
-                .then()
-                .statusCode(HttpStatus.OK.value());
+        ReservationApi.delete(reservationId, confirmationCode, HttpStatus.OK);
 
         // when: 사용자가 필수 정보를 모두 입력하고 예약을 시도한다
         ReservationRequest newRequest = ReservationRequestFixture.builder()
@@ -327,14 +251,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
                 .phoneNumber("010-1111-1111")
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(newRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(newRequest);
 
         // then: 예약이 성공한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
