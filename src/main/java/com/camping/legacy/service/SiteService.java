@@ -72,12 +72,10 @@ public class SiteService {
                 }
             }
             
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            boolean isAvailable = !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    site, request.getEndDate(), request.getStartDate());
             
-            if (startAvailable && endAvailable) {
+            if (isAvailable) {
                 availableSites.add(SiteAvailabilityResponse.builder()
                         .siteId(site.getId())
                         .siteNumber(site.getSiteNumber())
