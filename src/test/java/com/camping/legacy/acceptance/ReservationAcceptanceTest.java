@@ -1,6 +1,7 @@
 package com.camping.legacy.acceptance;
 
 import static com.camping.legacy.acceptance.ReservationHelper.예약_생성_요청;
+import static com.camping.legacy.acceptance.ReservationHelper.예약_취소_요청;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.camping.legacy.dto.ReservationRequest;
@@ -216,13 +217,7 @@ class ReservationAcceptanceTest {
         String confirmationCode = initialResponse.getConfirmationCode();
 
         // 2. 예약 취소
-        RestAssured
-                .given().log().all()
-                    .queryParam("confirmationCode", confirmationCode)
-                .when()
-                    .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                    .statusCode(HttpStatus.OK.value());
+        예약_취소_요청(confirmationCode, reservationId, HttpStatus.CREATED);
 
         // When: 다른 사용자가 동일한 사이트와 날짜로 새로운 예약을 요청하면
         ReservationRequest newRequest = ReservationRequest.builder()
@@ -233,7 +228,6 @@ class ReservationAcceptanceTest {
                 .siteNumber("A-1")
                 .numberOfPeople(3)
                 .build();
-
         ReservationResponse newResponse = 예약_생성_요청(newRequest, HttpStatus.CREATED).as(ReservationResponse.class);
 
         // Then: 'A-1' 사이트의 취소된 예약 날짜에 새로운 사용자 정보로 예약이 생긴다.
@@ -343,13 +337,7 @@ class ReservationAcceptanceTest {
 
         // When: 해당 예약의 예약 ID와 확인 코드로 취소를 요청하면
         // Then: 예약 취소는 성공적으로 처리된다.
-        RestAssured
-                .given().log().all()
-                    .queryParam("confirmationCode", confirmationCode)
-                .when()
-                    .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                    .statusCode(HttpStatus.OK.value());
+        예약_취소_요청(confirmationCode, reservationId, HttpStatus.CREATED);
 
         // And: 취소된 사이트와 날짜에 다른 사용자가 예약을 요청하면 성공한다.
         ReservationRequest newRequest = ReservationRequest.builder()
@@ -386,15 +374,7 @@ class ReservationAcceptanceTest {
 
         // When: 사용자가 해당 예약 ID와 유효하지 않은 확인 코드로 취소를 요청하면
         String invalidConfirmationCode = "invalid-code";
-
-        String errorMessage = RestAssured
-                .given().log().all()
-                    .queryParam("confirmationCode", invalidConfirmationCode)
-                .when()
-                    .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                    .statusCode(HttpStatus.BAD_REQUEST.value())
-                    .extract().path("message");
+        String errorMessage = 예약_취소_요청(invalidConfirmationCode, reservationId, HttpStatus.BAD_REQUEST).path("message");
 
         // Then: "확인 코드가 일치하지 않습니다."와 같은 메시지와 함께 예약 취소가 실패한다.
         assertThat(errorMessage).contains("확인 코드가 일치하지 않습니다.");
@@ -424,15 +404,7 @@ class ReservationAcceptanceTest {
         String confirmationCode = initialResponse.getConfirmationCode();
 
         // When: 사용자가 해당 예약을 취소하면
-        String refundType = RestAssured
-                .given().log().all()
-                    .queryParam("confirmationCode", confirmationCode)
-                .when()
-                    .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                // Then: 예약 취소는 성공적으로 처리된다.
-                    .statusCode(HttpStatus.OK.value())
-                    .extract().path("refundType");
+        String refundType = 예약_취소_요청(confirmationCode, reservationId, HttpStatus.OK).path("refundType");
 
         // And: 사용자는 예약 취소 후 환불 불가라는 것을 알 수 있어야 한다.
         assertThat(refundType).isEqualTo("NON_REFUNDABLE");
@@ -462,15 +434,7 @@ class ReservationAcceptanceTest {
         String confirmationCode = initialResponse.getConfirmationCode();
 
         // When: 사용자가 해당 예약을 취소하면
-        String refundType = RestAssured
-                .given().log().all()
-                    .queryParam("confirmationCode", confirmationCode)
-                .when()
-                    .delete("/api/reservations/" + reservationId)
-                .then().log().all()
-                // Then: 예약 취소는 성공적으로 처리된다.
-                    .statusCode(HttpStatus.OK.value())
-                    .extract().path("refundType");
+        String refundType = 예약_취소_요청(confirmationCode, reservationId, HttpStatus.OK).path("refundType");
 
         // And: 사용자는 예약 취소 후 전액 환불이 된 것을 알 수 있어야 한다.
         assertThat(refundType).isEqualTo("FULL_REFUND");

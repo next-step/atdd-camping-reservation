@@ -22,4 +22,15 @@ public class ReservationHelper {
                     .statusCode(status.value())
                     .extract();
     }
+
+    static ExtractableResponse<Response> 예약_취소_요청(String confirmationCode, Long reservationId, HttpStatus status) {
+        return RestAssured
+                .given().log().all()
+                    .queryParam("confirmationCode", confirmationCode)
+                .when()
+                    .delete(RESERVATION_BASE_URL + "/" + reservationId)
+                .then().log().all()
+                    .statusCode(status.value())
+                    .extract();
+    }
 }
