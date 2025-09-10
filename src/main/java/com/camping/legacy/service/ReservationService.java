@@ -45,32 +45,34 @@ public class ReservationService {
         
         LocalDate startDate = request.startDate();
         LocalDate endDate = request.endDate();
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
-                campsite, endDate, startDate, "CANCELLED");
-        if (hasConflict) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+
+        synchronized (this) {
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                    campsite, endDate, startDate, "CANCELLED");
+            if (hasConflict) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
+
+            try {
+                Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            Reservation reservation = new Reservation();
+            reservation.setCustomerName(request.customerName());
+            reservation.setStartDate(startDate);
+            reservation.setEndDate(endDate);
+            reservation.setReservationDate(startDate);
+            reservation.setCampsite(campsite);
+            reservation.setPhoneNumber(request.phoneNumber());
+
+            reservation.setConfirmationCode(generateConfirmationCode());
+
+            Reservation saved = reservationRepository.save(reservation);
+
+            return ReservationResponse.from(saved);
         }
-        
-        try {
-            Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        
-        Reservation reservation = new Reservation();
-        reservation.setCustomerName(request.customerName());
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setReservationDate(startDate);
-        reservation.setCampsite(campsite);
-        reservation.setPhoneNumber(request.phoneNumber());
-        
-        reservation.setConfirmationCode(generateConfirmationCode());
-        
-        Reservation saved = reservationRepository.save(reservation);
-        
-        return ReservationResponse.from(saved);
     }
     
     @Transactional(readOnly = true)
