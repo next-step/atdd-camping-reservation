@@ -143,13 +143,15 @@ public class ReservationTest extends AbstractIntegrationTest {
                 PHONE_NUMBER
         );
 
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 취소 요청
-        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId);
+        ExtractableResponse<Response> canceledResponse = cancelReservation(reservationId, confirmationCode);
 
         // Then: 당일 취소는 환불 불가
-        assertStatusAndMessage(canceledResponse, HttpStatus.BAD_REQUEST.value(), "CANCELLED_SAME_DAY");
+        assertStatusAndMessage(canceledResponse, HttpStatus.OK.value(), "CANCELLED_SAME_DAY");
     }
 
     @Test
@@ -165,10 +167,12 @@ public class ReservationTest extends AbstractIntegrationTest {
                 PHONE_NUMBER
         );
 
-        Long reservationId = postReservation(reservation).jsonPath().getLong("id");
+        ExtractableResponse<Response> reservationResponse = postReservation(reservation);
+        Long reservationId = reservationResponse.jsonPath().getLong("id");
+        String confirmationCode = reservationResponse.jsonPath().getString("confirmationCode");
 
         // When: 예약 취소
-        cancelReservation(reservationId);
+        cancelReservation(reservationId, confirmationCode);
 
         // Then: 다른 고객이 같은 날짜/사이트로 예약 가능
         Map<String, String> newReservation = createReservationMap(

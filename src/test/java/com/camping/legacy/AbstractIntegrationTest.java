@@ -67,11 +67,12 @@ public abstract class AbstractIntegrationTest {
                 .extract();
     }
 
-    protected ExtractableResponse<Response> cancelReservation(Long reservationId) {
+    protected ExtractableResponse<Response> cancelReservation(Long reservationId, String confirmationCode) {
         return RestAssured.given()
                 .contentType(ContentType.JSON)
+                .queryParam("confirmationCode", confirmationCode)
                 .when()
-                .delete("/api/reservations/" + reservationId)
+                .delete("/api/reservations/{id}", reservationId)
                 .then()
                 .extract();
     }
