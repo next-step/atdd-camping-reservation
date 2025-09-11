@@ -54,8 +54,9 @@ public class ReservationService {
             throw new RuntimeException("전화번호를 입력해주세요.");
         }
         
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatus(
+                campsite, endDate, startDate, "CONFIRMED");
+
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
