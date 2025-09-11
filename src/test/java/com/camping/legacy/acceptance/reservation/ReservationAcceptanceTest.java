@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.springframework.http.HttpStatus;
@@ -143,10 +144,14 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
     }
 
     @DisplayName("사용자가 오늘로부터 30일 이후 시점의 예약을 시도하면 예약이 실패하는지")
-    @Test
-    void reservationTestWithTooFarDate() {
+    @ParameterizedTest(name = "오늘+{0}일 시작 → 기대 상태 {1}")
+    @CsvSource({
+            "29, 201",   // 허용 (경계 포함)
+            "30, 409"    // 초과 → 거절
+    })
+    void reservationTestWithTooFarDate(int daysAfterToday, int expectedStatus) {
         // when: 사용자가 필수 정보를 모두 입력하고 오늘로부터 30일 이후 시점에 예약을 시도한다
-        final LocalDate start = LocalDate.now().plusDays(31);
+        final LocalDate start = LocalDate.now().plusDays(daysAfterToday);
         final LocalDate end = start.plusDays(1);
         final String customerName = "TEST";
         final String phoneNumber = "010-0000-0000";
@@ -162,7 +167,7 @@ class ReservationAcceptanceTest extends BaseAcceptanceTest {
         var response = ReservationApi.post(request);
 
         // then: 예약이 실패한다
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.statusCode()).isEqualTo(expectedStatus);
     }
 
     @DisplayName("종료일이 시작일보다 이전인 날짜로 예약을 시도하면 예약이 실패하는지")
