@@ -49,6 +49,10 @@ public class ReservationService {
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
+
+        if (request.getPhoneNumber() == null) {
+            throw new RuntimeException("전화번호를 입력해주세요.");
+        }
         
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
