@@ -66,12 +66,6 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
         assertThat(editResponse.jsonPath().getString("message")).isEqualTo("확인 코드가 일치하지 않습니다.");
     }
 
-    /**
-     * Scenario: 존재하지 않는 예약 ID로 변경 실패
-     * Given 예약 ID "1"는 존재하지 않는다
-     * When 사용자가 예약("1")을 변경한다
-     * Then "예약을 찾을 수 없습니다." 메시지를 반환해야 한다
-     */
     @Test
     void 존재하지_않는_예약_ID로_변경_실패() {
         // given
@@ -106,7 +100,6 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
     @Test
     void 과거_날짜로_변경불가() {
         // given
-        // TODO: mock today to 2025-09-01
         ExtractableResponse<Response> response = sendReservationCreateRequest(reservationCreateRequest());
         Long reservationId = response.jsonPath().getLong("id");
         String confirmationCode = response.jsonPath().getString("confirmationCode");
@@ -119,7 +112,7 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(editResponse.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-        assertThat(editResponse.jsonPath().getString("message")).isEqualTo("과거 날짜로는 예약할 수 없습니다.");
+        assertThat(editResponse.jsonPath().getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다.");
     }
 
     @Test

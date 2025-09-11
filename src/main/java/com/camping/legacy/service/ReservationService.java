@@ -154,17 +154,22 @@ public class ReservationService {
         Campsite campsite = reservation.getCampsite();
         String phoneNumber = reservation.getPhoneNumber();
 
+        LocalDate today = LocalDate.now(clock);
+
         if (request.siteNumber() != null) {
             campsite = campsiteRepository.findBySiteNumber(request.siteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         }
         
         if (request.startDate() != null) {
+            if (request.startDate().isBefore(today)) {
+                throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+            }
             startDate = request.startDate();
         }
 
         if (request.endDate() != null) {
-            if(request.endDate().isAfter(LocalDate.now(clock).plusDays(MAX_RESERVATION_DAYS))) {
+            if(request.endDate().isAfter(today.plusDays(MAX_RESERVATION_DAYS))) {
                 throw new RuntimeException("예약은 오늘부터 30일 이내의 날짜로만 가능합니다.");
             }
             endDate = request.endDate();
