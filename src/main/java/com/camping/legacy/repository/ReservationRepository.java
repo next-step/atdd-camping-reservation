@@ -18,7 +18,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     
     Optional<Reservation> findByCampsiteIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Long campsiteId, LocalDate endDate, LocalDate startDate);
     
-    boolean existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Campsite campsite, LocalDate endDate, LocalDate startDate);
+    boolean existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatus(Campsite campsite, LocalDate endDate, LocalDate startDate, String status);
     
     List<Reservation> findByCustomerName(String customerName);
     

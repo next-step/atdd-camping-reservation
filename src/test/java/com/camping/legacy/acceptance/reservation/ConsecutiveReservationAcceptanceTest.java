@@ -1,34 +1,26 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.camping.legacy.acceptance.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.BaseAcceptanceTest;
+import com.camping.legacy.acceptance.reservation.support.db.CampsiteSeed;
+import com.camping.legacy.acceptance.reservation.support.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.reservation.support.http.ReservationApi;
 import com.camping.legacy.dto.ReservationRequest;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import java.time.LocalDate;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.jdbc.Sql;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Sql(statements = {
-        "TRUNCATE TABLE reservations",
-        "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
-}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class ConsecutiveReservationAcceptanceTest {
+class ConsecutiveReservationAcceptanceTest extends BaseAcceptanceTest {
 
-    @LocalServerPort
-    int port;
+    static final String DEFAULT_SITE_NUMBER = "A-1";
 
     @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
+    void setUpDefaultSite() {
+        CampsiteSeed.ensure(jdbc, DEFAULT_SITE_NUMBER);
     }
 
     @DisplayName("한 사용자가 연속된 날짜로 예약을 시도하면 모두 성공하는지")
@@ -41,16 +33,10 @@ class ConsecutiveReservationAcceptanceTest {
         ReservationRequest request = ReservationRequestFixture.builder()
                 .startDate(start)
                 .endDate(end)
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(request);
 
         // then: 예약이 성공한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -67,16 +53,10 @@ class ConsecutiveReservationAcceptanceTest {
                 .startDate(existingStart)
                 .endDate(existingEnd)
                 .customerName("TEST-EXISTING")
+                .siteNumber(DEFAULT_SITE_NUMBER)
                 .build();
 
-        RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(existingRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value());
+        ReservationApi.post(existingRequest, HttpStatus.CREATED);
 
         // when: 사용자가 3박 4일 연박 예약을 시도한다 (일부 날짜가 겹침)
         final LocalDate newStart = existingStart.plusDays(2);
@@ -88,14 +68,7 @@ class ConsecutiveReservationAcceptanceTest {
                 .customerName("TEST-NEW")
                 .build();
 
-        var response = RestAssured
-                .given().log().all()
-                .contentType(ContentType.JSON)
-                .body(newRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        var response = ReservationApi.post(newRequest);
 
         // then: 예약이 실패한다
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());

@@ -1,6 +1,9 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
-import com.camping.legacy.acceptance.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.BaseAcceptanceTest;
+import com.camping.legacy.acceptance.reservation.support.db.CampsiteSeed;
+import com.camping.legacy.acceptance.reservation.support.fixture.ReservationRequestFixture;
+import com.camping.legacy.acceptance.reservation.support.http.ReservationApi;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
@@ -8,10 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.concurrent.*;
@@ -19,20 +19,13 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment =  SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Sql(statements = {
-        "TRUNCATE TABLE reservations",
-        "ALTER TABLE reservations ALTER COLUMN id RESTART WITH 1"
-}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-class SynchronicityAcceptanceTest {
+class SynchronicityAcceptanceTest extends BaseAcceptanceTest {
 
-    @LocalServerPort
-    int port;
+    static final String DEFAULT_SITE_NUMBER = "A-1";
 
     @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
+    void setUpDefaultSite() {
+        CampsiteSeed.ensure(jdbc, DEFAULT_SITE_NUMBER);
     }
 
     @DisplayName("여러 사용자가 동시에 같은 사이트를 예약하면 하나의 예약만 잘 성공하는지")
@@ -41,7 +34,6 @@ class SynchronicityAcceptanceTest {
     void reservationSynchronicityTest() throws InterruptedException {
         //when: 서른 명의 사용자가 동일한 캠핑 사이트와 날짜로 예약을 시도한다
         final int userCount = 30;
-        final String siteNumber = "A-1";
         final LocalDate start = LocalDate.now();
         final LocalDate end = start.plusDays(1);
 
@@ -53,7 +45,7 @@ class SynchronicityAcceptanceTest {
             var tasks = IntStream.range(0, userCount)
                     .mapToObj(i -> (Callable<Integer>) () -> {
                         ReservationRequest request = ReservationRequestFixture.builder()
-                                .siteNumber(siteNumber)
+                                .siteNumber(DEFAULT_SITE_NUMBER)
                                 .startDate(start)
                                 .endDate(end)
                                 .customerName("TEST-" + (i + 1))
@@ -61,13 +53,7 @@ class SynchronicityAcceptanceTest {
 
                         barrier.await();
 
-                        return RestAssured.given()
-                                .contentType(ContentType.JSON)
-                                .body(request)
-                                .when()
-                                .post("/api/reservations")
-                                .then()
-                                .extract()
+                        return ReservationApi.post(request)
                                 .statusCode();
                     })
                     .toList();

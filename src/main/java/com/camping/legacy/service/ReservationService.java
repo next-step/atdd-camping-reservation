@@ -28,7 +28,7 @@ public class ReservationService {
     
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+        Campsite campsite = campsiteRepository.findBySiteNumberForUpdate(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         
         LocalDate startDate = request.getStartDate();
@@ -41,13 +41,22 @@ public class ReservationService {
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
         }
+
+        if (endDate.isAfter(LocalDate.now().plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("최대 예약 가능 기간은 오늘로부터 " + MAX_RESERVATION_DAYS + "일 이내입니다.");
+        }
         
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
+
+        if (request.getPhoneNumber() == null) {
+            throw new RuntimeException("전화번호를 입력해주세요.");
+        }
         
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatus(
+                campsite, endDate, startDate, "CONFIRMED");
+
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
