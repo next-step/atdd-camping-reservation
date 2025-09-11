@@ -183,20 +183,22 @@ public class ReservationService {
             phoneNumber = request.phoneNumber();
         }
 
-        boolean hasConflict = reservationRepository.existsByIdNotAndCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
-                reservation.getId(), campsite, startDate, endDate, "CANCELLED");
-        if (hasConflict) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-        }
+        synchronized (this) {
+            boolean hasConflict = reservationRepository.existsByIdNotAndCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                    reservation.getId(), campsite, startDate, endDate, "CANCELLED");
+            if (hasConflict) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
 
-        reservation.setCampsite(campsite);
-        reservation.setStartDate(startDate);
-        reservation.setEndDate(endDate);
-        reservation.setCustomerName(customerName);
-        reservation.setPhoneNumber(phoneNumber);
-        
-        Reservation updated = reservationRepository.save(reservation);
-        return ReservationResponse.from(updated);
+            reservation.setCampsite(campsite);
+            reservation.setStartDate(startDate);
+            reservation.setEndDate(endDate);
+            reservation.setCustomerName(customerName);
+            reservation.setPhoneNumber(phoneNumber);
+
+            Reservation updated = reservationRepository.save(reservation);
+            return ReservationResponse.from(updated);
+        }
     }
     
     @Transactional(readOnly = true)
