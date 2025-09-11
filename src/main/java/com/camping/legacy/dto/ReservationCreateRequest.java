@@ -2,7 +2,7 @@ package com.camping.legacy.dto;
 
 import java.time.LocalDate;
 
-public record ReservationRequest(
+public record ReservationCreateRequest(
         String customerName,
         LocalDate startDate,
         LocalDate endDate,
@@ -12,7 +12,7 @@ public record ReservationRequest(
         String carNumber,
         String requests
 ) {
-    public ReservationRequest {
+    public ReservationCreateRequest {
         if(customerName == null || customerName.isBlank()) throw new RuntimeException("예약자 이름을 입력해주세요.");
         if(startDate == null) throw new RuntimeException("예약 기간을 선택해주세요.");
         if(endDate == null) throw new RuntimeException("예약 기간을 선택해주세요.");

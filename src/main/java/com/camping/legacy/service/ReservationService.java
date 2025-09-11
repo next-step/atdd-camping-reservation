@@ -2,7 +2,8 @@ package com.camping.legacy.service;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
-import com.camping.legacy.dto.ReservationRequest;
+import com.camping.legacy.dto.ReservationEditRequest;
+import com.camping.legacy.dto.ReservationCreateRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
@@ -12,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -28,7 +28,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
 
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResponse createReservation(ReservationCreateRequest request) {
         LocalDate today = LocalDate.now(clock);
 
         if (request.startDate().isBefore(today)) {
@@ -136,7 +136,7 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+    public ReservationResponse updateReservation(Long id, ReservationEditRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         

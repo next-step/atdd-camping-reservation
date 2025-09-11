@@ -4,9 +4,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-public class ReservationRequestFixture {
-    public static ReservationRequestBuilder builder() {
-        return ReservationRequestFixture.innerBuilder()
+public class ReservationCreateRequestFixture {
+    public static ReservationCreateRequestBuilder builder() {
+        return ReservationCreateRequestFixture.innerBuilder()
                 .customerName("홍길동")
                 .startDate(LocalDate.of(2024, 7, 1))
                 .endDate(LocalDate.of(2024, 7, 3))
@@ -18,7 +18,7 @@ public class ReservationRequestFixture {
     }
 
     @Builder(builderMethodName = "innerBuilder")
-    private static ReservationRequest builder(
+    private static ReservationCreateRequest builder(
             String customerName,
             LocalDate startDate,
             LocalDate endDate,
@@ -28,7 +28,7 @@ public class ReservationRequestFixture {
             String carNumber,
             String request
     ) {
-        return new ReservationRequest(
+        return new ReservationCreateRequest(
                 customerName,
                 startDate,
                 endDate,
