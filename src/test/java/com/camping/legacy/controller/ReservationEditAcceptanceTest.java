@@ -125,15 +125,14 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
     @Test
     void 예약_날짜는_오늘부터_30일_이내여야_한다() {
         // given
-        // TODO: mock today to 2025-09-01
         ExtractableResponse<Response> response = sendReservationCreateRequest(reservationCreateRequest());
         Long reservationId = response.jsonPath().getLong("id");
         String confirmationCode = response.jsonPath().getString("confirmationCode");
 
         // when
         Map<String, Object> editRequest = reservationEditRequest();
-        editRequest.put("startDate", "2025-09-31");
-        editRequest.put("endDate", "2025-10-01");
+        editRequest.put("startDate", "2025-09-30");
+        editRequest.put("endDate", "2025-10-02");
         ExtractableResponse<Response> editResponse = sendReservationEditRequest(reservationId, confirmationCode, editRequest);
 
         // then

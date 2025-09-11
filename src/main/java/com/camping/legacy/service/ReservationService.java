@@ -144,6 +144,10 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
+        if (reservation.isCancelled()) {
+            throw new RuntimeException("취소된 예약은 변경할 수 없습니다.");
+        }
+
         String customerName = reservation.getCustomerName();
         LocalDate startDate = reservation.getStartDate();
         LocalDate endDate = reservation.getEndDate();
@@ -160,6 +164,9 @@ public class ReservationService {
         }
 
         if (request.endDate() != null) {
+            if(request.endDate().isAfter(LocalDate.now(clock).plusDays(MAX_RESERVATION_DAYS))) {
+                throw new RuntimeException("예약은 오늘부터 30일 이내의 날짜로만 가능합니다.");
+            }
             endDate = request.endDate();
         }
         
