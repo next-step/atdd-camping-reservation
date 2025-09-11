@@ -135,7 +135,7 @@ public class ReservationService {
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     public ReservationResponse updateReservation(Long id, ReservationEditRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
@@ -143,26 +143,45 @@ public class ReservationService {
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
+        String customerName = reservation.getCustomerName();
+        LocalDate startDate = reservation.getStartDate();
+        LocalDate endDate = reservation.getEndDate();
+        Campsite campsite = reservation.getCampsite();
+        String phoneNumber = reservation.getPhoneNumber();
+
         if (request.siteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.siteNumber())
+            campsite = campsiteRepository.findBySiteNumber(request.siteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
         }
         
         if (request.startDate() != null) {
-            reservation.setStartDate(request.startDate());
+            startDate = request.startDate();
         }
+
         if (request.endDate() != null) {
-            reservation.setEndDate(request.endDate());
+            endDate = request.endDate();
         }
         
         if (request.customerName() != null) {
-            reservation.setCustomerName(request.customerName());
+            customerName = request.customerName();
         }
+
         if (request.phoneNumber() != null) {
-            reservation.setPhoneNumber(request.phoneNumber());
+            phoneNumber = request.phoneNumber();
         }
+
+        boolean hasConflict = reservationRepository.existsByIdNotAndCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                reservation.getId(), campsite, startDate, endDate, "CANCELLED");
+        if (hasConflict) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+        }
+
+        reservation.setCampsite(campsite);
+        reservation.setStartDate(startDate);
+        reservation.setEndDate(endDate);
+        reservation.setCustomerName(customerName);
+        reservation.setPhoneNumber(phoneNumber);
         
         Reservation updated = reservationRepository.save(reservation);
         return ReservationResponse.from(updated);

@@ -7,9 +7,12 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -22,11 +25,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReservationEditAcceptanceTest extends AcceptanceTest {
     @Autowired
     private CampsiteRepository campsiteRepository;
+    private final LocalDate today = LocalDate.of(2025, 9, 1);
 
     @BeforeEach
     void setUpData() {
         campsiteRepository.save(new Campsite("A-1", "A-1", 3));
         campsiteRepository.save(new Campsite("B-1", "B-1", 3));
+        Mockito.when(clock.instant())
+                .thenReturn(today.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     @Test
@@ -150,9 +156,9 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
 
         // when
         Map<String, Object> editRequest = reservationEditRequest();
-        editRequest.put("siteNumber", "B-1");
-        editRequest.put("startDate", "2025-09-13");
-        editRequest.put("endDate", "2025-09-14");
+        editRequest.put("siteNumber", "A-1");
+        editRequest.put("startDate", "2025-09-10");
+        editRequest.put("endDate", "2025-09-12");
         ExtractableResponse<Response> editResponse =
                 sendReservationEditRequest(reservationId, confirmationCode, editRequest);
 
