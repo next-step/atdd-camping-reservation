@@ -7,6 +7,8 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -81,8 +83,15 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         assertThat(response.jsonPath().getString("message")).isEqualTo("예약은 오늘부터 30일 이내의 날짜로만 가능합니다.");
     }
 
-    @Test
-    void 동일_사이트_동일_기간_중복_예약_불가() {
+    @CsvSource(value = {
+            "2025-09-08, 2025-09-10",
+            "2025-09-08, 2025-09-11",
+            "2025-09-10, 2025-09-12",
+            "2025-09-11, 2025-09-14",
+            "2025-09-12, 2025-09-14",
+    })
+    @ParameterizedTest
+    void 동일_사이트_동일_기간_중복_예약_불가(String startDate, String endDate) {
         // given
         Map<String, Object> firstRequest = defaultCreateRequest();
         sendReservationCreateRequest(firstRequest);
@@ -90,6 +99,8 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         // when
         Map<String, Object> secondRequest = defaultCreateRequest();
         secondRequest.put("customerName", "김철수");
+        secondRequest.put("startDate", startDate);
+        secondRequest.put("endDate", endDate);
         ExtractableResponse<Response> response = sendReservationCreateRequest(secondRequest);
 
         // then
