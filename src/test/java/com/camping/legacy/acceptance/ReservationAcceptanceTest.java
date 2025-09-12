@@ -69,15 +69,7 @@ class ReservationAcceptanceTest {
     @Test
     void 사용자가_유효한_정보로_예약을_성공적으로_생성한다() throws Exception {
         // when
-        ReservationRequest request = ReservationRequest.builder()
-                .customerName("김철수")
-                .phoneNumber("010-1234-5678")
-                .startDate(LocalDate.of(2025, 9, 10))
-                .endDate(LocalDate.of(2025, 9, 11))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
-                .build();
-
+        ReservationRequest request = ReservationRequestTestBuilder.builder().build();
         ExtractableResponse<Response> extractedResponse = 예약_생성_요청(request, HttpStatus.CREATED);
 
         // then
@@ -97,25 +89,22 @@ class ReservationAcceptanceTest {
     @Test
     void 이미_예약된_날짜에_중복으로_예약을_시도하면_실패한다() throws Exception {
         // Given: 2025-09-10일에 대형 사이트 'A-1'에 이미 예약이 존재할 때
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("홍길동")
-                .phoneNumber("010-1111-2222")
-                .startDate(LocalDate.of(2025, 9, 10))
-                .endDate(LocalDate.of(2025, 9, 11))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.of(2025, 9, 10))
+                .withEndDate(LocalDate.of(2025, 9, 11))
                 .build();
         예약_생성_요청(initialRequest, HttpStatus.CREATED);
 
         // When: 다른 사용자가 사이트 'A-1'에 대해 2025-09-10일을 포함하는 기간으로 예약을 요청하면
-        ReservationRequest conflictingRequest = ReservationRequest.builder()
-                .customerName("김중복")
-                .phoneNumber("010-3333-4444")
-                .startDate(LocalDate.of(2025, 9, 10)) // 중복되는 날짜
-                .endDate(LocalDate.of(2025, 9, 11))
-                .siteNumber("A-1")
-                .numberOfPeople(3)
+        ReservationRequest conflictingRequest = ReservationRequestTestBuilder.builder()
+                .withCustomerName("김중복")
+                .withPhoneNumber("010-3333-4444")
+                .withStartDate(LocalDate.of(2025, 9, 10))
+                .withEndDate(LocalDate.of(2025, 9, 11))
+                .withSiteNumber("A-1")
+                .withNumberOfPeople(3)
                 .build();
+
         String message = 예약_생성_요청(conflictingRequest, HttpStatus.CONFLICT).path("message");
 
         // Then: "해당 기간에 이미 예약이 존재합니다."와 같은 메시지와 함께 예약이 실패한다.
@@ -130,13 +119,9 @@ class ReservationAcceptanceTest {
     @Test
     void 과거_날짜로_예약을_시도하면_실패한다() throws Exception {
         // When: 사용자가 예약할 때, 시작 날짜를 오늘보다 과거로 지정하면
-        ReservationRequest request = ReservationRequest.builder()
-                .customerName("김시간")
-                .phoneNumber("010-9876-5432")
-                .startDate(LocalDate.now().minusDays(1)) // 과거 날짜
-                .endDate(LocalDate.now().plusDays(1))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest request = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.now().minusDays(1)) // 과거 날짜
+                .withEndDate(LocalDate.now().plusDays(1))
                 .build();
 
         String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
@@ -154,13 +139,9 @@ class ReservationAcceptanceTest {
     @Test
     void 유효하지_않은_기간으로_예약을_시도하면_실패한다() throws Exception {
         // When: 사용자가 예약할 때, 종료 날짜를 시작 날짜보다 이전으로 지정하면
-        ReservationRequest request = ReservationRequest.builder()
-                .customerName("김기간")
-                .phoneNumber("010-1234-5678")
-                .startDate(LocalDate.of(2025, 9, 11)) // 시작일
-                .endDate(LocalDate.of(2025, 9, 10))   // 종료일 (시작일보다 빠름)
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest request = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.of(2025, 9, 11)) // 시작일
+                .withEndDate(LocalDate.of(2025, 9, 10))   // 종료일 (시작일보다 빠름)
                 .build();
 
         String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
@@ -177,13 +158,9 @@ class ReservationAcceptanceTest {
     @Test
     void 삼십일_이후_기간으로_예약을_시도하면_실패한다() throws Exception {
         // When: 사용자가 예약할 때, 예약 기간에 30일 이후 날짜가 포함되면
-        ReservationRequest request = ReservationRequest.builder()
-                .customerName("김미래")
-                .phoneNumber("010-5555-6666")
-                .startDate(LocalDate.now().plusDays(30))
-                .endDate(LocalDate.now().plusDays(31))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest request = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.now().plusDays(30))
+                .withEndDate(LocalDate.now().plusDays(31))
                 .build();
 
         String message = 예약_생성_요청(request, HttpStatus.BAD_REQUEST).path("message");
@@ -203,13 +180,9 @@ class ReservationAcceptanceTest {
     void 취소된_예약_날짜에_새로운_예약을_성공적으로_생성한다() throws Exception {
         // Given: 'A-1' 사이트에 특정 날짜로 예약이 생성되었다가 취소되었을 때
         // 1. 초기 예약 생성
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("김초기")
-                .phoneNumber("010-0000-0000")
-                .startDate(LocalDate.of(2025, 10, 1))
-                .endDate(LocalDate.of(2025, 10, 2))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.of(2025, 10, 1))
+                .withEndDate(LocalDate.of(2025, 10, 2))
                 .build();
 
         ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
@@ -220,13 +193,11 @@ class ReservationAcceptanceTest {
         예약_취소_요청(confirmationCode, reservationId, HttpStatus.CREATED);
 
         // When: 다른 사용자가 동일한 사이트와 날짜로 새로운 예약을 요청하면
-        ReservationRequest newRequest = ReservationRequest.builder()
-                .customerName("박새롬")
-                .phoneNumber("010-1111-1111")
-                .startDate(LocalDate.of(2025, 10, 1))
-                .endDate(LocalDate.of(2025, 10, 2))
-                .siteNumber("A-1")
-                .numberOfPeople(3)
+        ReservationRequest newRequest = ReservationRequestTestBuilder.builder()
+                .withCustomerName("박새롬")
+                .withPhoneNumber("010-1111-1111")
+                .withStartDate(LocalDate.of(2025, 10, 1))
+                .withEndDate(LocalDate.of(2025, 10, 2))
                 .build();
         ReservationResponse newResponse = 예약_생성_요청(newRequest, HttpStatus.CREATED).as(ReservationResponse.class);
 
@@ -261,13 +232,13 @@ class ReservationAcceptanceTest {
                 try {
                     startLatch.await(); // Wait for the signal to start
 
-                    ReservationRequest request = ReservationRequest.builder()
-                            .customerName("User " + userIndex)
-                            .phoneNumber("010-1234-" + String.format("%04d", userIndex))
-                            .startDate(reservationDate)
-                            .endDate(reservationDate.plusDays(1))
-                            .siteNumber("A-1")
-                            .numberOfPeople(2)
+                    ReservationRequest request = ReservationRequestTestBuilder.builder()
+                            .withCustomerName("User " + userIndex)
+                            .withPhoneNumber("010-1234-" + String.format("%04d", userIndex))
+                            .withStartDate(reservationDate)
+                            .withEndDate(reservationDate.plusDays(1))
+                            .withSiteNumber("A-1")
+                            .withNumberOfPeople(2)
                             .build();
 
                     int statusCode = RestAssured
@@ -322,13 +293,9 @@ class ReservationAcceptanceTest {
     @Test
     void 사용자가_올바른_확인_코드로_자신의_예약을_성공적으로_취소한다() throws Exception {
         // Given: 사용자가 특정 날짜에 예약을 요청한 뒤
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("김취소")
-                .phoneNumber("010-4321-8765")
-                .startDate(LocalDate.of(2025, 11, 5))
-                .endDate(LocalDate.of(2025, 11, 6))
-                .siteNumber("B-2")
-                .numberOfPeople(4)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.of(2025, 11, 5))
+                .withEndDate(LocalDate.of(2025, 11, 6))
                 .build();
 
         ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
@@ -340,13 +307,13 @@ class ReservationAcceptanceTest {
         예약_취소_요청(confirmationCode, reservationId, HttpStatus.CREATED);
 
         // And: 취소된 사이트와 날짜에 다른 사용자가 예약을 요청하면 성공한다.
-        ReservationRequest newRequest = ReservationRequest.builder()
-                .customerName("박새롬")
-                .phoneNumber("010-1111-1111")
-                .startDate(LocalDate.of(2025, 11, 5))
-                .endDate(LocalDate.of(2025, 11, 6))
-                .siteNumber("B-2")
-                .numberOfPeople(3)
+        ReservationRequest newRequest = ReservationRequestTestBuilder.builder()
+                .withCustomerName("박새롬")
+                .withPhoneNumber("010-1111-1111")
+                .withStartDate(LocalDate.of(2025, 11, 5))
+                .withEndDate(LocalDate.of(2025, 11, 6))
+                .withSiteNumber("A-1")
+                .withNumberOfPeople(3)
                 .build();
         예약_생성_요청(newRequest, HttpStatus.CREATED).as(ReservationResponse.class);
     }
@@ -360,13 +327,7 @@ class ReservationAcceptanceTest {
     @Test
     void 사용자가_잘못된_확인_코드로_예약_취소를_시도하면_실패한다() throws Exception {
         // Given: 사용자가 사이트 'A-1'을 예약해둔 상태일 때
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("김보안")
-                .phoneNumber("010-9999-8888")
-                .startDate(LocalDate.of(2025, 12, 1))
-                .endDate(LocalDate.of(2025, 12, 2))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
                 .build();
 
         ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
@@ -390,13 +351,9 @@ class ReservationAcceptanceTest {
     @Test
     void 당일_예약을_취소하면_환불_불가_정책이_적용된다() throws Exception {
         // Given: 오늘 날짜로 'A-1' 사이트에 예약이 존재할 때
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("김당일")
-                .phoneNumber("010-2025-0904")
-                .startDate(LocalDate.of(2025, 9, 4))
-                .endDate(LocalDate.of(2025, 9, 5))
-                .siteNumber("A-1")
-                .numberOfPeople(2)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.now())
+                .withEndDate(LocalDate.now().plusDays(1L))
                 .build();
 
         ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
@@ -420,13 +377,9 @@ class ReservationAcceptanceTest {
     @Test
     void 예약일_이전에_취소하면_전액_환불_정책이_적용된다() throws Exception {
         // Given: 내일 날짜로 'B-1' 사이트에 예약이 존재할 때
-        ReservationRequest initialRequest = ReservationRequest.builder()
-                .customerName("김환불")
-                .phoneNumber("010-2025-0905")
-                .startDate(LocalDate.of(2025, 9, 5))
-                .endDate(LocalDate.of(2025, 9, 6))
-                .siteNumber("B-1")
-                .numberOfPeople(2)
+        ReservationRequest initialRequest = ReservationRequestTestBuilder.builder()
+                .withStartDate(LocalDate.now().plusDays(3))
+                .withEndDate(LocalDate.now().plusDays(4))
                 .build();
 
         ReservationResponse initialResponse = 예약_생성_요청(initialRequest, HttpStatus.CREATED).as(ReservationResponse.class);
