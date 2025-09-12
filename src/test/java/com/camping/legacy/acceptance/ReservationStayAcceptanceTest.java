@@ -32,17 +32,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("A-5")
             .withDates(conflictDate, conflictDate.plusDays(1))
-            .withName("기존예약고객")
-            .withPhone("010-7777-7777")
             .build();
 
         given()
             .contentType("application/json")
             .body(existingReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .statusCode(CREATED.value());
+                .statusCode(CREATED.value());
 
         // when - 고객이 12월 20일부터 24일까지 예약하려고 하면
         LocalDate startDate = LocalDate.of(currentYear, 12, 20);
@@ -51,19 +49,17 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("A-5")
             .withDates(startDate, endDate)
-            .withName("연박예약고객")
-            .withPhone("010-6666-6666")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(newReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
-        // then - 예약에 실패한다
+        // then - "해당 기간에 이미 예약이 존재합니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
     }
@@ -78,26 +74,24 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
             .withSiteNumber("A-7")
             .withDates(startDate, endDate)
-            .withName("잘못된날짜고객")
-            .withPhone("010-5555-5555")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(invalidReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
-        // then - 예약에 실패한다
+        // then - "종료일이 시작일보다 이전일 수 없습니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("종료일이 시작일보다 이전일 수 없습니다.");
     }
 
     @Test
     void 일부_날짜만_가능해도_전체_예약_불가() {
-        // given - A-2 캠핑 구역이 12월 20일, 21일은 비어있지만 22일은 예약되어 있을 때
+        // given - A-2 캠핑 구역이 12월 22일이 예약되어 있을 때
         int currentYear = LocalDate.now().getYear();
         LocalDate startDate = LocalDate.of(currentYear, 12, 22);
         LocalDate endDate = LocalDate.of(currentYear, 12, 23);
@@ -106,17 +100,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-2")
             .withDates(startDate, endDate)
-            .withName("부분충돌고객")
-            .withPhone("010-3333-3333")
             .build();
 
         given()
             .contentType("application/json")
             .body(existingReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .statusCode(CREATED.value());
+                .statusCode(CREATED.value());
 
         // when - 고객이 12월 20일부터 22일까지 예약하려고 하면
         startDate = LocalDate.of(currentYear, 12, 20);
@@ -125,19 +117,17 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> overlappingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-2")
             .withDates(startDate, endDate)
-            .withName("부분예약고객")
-            .withPhone("010-2222-2222")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(overlappingReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
-        // then - 예약할 수 없다
+        // then - "해당 기간에 이미 예약이 존재합니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
     }
@@ -151,17 +141,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> futureReservation = new ReservationTestDataBuilder()
             .withSiteNumber("A-8")
             .withDates(startDate, endDate)
-            .withName("미래예약고객")
-            .withPhone("010-4444-4444")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(futureReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
         // then - "예약은 30일 이내에만 가능합니다"라는 안내 메시지가 나타난다
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -177,17 +165,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> validReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-3")
             .withDates(startDate, endDate)
-            .withName("29일경계고객")
-            .withPhone("010-1111-2222")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(validReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -202,17 +188,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> validReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-4")
             .withDates(startDate, endDate)
-            .withName("30일경계고객")
-            .withPhone("010-2222-3333")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(validReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -226,17 +210,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> sameDayReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-5")
             .withDates(sameDate, sameDate)
-            .withName("당일예약고객")
-            .withPhone("010-3333-4444")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(sameDayReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -250,17 +232,15 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> todayReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-6")
             .withDates(today, today.plusDays(1))
-            .withName("오늘예약고객")
-            .withPhone("010-4444-5555")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(todayReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -275,19 +255,17 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
         Map<String, Object> invalidSiteReservation = new ReservationTestDataBuilder()
             .withSiteNumber("Z-99")  // 존재하지 않는 캠핑장
             .withDates(startDate, endDate)
-            .withName("잘못된사이트고객")
-            .withPhone("010-5555-6666")
             .build();
 
         ExtractableResponse<Response> response = given()
             .contentType("application/json")
             .body(invalidSiteReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
-        // then - "존재하지 않는 캠핑장입니다" 오류가 발생한다
+        // then - "존재하지 않는 캠핑장입니다" 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).contains("존재하지 않는 캠핑장");
     }
@@ -364,11 +342,11 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .contentType("application/json")
             .body(invalidReservation)
             .when()
-            .post("/api/reservations")
+                .post("/api/reservations")
             .then()
-            .extract();
+                .extract();
 
-        // then - 예약에 실패한다
+        // then - "예약 기간을 선택해주세요." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("예약 기간을 선택해주세요.");
     }
@@ -376,8 +354,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 기존_예약을_완전히_포함하는_예약_실패() {
         // given - B-10 캠핑 구역에 12월 10일부터 13일까지 예약이 있을 때
-        LocalDate existingStart = LocalDate.now().plusDays(10);
-        LocalDate existingEnd = LocalDate.now().plusDays(13);
+        LocalDate existingStart = LocalDate.of(2025, 12, 10);
+        LocalDate existingEnd = LocalDate.of(2025, 12, 13);
 
         // 기존 예약 생성
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
@@ -394,8 +372,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
 
         // when - 동일한 캠핑 구역을 9일부터 14일까지 예약하려고 하면
-        LocalDate newStart = LocalDate.now().plusDays(9);
-        LocalDate newEnd = LocalDate.now().plusDays(14);
+        LocalDate newStart = LocalDate.of(2025, 12, 9);
+        LocalDate newEnd = LocalDate.of(2025, 12, 14);
 
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-10")
@@ -418,8 +396,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 기존_예약_안에_포함되는_예약_실패() {
         // given - B-11 캠핑 구역에 12월 15일부터 20일까지 예약이 있을 때
-        LocalDate existingStart = LocalDate.now().plusDays(15);
-        LocalDate existingEnd = LocalDate.now().plusDays(20);
+        LocalDate existingStart = LocalDate.of(2025, 12, 15);
+        LocalDate existingEnd = LocalDate.of(2025, 12, 20);
 
         // 기존 예약 생성
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
@@ -436,8 +414,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
 
         // when - 동일한 캠핑 구역을 16일부터 18일까지 예약하려고 하면
-        LocalDate newStart = LocalDate.now().plusDays(16);
-        LocalDate newEnd = LocalDate.now().plusDays(18);
+        LocalDate newStart = LocalDate.of(2025, 12, 16);
+        LocalDate newEnd = LocalDate.of(2025, 12, 18);
 
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-11")
@@ -460,8 +438,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 시작일만_겹치는_예약_실패() {
         // given - B-12 캠핑 구역에 20일부터 23일까지 예약이 있을 때
-        LocalDate existingStart = LocalDate.now().plusDays(20);
-        LocalDate existingEnd = LocalDate.now().plusDays(23);
+        LocalDate existingStart = LocalDate.of(2025, 12, 20);
+        LocalDate existingEnd = LocalDate.of(2025, 12, 23);
 
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-12")
@@ -477,8 +455,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
 
         // when - 동일한 캠핑 구역을 22일부터 25일까지 예약하려고 하면
-        LocalDate newStart = LocalDate.now().plusDays(22);
-        LocalDate newEnd = LocalDate.now().plusDays(25);
+        LocalDate newStart = LocalDate.of(2025, 12, 22);
+        LocalDate newEnd = LocalDate.of(2025, 12, 25);
 
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-12")
@@ -501,8 +479,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 종료일만_겹치는_예약_실패() {
         // given - B-13 캠핑 구역에 25일부터 28일까지 예약이 있을 때
-        LocalDate existingStart = LocalDate.now().plusDays(25);
-        LocalDate existingEnd = LocalDate.now().plusDays(28);
+        LocalDate existingStart = LocalDate.of(2025, 12, 25);
+        LocalDate existingEnd = LocalDate.of(2025, 12, 28);
 
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-13")
@@ -518,8 +496,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
 
         // when - 동일한 캠핑 구역을 23일부터 26일까지 예약하려고 하면
-        LocalDate newStart = LocalDate.now().plusDays(23);
-        LocalDate newEnd = LocalDate.now().plusDays(26);
+        LocalDate newStart = LocalDate.of(2025, 12, 23);
+        LocalDate newEnd = LocalDate.of(2025, 12, 26);
 
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-13")
@@ -542,8 +520,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 연속된_날짜_예약_성공() {
         // given - B-14 캠핑 구역에 12월 1일부터 3일까지 예약이 있을 때
-        LocalDate existingStart = LocalDate.now().plusDays(1);
-        LocalDate existingEnd = LocalDate.now().plusDays(3);
+        LocalDate existingStart = LocalDate.of(2025, 12, 1);
+        LocalDate existingEnd = LocalDate.of(2025, 12, 3);
 
         Map<String, Object> existingReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-14")
@@ -559,8 +537,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 .statusCode(CREATED.value());
 
         // when - 동일한 캠핑 구역을 4일부터 6일까지 예약하려고 하면
-        LocalDate newStart = LocalDate.now().plusDays(4);
-        LocalDate newEnd = LocalDate.now().plusDays(6);
+        LocalDate newStart = LocalDate.of(2025, 12, 4);
+        LocalDate newEnd = LocalDate.of(2025, 12, 6);
 
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-14")
