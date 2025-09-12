@@ -25,7 +25,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
-    public ReservationResponse createReservation(ReservationRequest request, LocalDate currentDate) {
+    public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
 
         Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
@@ -103,15 +103,15 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode, LocalDate currentDate) {
+    public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        if (reservation.getStartDate().equals(currentDate)) {
+        if (reservation.getStartDate().equals(LocalDate.now())) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");
