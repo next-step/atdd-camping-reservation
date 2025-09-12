@@ -32,16 +32,35 @@ public class ReservationTestDataBuilder {
         return this;
     }
     
-    public ReservationTestDataBuilder withStartDate(LocalDate startDate) {
-        this.startDate = startDate;
+    public ReservationTestDataBuilder withDateRange(int startDaysFromNow, int endDaysFromNow) {
+        this.startDate = LocalDate.now().plusDays(startDaysFromNow);
+        this.endDate = LocalDate.now().plusDays(endDaysFromNow);
         return this;
     }
     
-    public ReservationTestDataBuilder withEndDate(LocalDate endDate) {
-        this.endDate = endDate;
+    public ReservationTestDataBuilder withSameDayReservation(LocalDate date) {
+        this.startDate = date;
+        this.endDate = date;
         return this;
     }
     
+    public ReservationTestDataBuilder withValidFutureReservation() {
+        return withDateRange(7, 9);
+    }
+    
+    public ReservationTestDataBuilder withTodayReservation() {
+        LocalDate today = LocalDate.now();
+        this.startDate = today;
+        this.endDate = today.plusDays(1);
+        return this;
+    }
+    
+    public ReservationTestDataBuilder withoutDates() {
+        this.startDate = null;
+        this.endDate = null;
+        return this;
+    }
+
     public Map<String, Object> build() {
         Map<String, Object> request = new HashMap<>();
         request.put("siteNumber", siteNumber);

@@ -152,6 +152,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         // when - B-8 캠핑 구역을 1명의 고객이 예약을 시도하면
         Map<String, Object> singleReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-8")
+            .withValidFutureReservation()
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -171,6 +172,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         // when - B-9 캠핑 구역에 예약을 생성하면
         Map<String, Object> reservationForCode = new ReservationTestDataBuilder()
             .withSiteNumber("B-9")
+            .withValidFutureReservation()
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -196,6 +198,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         for (int i = 1; i <= 5; i++) {
             Map<String, Object> reservation = new ReservationTestDataBuilder()
                     .withSiteNumber("B-1" + i) // B-11, B-12, B-13, B-14, B-15
+                    .withValidFutureReservation()
                     .build();
 
             ExtractableResponse<Response> response = given()
@@ -220,6 +223,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객명이 null인 예약을 시도하면
         Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
             .withName(null)
+            .withValidFutureReservation()
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -240,6 +244,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객명이 빈 문자열인 예약을 시도하면
         Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
             .withName("")
+            .withValidFutureReservation()
             .build();
 
         ExtractableResponse<Response> response = given()

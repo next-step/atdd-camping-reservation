@@ -159,12 +159,9 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void _29일_후_예약은_성공() {
         // when - B-3 캠핑 구역을 고객이 오늘로부터 29일 후의 날짜로 예약하려고 하면
-        LocalDate startDate = LocalDate.now().plusDays(29);
-        LocalDate endDate = LocalDate.now().plusDays(30);
-
         Map<String, Object> validReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-3")
-            .withDates(startDate, endDate)
+            .withDateRange(29, 30)
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -182,12 +179,9 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void _30일_후_예약은_성공() {
         // when - B-4 캠핑 구역을 고객이 오늘로부터 30일 후에 예약하려고 하면
-        LocalDate startDate = LocalDate.now().plusDays(30);
-        LocalDate endDate = LocalDate.now().plusDays(31);
-
         Map<String, Object> validReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-4")
-            .withDates(startDate, endDate)
+            .withDateRange(30, 31)
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -209,7 +203,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
 
         Map<String, Object> sameDayReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-5")
-            .withDates(sameDate, sameDate)
+            .withSameDayReservation(sameDate)
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -227,11 +221,9 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 오늘_날짜_예약_시도_성공() {
         // given - B-6 캠핑 구역을 고객이 오늘 날짜로 예약을 시도하면
-        LocalDate today = LocalDate.now();
-
         Map<String, Object> todayReservation = new ReservationTestDataBuilder()
             .withSiteNumber("B-6")
-            .withDates(today, today.plusDays(1))
+            .withTodayReservation()
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -249,12 +241,9 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 존재하지_않는_캠핑장_예약_시도_실패() {
         // when - 고객이 존재하지 않는 캠핑장으로 예약하려고 하면
-        LocalDate startDate = LocalDate.now().plusDays(10);
-        LocalDate endDate = LocalDate.now().plusDays(12);
-
         Map<String, Object> invalidSiteReservation = new ReservationTestDataBuilder()
             .withSiteNumber("Z-99")  // 존재하지 않는 캠핑장
-            .withDates(startDate, endDate)
+            .withDateRange(10, 12)
             .build();
 
         ExtractableResponse<Response> response = given()
@@ -273,8 +262,6 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 최소_동시성_2명_예약_시도() {
         // when - 2명의 고객이 동시에 같은 기간으로 B-7 캠핑 구역을 예약하려고 하면
-        LocalDate startDate = LocalDate.now().plusDays(10);
-        LocalDate endDate = LocalDate.now().plusDays(12);
 
         ExecutorService executorService = Executors.newFixedThreadPool(2);
         CountDownLatch latch = new CountDownLatch(2);
@@ -286,7 +273,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                 try {
                     Map<String, Object> request = new ReservationTestDataBuilder()
                         .withSiteNumber("B-7")
-                        .withDates(startDate, endDate)
+                        .withDateRange(10, 12)
                         .withName("최소동시고객" + customerIndex)
                         .withPhone("010-6666-777" + customerIndex)
                         .build();
@@ -335,7 +322,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     void 날짜가_null인_요청_시_예약_실패() {
         // when - 고객이 null 날짜로 예약을 시도하면
         Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
-            .withStartDate(null)
+            .withoutDates()
             .build();
 
         ExtractableResponse<Response> response = given()
