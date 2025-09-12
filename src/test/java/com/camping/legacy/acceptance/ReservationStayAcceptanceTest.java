@@ -139,8 +139,8 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void _30일_이내만_예약_가능() {
         // when - 고객이 오늘로부터 31일 이후의 날짜로 예약하려고 하면
-        LocalDate startDate = LocalDate.now().plusDays(31);
-        LocalDate endDate = LocalDate.now().plusDays(33);
+        LocalDate startDate = clockProvider.now().plusDays(31);
+        LocalDate endDate = clockProvider.now().plusDays(33);
 
         Map<String, Object> futureReservation = new HashMap<>();
         futureReservation.put("siteNumber", "A-8");
