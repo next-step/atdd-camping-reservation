@@ -3,6 +3,7 @@ package com.camping.legacy.acceptance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.OK;
 
+import com.camping.legacy.acceptance.support.ConcurrentTestHelper;
 import com.camping.legacy.acceptance.support.ReservationApiHelper;
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
@@ -11,10 +12,6 @@ import io.restassured.response.Response;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.ArrayList;
 
 import org.junit.jupiter.api.Test;
 
@@ -87,30 +84,8 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         ReservationApiHelper.createReservation(existingReservation);
 
         // when - 10명의 고객이 동시에 A-8 캠핑 구역의 예약 가능 여부를 확인하면
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
-        CountDownLatch latch = new CountDownLatch(10);
-        List<ExtractableResponse<Response>> responses = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++) {
-            executorService.execute(() -> {
-                try {
-                    ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-8", checkDate);
-
-                    synchronized (responses) {
-                        responses.add(response);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        executorService.shutdown();
+        List<ExtractableResponse<Response>> responses = ConcurrentTestHelper
+                .executeConcurrentSiteAvailabilityChecks(10, "A-8", checkDate);
 
         // then - 모든 고객에게 동일하게 "예약 불가능"으로 표시된다
         assertThat(responses).hasSize(10);
@@ -147,30 +122,8 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 2명의 고객이 동시에 A-10 캠핑 구역의 예약 가능 여부를 확인하면
         LocalDate checkDate = LocalDate.now().plusDays(16);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        CountDownLatch latch = new CountDownLatch(2);
-        List<ExtractableResponse<Response>> responses = new ArrayList<>();
-
-        for (int i = 0; i < 2; i++) {
-            executorService.execute(() -> {
-                try {
-                    ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-10", checkDate);
-
-                    synchronized (responses) {
-                        responses.add(response);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        executorService.shutdown();
+        List<ExtractableResponse<Response>> responses = ConcurrentTestHelper
+                .executeConcurrentSiteAvailabilityChecks(2, "A-10", checkDate);
 
         // then - 모든 고객에게 동일하게 "예약 가능"으로 표시된다
         assertThat(responses).hasSize(2);

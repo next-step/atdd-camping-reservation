@@ -4,18 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
+import com.camping.legacy.acceptance.support.ConcurrentTestHelper;
 import com.camping.legacy.acceptance.support.ReservationApiHelper;
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.Test;
 
@@ -196,54 +193,21 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 최소_동시성_2명_예약_시도() {
         // when - 2명의 고객이 동시에 같은 기간으로 B-7 캠핑 구역을 예약하려고 하면
+        LocalDate startDate = LocalDate.now().plusDays(10);
+        LocalDate endDate = LocalDate.now().plusDays(12);
 
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        CountDownLatch latch = new CountDownLatch(2);
-        List<ExtractableResponse<Response>> responses = new ArrayList<>();
-
-        for (int i = 0; i < 2; i++) {
-            final int customerIndex = i;
-            executorService.execute(() -> {
-                try {
-                    Map<String, Object> request = new ReservationTestDataBuilder()
+        List<ExtractableResponse<Response>> responses = ConcurrentTestHelper
+                .executeConcurrentReservationsWithIndex(2, customerIndex -> 
+                    new ReservationTestDataBuilder()
                         .withSiteNumber("B-7")
-                        .withDateRange(10, 12)
+                        .withDates(startDate, endDate)
                         .withName("최소동시고객" + customerIndex)
                         .withPhone("010-6666-777" + customerIndex)
-                        .build();
-
-                    ExtractableResponse<Response> response = ReservationApiHelper.createReservation(request);
-
-                    synchronized (responses) {
-                        responses.add(response);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        executorService.shutdown();
+                        .build()
+                );
 
         // then - 한 명만 예약에 성공하고 한 명은 실패한다
-        long successCount = responses.stream()
-            .mapToInt(ExtractableResponse::statusCode)
-            .filter(status -> status == CREATED.value())
-            .count();
-
-        long conflictCount = responses.stream()
-            .mapToInt(ExtractableResponse::statusCode)
-            .filter(status -> status == CONFLICT.value())
-            .count();
-
-        assertThat(successCount).isEqualTo(1);
-        assertThat(conflictCount).isEqualTo(1);
-        assertThat(responses).hasSize(2);
+        ConcurrentTestHelper.assertConcurrentResults(responses, 1, 1);
     }
 
     @Test
