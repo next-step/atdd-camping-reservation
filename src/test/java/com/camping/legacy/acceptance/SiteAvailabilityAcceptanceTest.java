@@ -1,10 +1,9 @@
 package com.camping.legacy.acceptance;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
 
+import com.camping.legacy.acceptance.support.ReservationApiHelper;
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -33,20 +32,10 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
             .withDates(reservedDate, reservedDate.plusDays(1))
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 고객이 12월 25일에 A-3 캠핑 구역의 예약 가능 여부를 확인하면
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/A-3/availability?date=" + reservedDate)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-3", reservedDate);
 
         // then - "예약 불가능"으로 표시된다
         assertThat(response.statusCode()).isEqualTo(OK.value());
@@ -58,11 +47,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객이 12월 25일에 A-4 캠핑 구역의 예약 가능 여부를 확인하면
         LocalDate availableDate = LocalDate.of(2025, 12, 25);
 
-        ExtractableResponse<Response> response = given()
-            .when()
-               .get("/api/sites/A-4/availability?date=" + availableDate)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-4", availableDate);
 
         // then - "예약 가능"으로 표시된다
         assertThat(response.jsonPath().getBoolean("available")).isTrue();
@@ -79,20 +64,10 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
             .withName("고객A")
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(reservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(reservation);
 
         // and - 고객B가 같은 날짜의 예약 가능 여부를 확인하면
-        ExtractableResponse<Response> response = given()
-            .when()
-            .get("/api/sites/A-6/availability?date=" + targetDate)
-            .then()
-            .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-6", targetDate);
 
         // then - "예약 불가능"으로 표시된다
         assertThat(response.jsonPath().getBoolean("available")).isFalse();
@@ -109,13 +84,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
             .withDates(checkDate, checkDate.plusDays(1))
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-               .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 10명의 고객이 동시에 A-8 캠핑 구역의 예약 가능 여부를 확인하면
         ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -125,11 +94,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         for (int i = 0; i < 10; i++) {
             executorService.execute(() -> {
                 try {
-                    ExtractableResponse<Response> response = given()
-                        .when()
-                        .get("/api/sites/A-8/availability?date=" + checkDate)
-                        .then()
-                        .extract();
+                    ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-8", checkDate);
 
                     synchronized (responses) {
                         responses.add(response);
@@ -160,11 +125,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객이 존재하지 않는 캠핑장의 가용성을 조회하면
         LocalDate queryDate = LocalDate.now().plusDays(10);
 
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/Z-99/availability?date=" + queryDate)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("Z-99", queryDate);
 
         // then - "사이트를 찾을 수 없습니다"라는 안내 메시지가 나타난다
         assertThat(response.jsonPath().getString("message").contains("사이트를 찾을 수 없습니다"));
@@ -175,11 +136,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 1명의 고객이 A-9 캠핑 구역의 가용성을 조회하면
         LocalDate availableDate = LocalDate.now().plusDays(20);
 
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/A-9/availability?date=" + availableDate)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-9", availableDate);
 
         // then - "예약 가능"으로 표시된다
         assertThat(response.jsonPath().getBoolean("available")).isTrue();
@@ -197,11 +154,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         for (int i = 0; i < 2; i++) {
             executorService.execute(() -> {
                 try {
-                    ExtractableResponse<Response> response = given()
-                        .when()
-                            .get("/api/sites/A-10/availability?date=" + checkDate)
-                        .then()
-                            .extract();
+                    ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-10", checkDate);
 
                     synchronized (responses) {
                         responses.add(response);
@@ -233,11 +186,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객이 오늘 날짜로 A-11 캠핑 구역의 가용성을 조회하면
         LocalDate today = LocalDate.now();
 
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/A-11/availability?date=" + today)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability("A-11", today);
 
         // then - "예약 가능"으로 표시된다
         assertThat(response.statusCode()).isEqualTo(OK.value());
@@ -249,11 +198,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
         // when - 고객이 빈 캠핑장 번호로 가용성을 조회하면
         LocalDate queryDate = LocalDate.now().plusDays(10);
 
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/ /availability?date=" + queryDate)
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailability(" ", queryDate);
 
         // then - "사이트를 찾을 수 없습니다"라는 안내 메시지가 나타난다
         assertThat(response.jsonPath().getString("message")).contains("사이트를 찾을 수 없습니다");
@@ -262,11 +207,7 @@ class SiteAvailabilityAcceptanceTest extends BaseAcceptanceTest {
     @Test
     void 날짜_파라미터_없이_가용성_조회_실패() {
         // when - 고객이 날짜 없이 가용성을 조회하면
-        ExtractableResponse<Response> response = given()
-            .when()
-                .get("/api/sites/A-12/availability")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.checkSiteAvailabilityWithoutDateParam("A-12");
 
         // then - "필수 파라미터가 누락되었습니다"라는 안내 메시지가 나타난다
         assertThat(response.jsonPath().getString("message")).contains("date");

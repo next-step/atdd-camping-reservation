@@ -1,10 +1,10 @@
 package com.camping.legacy.acceptance;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
+import com.camping.legacy.acceptance.support.ReservationApiHelper;
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -32,13 +32,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                 .withDates(startDate, endDate)
                 .build();
 
-        ExtractableResponse<Response> response = given()
-                .contentType("application/json")
-                .body(reservationRequest)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservationRequest);
 
         // then - 예약이 완료되고
         // and - 6자리 예약 확인 번호를 받는다
@@ -65,13 +59,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                             .withDates(startDate, endDate)
                             .build();
 
-                    ExtractableResponse<Response> response = given()
-                            .contentType("application/json")
-                            .body(request)
-                    .when()
-                            .post("/api/reservations")
-                    .then()
-                            .extract();
+                    ExtractableResponse<Response> response = ReservationApiHelper.createReservation(request);
 
                     synchronized (responses) {
                         responses.add(response);
@@ -118,13 +106,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                 .withDates(startDate, endDate)
                 .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 고객이 같은 기간으로 B-1 캠핑 구역을 예약하려고 하면
         Map<String, Object> newReservation = new ReservationTestDataBuilder()
@@ -134,13 +116,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             .withPhone("010-8888-8888")
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다"라는 안내 메시지가 나타난다
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -155,13 +131,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             .withValidFutureReservation()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(singleReservation)
-            .when()
-               .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(singleReservation);
 
         // then - 예약이 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -175,13 +145,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             .withValidFutureReservation()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(reservationForCode)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservationForCode);
 
         // then - 확인 코드는 영문자 6자리여야 한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -201,13 +165,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
                     .withValidFutureReservation()
                     .build();
 
-            ExtractableResponse<Response> response = given()
-                    .contentType("application/json")
-                    .body(reservation)
-                    .when()
-                        .post("/api/reservations")
-                    .then()
-                        .extract();
+            ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservation);
 
             responses.add(response);
         }
@@ -226,13 +184,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             .withValidFutureReservation()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(invalidReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
 
         // then - "예약자 이름을 입력해주세요." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -247,13 +199,7 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
             .withValidFutureReservation()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(invalidReservation)
-            .when()
-            .post("/api/reservations")
-            .then()
-            .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
 
         // then - "예약자 이름을 입력해주세요." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());

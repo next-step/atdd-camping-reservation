@@ -1,10 +1,10 @@
 package com.camping.legacy.acceptance;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
+import com.camping.legacy.acceptance.support.ReservationApiHelper;
 import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -34,13 +34,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(conflictDate, conflictDate.plusDays(1))
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 고객이 12월 20일부터 24일까지 예약하려고 하면
         LocalDate startDate = LocalDate.of(currentYear, 12, 20);
@@ -51,13 +45,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(startDate, endDate)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -76,13 +64,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(startDate, endDate)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(invalidReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
 
         // then - "종료일이 시작일보다 이전일 수 없습니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -102,13 +84,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(startDate, endDate)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 고객이 12월 20일부터 22일까지 예약하려고 하면
         startDate = LocalDate.of(currentYear, 12, 20);
@@ -119,13 +95,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(startDate, endDate)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(overlappingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(overlappingReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -143,13 +113,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(startDate, endDate)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(futureReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(futureReservation);
 
         // then - "예약은 30일 이내에만 가능합니다"라는 안내 메시지가 나타난다
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -164,13 +128,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDateRange(29, 30)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(validReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(validReservation);
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -184,13 +142,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDateRange(30, 31)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(validReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(validReservation);
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -206,13 +158,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withSameDayReservation(sameDate)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(sameDayReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(sameDayReservation);
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -226,13 +172,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withTodayReservation()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(todayReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(todayReservation);
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
@@ -246,13 +186,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDateRange(10, 12)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(invalidSiteReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidSiteReservation);
 
         // then - "존재하지 않는 캠핑장입니다" 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -278,13 +212,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
                         .withPhone("010-6666-777" + customerIndex)
                         .build();
 
-                    ExtractableResponse<Response> response = given()
-                        .contentType("application/json")
-                        .body(request)
-                        .when()
-                        .post("/api/reservations")
-                        .then()
-                        .extract();
+                    ExtractableResponse<Response> response = ReservationApiHelper.createReservation(request);
 
                     synchronized (responses) {
                         responses.add(response);
@@ -325,13 +253,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withoutDates()
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(invalidReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
 
         // then - "예약 기간을 선택해주세요." 라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -350,13 +272,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(existingStart, existingEnd)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 동일한 캠핑 구역을 9일부터 14일까지 예약하려고 하면
         LocalDate newStart = LocalDate.of(2025, 12, 9);
@@ -367,13 +283,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(newStart, newEnd)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다."라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -392,13 +302,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(existingStart, existingEnd)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 동일한 캠핑 구역을 16일부터 18일까지 예약하려고 하면
         LocalDate newStart = LocalDate.of(2025, 12, 16);
@@ -409,13 +313,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(newStart, newEnd)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다."라는 안내 메세지가 나타난다
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -433,13 +331,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(existingStart, existingEnd)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 동일한 캠핑 구역을 22일부터 25일까지 예약하려고 하면
         LocalDate newStart = LocalDate.of(2025, 12, 22);
@@ -450,13 +342,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(newStart, newEnd)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다."라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -474,13 +360,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(existingStart, existingEnd)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 동일한 캠핑 구역을 23일부터 26일까지 예약하려고 하면
         LocalDate newStart = LocalDate.of(2025, 12, 23);
@@ -491,13 +371,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(newStart, newEnd)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - "해당 기간에 이미 예약이 존재합니다."라는 안내 메세지가 나타난다.
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
@@ -515,13 +389,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(existingStart, existingEnd)
             .build();
 
-        given()
-            .contentType("application/json")
-            .body(existingReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(CREATED.value());
+        ReservationApiHelper.createReservation(existingReservation);
 
         // when - 동일한 캠핑 구역을 4일부터 6일까지 예약하려고 하면
         LocalDate newStart = LocalDate.of(2025, 12, 4);
@@ -532,13 +400,7 @@ class ReservationStayAcceptanceTest extends BaseAcceptanceTest {
             .withDates(newStart, newEnd)
             .build();
 
-        ExtractableResponse<Response> response = given()
-            .contentType("application/json")
-            .body(newReservation)
-            .when()
-                .post("/api/reservations")
-            .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
 
         // then - 예약에 성공한다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
