@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static com.camping.legacy.controller.ReservationTestHelper.*;
+import static com.camping.legacy.controller.ReservationApiClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationEditAcceptanceTest extends AcceptanceTest {

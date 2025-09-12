@@ -22,9 +22,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
-import static com.camping.legacy.controller.ReservationTestHelper.*;
+import static com.camping.legacy.controller.ReservationApiClient.*;
 import static com.camping.legacy.util.DateTimeUtil.yyyyMMdd;
-import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ReservationCreateAcceptanceTest extends AcceptanceTest {

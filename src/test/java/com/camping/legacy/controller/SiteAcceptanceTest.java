@@ -59,7 +59,7 @@ class SiteAcceptanceTest extends AcceptanceTest {
                 "startDate", "2025-09-12",
                 "endDate", "2025-09-13"
         );
-        ReservationTestHelper.sendReservationCreateRequest(siteB1ReservationRequest);
+        ReservationApiClient.sendReservationCreateRequest(siteB1ReservationRequest);
 
         // when
         Map<String, Object> queryParams = Map.of(

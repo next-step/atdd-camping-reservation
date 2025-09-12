@@ -9,7 +9,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReservationTestHelper {
+public class ReservationApiClient {
 
     public static void assertReservationSuccess(ExtractableResponse<Response> extract, Map<String, Object> expected) {
         assertThat(extract.jsonPath().getString("status")).isEqualTo("CONFIRMED");
