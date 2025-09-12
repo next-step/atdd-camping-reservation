@@ -38,7 +38,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     void 정상적인_예약_생성() {
         // given
         예약_가능한_캠핑_사이트_A1이_존재한다();
-        오늘_날짜가_설정된다("2024-01-01");
+        오늘_날짜가_설정된다();
 
         // when
         var response = 고객이_예약을_요청한다(
@@ -54,7 +54,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @Test
     void 예약_30일_초과_시도() {
         // given
-        오늘_날짜가_설정된다(LocalDate.now().toString());
+        오늘_날짜가_설정된다();
 
         // when
         var response = 고객이_예약을_요청한다(
@@ -135,7 +135,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @Test
     void 당일_예약_취소() {
         // given
-        오늘_날짜가_설정된다(LocalDate.now().toString());
+        오늘_날짜가_설정된다();
         Long reservationId = 시작일인_예약이_존재한다(LocalDate.now().toString());
 
         var getResponse = given().log().all()

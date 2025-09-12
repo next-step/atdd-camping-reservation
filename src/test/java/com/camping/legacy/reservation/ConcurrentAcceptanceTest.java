@@ -22,7 +22,7 @@ public class ConcurrentAcceptanceTest extends AcceptanceTest {
     void 동시_예약_요청_처리() {
         // given
         예약_가능한_캠핑_사이트_A1이_존재한다();
-        오늘_날짜가_설정된다("2024-01-01");
+        오늘_날짜가_설정된다();
 
         // when
         var responses = 동시에_예약을_요청한다(
