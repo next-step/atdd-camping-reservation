@@ -7,11 +7,13 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.http.HttpStatus;
 
+import java.util.Map;
+
 public class ReservationHelper {
 
     public static final String RESERVATION_BASE_URL = "/api/reservations";
 
-    static ExtractableResponse<Response> 예약_생성_요청(ReservationRequest request, HttpStatus status) {
+    public static ExtractableResponse<Response> 예약_생성_요청(ReservationRequest request, HttpStatus status) {
         return RestAssured
                 .given().log().all()
                     .contentType(ContentType.JSON)
@@ -23,7 +25,7 @@ public class ReservationHelper {
                     .extract();
     }
 
-    static ExtractableResponse<Response> 예약_취소_요청(String confirmationCode, Long reservationId, HttpStatus status) {
+    public static ExtractableResponse<Response> 예약_취소_요청(String confirmationCode, Long reservationId, HttpStatus status) {
         return RestAssured
                 .given().log().all()
                     .queryParam("confirmationCode", confirmationCode)
@@ -31,6 +33,17 @@ public class ReservationHelper {
                     .delete(RESERVATION_BASE_URL + "/" + reservationId)
                 .then().log().all()
                     .statusCode(status.value())
+                    .extract();
+    }
+
+    public static ExtractableResponse<Response> 예약_조회_요청(Map<String, ?> params, HttpStatus status) {
+        return RestAssured
+                .given().log().all()
+                    .queryParams(params)
+                .when()
+                    .get(RESERVATION_BASE_URL)
+                .then().log().all()
+                    .statusCode(HttpStatus.OK.value())
                     .extract();
     }
 }

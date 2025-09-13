@@ -1,7 +1,6 @@
 package com.camping.legacy.acceptance;
 
-import static com.camping.legacy.acceptance.ReservationHelper.예약_생성_요청;
-import static com.camping.legacy.acceptance.ReservationHelper.예약_취소_요청;
+import static com.camping.legacy.acceptance.ReservationHelper.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.camping.legacy.dto.ReservationRequest;
@@ -29,6 +28,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -237,14 +237,8 @@ class ReservationAcceptanceTest {
         assertThat(concurrencyTestResult.failCount()).isEqualTo(numberOfThreads - 1);
 
         // And: 해당 날짜에는 하나의 예약만 생긴다.
-        List<ReservationResponse> reservations = RestAssured
-                .given()
-                .queryParam("date", reservationDate.toString())
-                .when()
-                .get("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract().body().jsonPath().getList(".", ReservationResponse.class);
+        List<ReservationResponse> reservations = 예약_조회_요청(Map.of("date", reservationDate.toString()), HttpStatus.OK)
+                .body().jsonPath().getList(".", ReservationResponse.class);
 
         assertThat(reservations).hasSize(1);
     }
