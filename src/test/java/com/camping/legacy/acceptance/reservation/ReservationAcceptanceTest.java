@@ -7,14 +7,12 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDate;
 import java.util.Map;
 
 import static com.camping.legacy.acceptance.utils.RequestAcceptanceFixture.*;
 import static com.camping.legacy.acceptance.utils.ResponseAcceptanceFixture.*;
 
 public class ReservationAcceptanceTest extends AcceptanceTestBase {
-    LocalDate today = LocalDate.now();
     @DisplayName("유효한 정보를 통해 예약할 수 있다")
     @Test
     void reservationSuccessCase() {
