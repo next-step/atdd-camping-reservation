@@ -42,6 +42,10 @@ public class Reservation {
     private String confirmationCode;
     
     private LocalDateTime createdAt;
+
+    public Boolean isCancelled() {
+        return "CANCELLED".equals(this.status);
+    }
     
     @PrePersist
     protected void onCreate() {

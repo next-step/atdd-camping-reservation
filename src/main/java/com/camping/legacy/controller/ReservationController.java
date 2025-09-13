@@ -1,7 +1,8 @@
 package com.camping.legacy.controller;
 
 import com.camping.legacy.dto.CalendarResponse;
-import com.camping.legacy.dto.ReservationRequest;
+import com.camping.legacy.dto.ReservationEditRequest;
+import com.camping.legacy.dto.ReservationCreateRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.service.CalendarService;
 import com.camping.legacy.service.ReservationService;
@@ -25,7 +26,7 @@ public class ReservationController {
     private final CalendarService calendarService;
     
     @PostMapping
-    public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
+    public ResponseEntity<?> createReservation(@RequestBody ReservationCreateRequest request) {
         try {
             ReservationResponse response = reservationService.createReservation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -81,7 +82,7 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
             @PathVariable Long id,
-            @RequestBody ReservationRequest request,
+            @RequestBody ReservationEditRequest request,
             @RequestParam String confirmationCode) {
         try {
             ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode);

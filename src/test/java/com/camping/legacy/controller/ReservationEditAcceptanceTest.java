@@ -7,26 +7,32 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import static com.camping.legacy.controller.ReservationTestHelper.*;
+import static com.camping.legacy.controller.ReservationApiClient.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationEditAcceptanceTest extends AcceptanceTest {
     @Autowired
     private CampsiteRepository campsiteRepository;
+    private final LocalDate today = LocalDate.of(2025, 9, 1);
 
     @BeforeEach
     void setUpData() {
         campsiteRepository.save(new Campsite("A-1", "A-1", 3));
         campsiteRepository.save(new Campsite("B-1", "B-1", 3));
+        Mockito.when(clock.instant())
+                .thenReturn(today.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     @Test
@@ -60,12 +66,6 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
         assertThat(editResponse.jsonPath().getString("message")).isEqualTo("확인 코드가 일치하지 않습니다.");
     }
 
-    /**
-     * Scenario: 존재하지 않는 예약 ID로 변경 실패
-     * Given 예약 ID "1"는 존재하지 않는다
-     * When 사용자가 예약("1")을 변경한다
-     * Then "예약을 찾을 수 없습니다." 메시지를 반환해야 한다
-     */
     @Test
     void 존재하지_않는_예약_ID로_변경_실패() {
         // given
@@ -100,7 +100,6 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
     @Test
     void 과거_날짜로_변경불가() {
         // given
-        // TODO: mock today to 2025-09-01
         ExtractableResponse<Response> response = sendReservationCreateRequest(reservationCreateRequest());
         Long reservationId = response.jsonPath().getLong("id");
         String confirmationCode = response.jsonPath().getString("confirmationCode");
@@ -113,21 +112,20 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(editResponse.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-        assertThat(editResponse.jsonPath().getString("message")).isEqualTo("과거 날짜로는 예약할 수 없습니다.");
+        assertThat(editResponse.jsonPath().getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다.");
     }
 
     @Test
     void 예약_날짜는_오늘부터_30일_이내여야_한다() {
         // given
-        // TODO: mock today to 2025-09-01
         ExtractableResponse<Response> response = sendReservationCreateRequest(reservationCreateRequest());
         Long reservationId = response.jsonPath().getLong("id");
         String confirmationCode = response.jsonPath().getString("confirmationCode");
 
         // when
         Map<String, Object> editRequest = reservationEditRequest();
-        editRequest.put("startDate", "2025-09-31");
-        editRequest.put("endDate", "2025-10-01");
+        editRequest.put("startDate", "2025-09-30");
+        editRequest.put("endDate", "2025-10-02");
         ExtractableResponse<Response> editResponse = sendReservationEditRequest(reservationId, confirmationCode, editRequest);
 
         // then
@@ -150,9 +148,9 @@ public class ReservationEditAcceptanceTest extends AcceptanceTest {
 
         // when
         Map<String, Object> editRequest = reservationEditRequest();
-        editRequest.put("siteNumber", "B-1");
-        editRequest.put("startDate", "2025-09-13");
-        editRequest.put("endDate", "2025-09-14");
+        editRequest.put("siteNumber", "A-1");
+        editRequest.put("startDate", "2025-09-10");
+        editRequest.put("endDate", "2025-09-12");
         ExtractableResponse<Response> editResponse =
                 sendReservationEditRequest(reservationId, confirmationCode, editRequest);
 

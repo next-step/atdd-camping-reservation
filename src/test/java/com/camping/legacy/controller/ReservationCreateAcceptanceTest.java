@@ -7,10 +7,14 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -18,17 +22,20 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 
-import static com.camping.legacy.controller.ReservationTestHelper.*;
+import static com.camping.legacy.controller.ReservationApiClient.*;
 import static com.camping.legacy.util.DateTimeUtil.yyyyMMdd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ReservationCreateAcceptanceTest extends AcceptanceTest {
     @Autowired
     private CampsiteRepository campsiteRepository;
+    private final LocalDate today = LocalDate.of(2025, 9, 1);
 
     @BeforeEach
     void setUpData() {
         campsiteRepository.save(new Campsite("A-1", "A-1", 3));
+        Mockito.when(clock.instant())
+                .thenReturn(today.atStartOfDay().toInstant(ZoneOffset.UTC));
     }
 
     @Test
@@ -56,7 +63,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).isEqualTo("과거 날짜로는 예약할 수 없습니다.");
+        assertThat(response.jsonPath().getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다.");
     }
 
     @Test
@@ -75,8 +82,15 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         assertThat(response.jsonPath().getString("message")).isEqualTo("예약은 오늘부터 30일 이내의 날짜로만 가능합니다.");
     }
 
-    @Test
-    void 동일_사이트_동일_기간_중복_예약_불가() {
+    @CsvSource(value = {
+            "2025-09-08, 2025-09-10",
+            "2025-09-08, 2025-09-11",
+            "2025-09-10, 2025-09-12",
+            "2025-09-11, 2025-09-14",
+            "2025-09-12, 2025-09-14",
+    })
+    @ParameterizedTest
+    void 동일_사이트_동일_기간_중복_예약_불가(String startDate, String endDate) {
         // given
         Map<String, Object> firstRequest = defaultCreateRequest();
         sendReservationCreateRequest(firstRequest);
@@ -84,6 +98,8 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         // when
         Map<String, Object> secondRequest = defaultCreateRequest();
         secondRequest.put("customerName", "김철수");
+        secondRequest.put("startDate", startDate);
+        secondRequest.put("endDate", endDate);
         ExtractableResponse<Response> response = sendReservationCreateRequest(secondRequest);
 
         // then

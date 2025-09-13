@@ -1,0 +1,24 @@
+package com.camping.legacy.dto;
+
+import java.time.LocalDate;
+
+public record ReservationCreateRequest(
+        String customerName,
+        LocalDate startDate,
+        LocalDate endDate,
+        String siteNumber,
+        String phoneNumber,
+        Integer numberOfPeople,
+        String carNumber,
+        String requests
+) {
+    public ReservationCreateRequest {
+        if(customerName == null || customerName.isBlank()) throw new RuntimeException("예약자 이름을 입력해주세요.");
+        if(startDate == null) throw new RuntimeException("예약 기간을 선택해주세요.");
+        if(endDate == null) throw new RuntimeException("예약 기간을 선택해주세요.");
+        if(siteNumber == null || siteNumber.isBlank()) throw new RuntimeException("캠핑장 번호를 입력해주세요.");
+        if(phoneNumber == null || !phoneNumber.matches("^01[016789]-?\\d{3,4}-?\\d{4}$")) throw new RuntimeException("전화번호를 입력해주세요.");
+
+        if(endDate.isBefore(startDate)) throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+    }
+}
