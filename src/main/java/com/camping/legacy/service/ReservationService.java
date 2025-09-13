@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -48,6 +47,9 @@ public class ReservationService {
         }
 
         String siteNumber = request.getSiteNumber();
+        if (siteNumber == null || siteNumber.trim().isEmpty()) {
+            throw new IllegalArgumentException("사이트 이름을 입력해주세요.");
+        }
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 

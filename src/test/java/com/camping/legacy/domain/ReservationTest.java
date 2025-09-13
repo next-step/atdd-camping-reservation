@@ -34,12 +34,44 @@ class ReservationTest {
     @Test
     @DisplayName("예약은 오늘로부터 30일 이내만 가능해야 한다.")
     void reservationDateLimit() {
-        // NOTE: 서비스 코드에 해당 기능 구현 필요.
-
         // given
         LocalDate startDate = LocalDate.now().plusDays(31);
         LocalDate endDate = LocalDate.now().plusDays(33);
         final var params = ReservationParams.of(startDate, endDate);
+
+        // when
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("오늘로부터 30일 이내는 예약 가능해야 한다.")
+    void 오늘로부터_30일_이내는_예약_가능해야_한다() {
+        // given
+        LocalDate startDate = LocalDate.now().plusDays(29);
+        LocalDate endDate = LocalDate.now().plusDays(30);
+        final var params = ReservationParams.of(startDate, endDate);
+
+        // when
+        ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+    }
+
+    @Test
+    @DisplayName("예약일은 null 일 수 없다.")
+    void 예약일은_null_일_수_없다() {
+        // given
+        final var params = new ReservationParams(
+                "홍길동",
+                "010-1234-5678",
+                "A-3",
+                null,
+                null
+        );
 
         // when
         ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
@@ -71,6 +103,21 @@ class ReservationTest {
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = LocalDate.now().plusDays(4);
         ReservationParams params = new ReservationParams(null, null, "A-1", startDate.toString(), endDate.toString());
+
+        // when
+        final var response = ReservationRequestSender.send(API_RESERVATIONS, params);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("siteNumber 는 필수 입력값이다.")
+    void siteNumber_는_필수_입력값이다() {
+        // given
+        LocalDate startDate = LocalDate.now();
+        LocalDate endDate = LocalDate.now().plusDays(4);
+        ReservationParams params =  ReservationParams.ofWithSiteNumber(null, startDate, endDate);
 
         // when
         final var response = ReservationRequestSender.send(API_RESERVATIONS, params);
