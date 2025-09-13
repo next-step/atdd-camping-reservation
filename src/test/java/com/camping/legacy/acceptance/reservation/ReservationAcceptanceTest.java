@@ -2,27 +2,16 @@ package com.camping.legacy.acceptance.reservation;
 
 import com.camping.legacy.acceptance.reservation.builder.ReservationTestDataBuilder;
 import com.camping.legacy.acceptance.utils.AcceptanceTestBase;
-import com.camping.legacy.acceptance.utils.RequestAcceptanceFixture;
-import io.restassured.RestAssured;
-import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.Map;
 
 import static com.camping.legacy.acceptance.utils.RequestAcceptanceFixture.*;
-import static com.camping.legacy.acceptance.utils.RequestAcceptanceFixture.updateReservation;
 import static com.camping.legacy.acceptance.utils.ResponseAcceptanceFixture.*;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservationAcceptanceTest extends AcceptanceTestBase {
     LocalDate today = LocalDate.now();
