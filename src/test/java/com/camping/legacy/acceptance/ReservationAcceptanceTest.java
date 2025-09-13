@@ -150,7 +150,7 @@ class ReservationAcceptanceTest {
      */
     @Test
     void 삼십일_이후_기간으로_예약을_시도하면_실패한다() throws Exception {
-        // When: 사용자가 예약할 때, 예약 기간에 30일 이후 날짜가 포함되면
+        // When: 사용자 예약 요청의 예약 기간에 30일 이후 날짜가 포함되면
         ReservationRequest request = ReservationRequestTestBuilder.builder()
                 .withStartDate(LocalDate.now().plusDays(30))
                 .withEndDate(LocalDate.now().plusDays(31))
