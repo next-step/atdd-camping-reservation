@@ -1,8 +1,8 @@
-package com.camping.legacy.acceptance;
+package com.camping.legacy.acceptance.reservation;
 
+import com.camping.legacy.acceptance.utils.AcceptanceTestBase;
 import io.restassured.RestAssured;
 import io.restassured.builder.RequestSpecBuilder;
-import io.restassured.config.LogConfig;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -14,46 +14,28 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// API 레벨의 인수테스트를 만들기 위해 스프링 부트 테스트 활용
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Sql(scripts = "/sql/data.sql",    executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
-@Sql(scripts = "/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
-public class ReservationTest {
-    @LocalServerPort
-    int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-        RestAssured.config = RestAssured.config()
-                .logConfig(LogConfig.logConfig()
-                        .enablePrettyPrinting(true)
-                        .blacklistHeader("Authorization", "Cookie", "Set-Cookie"));
-        RestAssured.requestSpecification = new RequestSpecBuilder()
-                .setContentType(ContentType.JSON)
-                .setAccept("application/json; charset=UTF-8")
-                .build();
-    }
-
-    @DisplayName("예약 정보를 모두 정상적으로 등록해 예약에 성공한다.")
+public class ReservationAcceptanceTest extends AcceptanceTestBase {
+    LocalDate today = LocalDate.now();
+    @DisplayName("유효한 정보를 통해 예약할 수 있다")
     @Test
     void reservationSuccessCase() {
         /**
          * 누가 : 예약하려는 사용자
          * 언제 : 오늘
          * 무엇을 : 30일내로 비어있는 날짜에 대한 예약을
-         * 왜 : 동시성 제어를 고려하지 않은 상태에서 예약에 성공하기 위해
+         * 왜 : 유효한 정보로 예약에 성공하기 위해
          */
         // given - 오늘 날짜를 기준으로 30일 이내의 날짜를 계산하고
+
         Map<String, String> map = Map.of(
                 "customerName", "홍길동"
-                , "startDate", "2025-09-09"
-                , "endDate", "2025-09-10"
+                , "startDate", today.plusDays(7).toString()
+                , "endDate", today.plusDays(8).toString()
                 , "siteNumber", "B-1"
                 , "phoneNumber", "010-1234-1234"
         );
@@ -71,7 +53,7 @@ public class ReservationTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
     }
 
-    @DisplayName("예약은 오늘로부터 30일 이내에만 가능해야 한다")
+    @DisplayName("오늘로부터 31일 이후의 날짜는 예약할 수 없다")
     @Test // 테스트가 뜰 때, Spring 부트 애플리케이션에 해당되는 컴포넌트들이 테스트 컨테이너에 Bean으로 같이 환경으로 딸려 올라감.
     // 이때, 딸려올라가는 웹 설정도 같이 해줄 수 있다.
     void reservationDateLimit() {
@@ -84,8 +66,8 @@ public class ReservationTest {
         // given - 오늘 날짜를 기준으로 30일 이후의 날짜를 계산하고
         Map<String, String> map = Map.of(
               "customerName", "홍길동"
-            , "startDate", "2025-10-09"
-            , "endDate", "2025-10-10"
+            , "startDate", today.plusDays(31).toString()
+            , "endDate", today.plusDays(32).toString()
             , "siteNumber", "B-1"
             , "phoneNumber", "010-1234-1234"
         );
@@ -104,7 +86,7 @@ public class ReservationTest {
         assertThat(response.jsonPath().getString("message")).isEqualTo("오늘로부터 30일 이내로만 예약할 수 있습니다.");
     }
 
-    @DisplayName("존재하는 캠핑장으로 예약 수정에 성공하다")
+    @DisplayName("존재하는 캠핑장만 예약 수정할 수 있다")
     @Test
     void reservationExistCampsite() {
         /**
@@ -152,14 +134,14 @@ public class ReservationTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
     }
 
-    @DisplayName("존재하는 캠핑장만 예약 수정할 수 있다")
+    @DisplayName("존재하지 않는 캠핑장은 예약 수정이 불가능하다")
     @Test
     void reservationNotExistCampsite() {
         /**
          * 누가 : 홍길동이
          * 무엇을 : x-999 캠핑장을
          * 어떻게 : 예약 1을 확인 코드 "ABC123"으로 캠핑장 수정
-         * 왜 : 존재하는 캠핑장만 예약할 수 있다는 안내를 받기 위해 
+         * 왜 : 존재하는 캠핑장만 예약할 수 있다는 안내를 받기 위해
          */
         // given - 예약 번호, 존재하지 않는 캠핑장 번호가 담긴 예약 정보와 생성된 확인코드로
         Long id = 1L;
@@ -198,5 +180,97 @@ public class ReservationTest {
         // then - 예약에 실패하고, "존재하지 않는 캠핑장입니다"라는 안내를 받는다.
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("존재하지 않는 캠핑장입니다.");
+    }
+
+    @DisplayName("필수 정보 누락 시 예약이 실패한다")
+    @Test
+    void reservationFailsWithMissingRequiredInfo() {
+        /**
+         * 누가 : 예약하려는 사용자
+         * 무엇을 : 불충분한 정보만 가지고 예약을
+         * 왜 : 필수 정보 누락 시 적절한 오류 메시지를 받기 위해
+         */
+        // given - 예약자 이름이 누락된 요청 데이터
+        Map<String, String> map = Map.of(
+                "startDate", today.plusDays(7).toString(),
+                "endDate", today.plusDays(8).toString(),
+                "siteNumber", "A-1",
+                "phoneNumber", "010-1234-5678"
+        );
+
+        // when - 불충분한 정보로 예약을 시도했을 때
+        ExtractableResponse<Response> response = RestAssured
+                .given()
+                    .body(map)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약이 실패하고 적절한 오류 메시지를 받는다
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약자 이름을 입력해주세요.");
+    }
+
+    @DisplayName("종료일이 시작일보다 이전인 경우 예약이 실패한다")
+    @Test
+    void reservationFailsWhenEndDateIsBeforeStartDate() {
+        /**
+         * 누가 : 예약하려는 사용자
+         * 무엇을 : 종료일이 시작일보다 이전인 예약을
+         * 왜 : 날짜 유효성 검증을 확인하기 위해
+         */
+        // given - 종료일이 시작일보다 이전인 요청 데이터
+        Map<String, String> map = Map.of(
+                "customerName", "홍길동",
+                "startDate", today.plusDays(8).toString(),
+                "endDate", today.plusDays(7).toString(), // 시작일보다 이전
+                "siteNumber", "A-1",
+                "phoneNumber", "010-1234-5678"
+        );
+
+        // when - 잘못된 날짜로 예약을 시도했을 때
+        ExtractableResponse<Response> response = RestAssured
+                .given()
+                    .body(map)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약이 실패하고 적절한 오류 메시지를 받는다
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("종료일이 시작일보다 이전일 수 없습니다.");
+    }
+
+    @DisplayName("30일 제한 규칙을 애매하게 넘는 경우 예약이 실패한다")
+    @Test
+    void reservationFailsWithBorderline30DayLimit() {
+        /**
+         * 누가 : 예약하려는 사용자
+         * 무엇을 : 정확히 30일째 되는 날짜의 예약을
+         * 왜 : 30일 제한 규칙의 경계값을 확인하기 위해
+         */
+        // given - 정확히 30일째와 그 이후 날짜
+        Map<String, String> map = Map.of(
+                "customerName", "홍길동",
+                "startDate", today.plusDays(30).toString(), // 정확히 30일째
+                "endDate", today.plusDays(32).toString(),   // 30일 초과
+                "siteNumber", "A-1",
+                "phoneNumber", "010-1234-5678"
+        );
+
+        // when - 경계값으로 예약을 시도했을 때
+        ExtractableResponse<Response> response = RestAssured
+                .given()
+                    .body(map)
+                .when()
+                    .post("/api/reservations")
+                .then()
+                .extract();
+
+        // then - 예약이 실패하고 적절한 오류 메시지를 받는다
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("오늘로부터 30일 이내로 예약할 수 있습니다.");
     }
 }
