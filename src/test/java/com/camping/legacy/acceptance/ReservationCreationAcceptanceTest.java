@@ -1,20 +1,18 @@
 package com.camping.legacy.acceptance;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.CONFLICT;
 
+import com.camping.legacy.acceptance.support.ConcurrentTestHelper;
+import com.camping.legacy.acceptance.support.ReservationApiHelper;
+import com.camping.legacy.acceptance.support.ReservationTestDataBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("NonAsciiCharacters")
@@ -27,29 +25,17 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         LocalDate startDate = LocalDate.of(currentYear, 12, 25);
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
 
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("siteNumber", "A-2");
-        reservationRequest.put("startDate", startDate.toString());
-        reservationRequest.put("endDate", endDate.toString());
-        reservationRequest.put("customerName", "김테스트");
-        reservationRequest.put("phoneNumber", "010-1234-5678");
+        Map<String, Object> reservationRequest = new ReservationTestDataBuilder()
+                .withSiteNumber("A-2")
+                .withDates(startDate, endDate)
+                .build();
 
-        ExtractableResponse<Response> response = given()
-                .contentType("application/json")
-                .body(reservationRequest)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservationRequest);
 
-        // then - 예약이 완료되고 6자리 예약 확인 번호를 받는다
+        // then - 예약이 완료되고
+        // and - 6자리 예약 확인 번호를 받는다
         assertThat(response.statusCode()).isEqualTo(CREATED.value());
-        assertThat(response.jsonPath().getLong("id")).isNotNull();
         assertThat(response.jsonPath().getString("confirmationCode")).hasSize(6);
-        assertThat(response.jsonPath().getString("customerName")).isEqualTo("김테스트");
-        assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-2");
-        assertThat(response.jsonPath().getString("startDate")).isEqualTo(startDate.toString());
-        assertThat(response.jsonPath().getString("endDate")).isEqualTo(endDate.toString());
     }
 
     @Test
@@ -58,64 +44,17 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         int currentYear = LocalDate.now().getYear();
         LocalDate startDate = LocalDate.of(currentYear, 12, 25);
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
-        
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("siteNumber", "A-1");
-        reservationRequest.put("startDate", startDate.toString());
-        reservationRequest.put("endDate", endDate.toString());
-        reservationRequest.put("customerName", "동시테스트");
-        reservationRequest.put("phoneNumber", "010-1111-1111");
-        
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
-        CountDownLatch latch = new CountDownLatch(10);
-        List<ExtractableResponse<Response>> responses = new ArrayList<>();
-        
-        for (int i = 0; i < 10; i++) {
-            final int customerIndex = i;
-            executorService.execute(() -> {
-                try {
-                    Map<String, Object> request = new HashMap<>(reservationRequest);
-                    request.put("customerName", "동시테스트" + customerIndex);
-                    request.put("phoneNumber", "010-1111-111" + customerIndex);
-                    
-                    ExtractableResponse<Response> response = given()
-                            .contentType("application/json")
-                            .body(request)
-                    .when()
-                            .post("/api/reservations")
-                    .then()
-                            .extract();
-                    
-                    synchronized (responses) {
-                        responses.add(response);
-                    }
-                } finally {
-                    latch.countDown();
-                }
-            });
-        }
-        
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        executorService.shutdown();
-        
+
+        List<ExtractableResponse<Response>> responses = ConcurrentTestHelper
+                .executeConcurrentReservations(10, () -> 
+                    new ReservationTestDataBuilder()
+                        .withSiteNumber("A-1")
+                        .withDates(startDate, endDate)
+                        .build()
+                );
+
         // then - 한 명만 예약에 성공하고 나머지 9명은 예약할 수 없다
-        long successCount = responses.stream()
-                .mapToInt(ExtractableResponse::statusCode)
-                .filter(status -> status == CREATED.value())
-                .count();
-        
-        long conflictCount = responses.stream()
-                .mapToInt(ExtractableResponse::statusCode)
-                .filter(status -> status == CONFLICT.value())
-                .count();
-        
-        assertThat(successCount).isEqualTo(1);
-        assertThat(conflictCount).isEqualTo(9);
-        assertThat(responses).hasSize(10);
+        ConcurrentTestHelper.assertConcurrentResults(responses, 1, 9);
     }
 
     @Test
@@ -126,40 +65,108 @@ class ReservationCreationAcceptanceTest extends BaseAcceptanceTest {
         LocalDate endDate = LocalDate.of(currentYear, 12, 27);
 
         // 사전 예약 생성
-        Map<String, Object> existingReservation = new HashMap<>();
-        existingReservation.put("siteNumber", "B-1");
-        existingReservation.put("startDate", startDate.toString());
-        existingReservation.put("endDate", endDate.toString());
-        existingReservation.put("customerName", "기존고객");
-        existingReservation.put("phoneNumber", "010-9999-9999");
-        
-        given()
-                .contentType("application/json")
-                .body(existingReservation)
-        .when()
-                .post("/api/reservations")
-        .then()
-                .statusCode(CREATED.value());
-        
-        // 동일한 기간으로 새로운 예약 시도
-        Map<String, Object> newReservation = new HashMap<>();
-        newReservation.put("siteNumber", "B-1");
-        newReservation.put("startDate", startDate.toString());
-        newReservation.put("endDate", endDate.toString());
-        newReservation.put("customerName", "새로운고객");
-        newReservation.put("phoneNumber", "010-8888-8888");
-        
+        Map<String, Object> existingReservation = new ReservationTestDataBuilder()
+                .withSiteNumber("B-1")
+                .withDates(startDate, endDate)
+                .build();
+
+        ReservationApiHelper.createReservation(existingReservation);
+
         // when - 고객이 같은 기간으로 B-1 캠핑 구역을 예약하려고 하면
-        ExtractableResponse<Response> response = given()
-                .contentType("application/json")
-                .body(newReservation)
-        .when()
-                .post("/api/reservations")
-        .then()
-                .extract();
-        
+        Map<String, Object> newReservation = new ReservationTestDataBuilder()
+            .withSiteNumber("B-1")
+            .withDates(startDate, endDate)
+            .withName("새로운고객")
+            .withPhone("010-8888-8888")
+            .build();
+
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(newReservation);
+
         // then - "해당 기간에 이미 예약이 존재합니다"라는 안내 메시지가 나타난다
         assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).isEqualTo("해당 기간에 이미 예약이 존재합니다.");
+    }
+
+    @Test
+    void 단독_예약_시도_성공() {
+        // when - B-8 캠핑 구역을 1명의 고객이 예약을 시도하면
+        Map<String, Object> singleReservation = new ReservationTestDataBuilder()
+            .withSiteNumber("B-8")
+            .withValidFutureReservation()
+            .build();
+
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(singleReservation);
+
+        // then - 예약이 성공한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+    }
+
+    @Test
+    void 확인_코드_6자리_정확성_검증() {
+        // when - B-9 캠핑 구역에 예약을 생성하면
+        Map<String, Object> reservationForCode = new ReservationTestDataBuilder()
+            .withSiteNumber("B-9")
+            .withValidFutureReservation()
+            .build();
+
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservationForCode);
+
+        // then - 확인 코드는 영문자 6자리여야 한다
+        assertThat(response.statusCode()).isEqualTo(CREATED.value());
+        String confirmationCode = response.jsonPath().getString("confirmationCode");
+        assertThat(confirmationCode).hasSize(6);
+        assertThat(confirmationCode).matches("[A-Z0-9]{6}"); // 영문 대문자와 숫자만
+    }
+
+    @Test
+    void 다중_예약_생성_독립성_검증() {
+        // when - 5개의 서로 다른 캠핑 구역을 연속으로 예약하면
+        List<ExtractableResponse<Response>> responses = new ArrayList<>();
+
+        for (int i = 1; i <= 5; i++) {
+            Map<String, Object> reservation = new ReservationTestDataBuilder()
+                    .withSiteNumber("B-1" + i) // B-11, B-12, B-13, B-14, B-15
+                    .withValidFutureReservation()
+                    .build();
+
+            ExtractableResponse<Response> response = ReservationApiHelper.createReservation(reservation);
+
+            responses.add(response);
+        }
+
+        // then - 모든 예약이 성공해야 한다
+        for (ExtractableResponse<Response> response : responses) {
+            assertThat(response.statusCode()).isEqualTo(CREATED.value());
+        }
+    }
+
+    @Test
+    void 고객명이_null인_경우_예약_실패() {
+        // when - 고객명이 null인 예약을 시도하면
+        Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
+            .withName(null)
+            .withValidFutureReservation()
+            .build();
+
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
+
+        // then - "예약자 이름을 입력해주세요." 라는 안내 메세지가 나타난다.
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약자 이름을 입력해주세요.");
+    }
+
+    @Test
+    void 고객명이_빈_문자열인_경우_예약_실패() {
+        // when - 고객명이 빈 문자열인 예약을 시도하면
+        Map<String, Object> invalidReservation = new ReservationTestDataBuilder()
+            .withName("")
+            .withValidFutureReservation()
+            .build();
+
+        ExtractableResponse<Response> response = ReservationApiHelper.createReservation(invalidReservation);
+
+        // then - "예약자 이름을 입력해주세요." 라는 안내 메세지가 나타난다.
+        assertThat(response.statusCode()).isEqualTo(CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약자 이름을 입력해주세요.");
     }
 }

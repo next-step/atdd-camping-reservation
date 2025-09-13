@@ -1,5 +1,6 @@
 package com.camping.legacy.service;
 
+import com.camping.legacy.common.ClockProvider;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.ReservationRequest;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -23,12 +23,13 @@ public class ReservationService {
     
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final ClockProvider clockProvider;
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+        Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
         
         LocalDate startDate = request.getStartDate();
@@ -40,6 +41,10 @@ public class ReservationService {
         
         if (endDate.isBefore(startDate)) {
             throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+        }
+        
+        if (startDate.isAfter(clockProvider.now().plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("예약은 30일 이내에만 가능합니다");
         }
         
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
@@ -107,7 +112,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = clockProvider.now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
