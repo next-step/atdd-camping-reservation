@@ -8,9 +8,9 @@ import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.test_config.TestConfig;
 import com.camping.legacy.test_utils.CleanUp;
+import com.camping.legacy.test_utils.ConcurrencyTestHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.assertj.core.api.SoftAssertions;
@@ -29,10 +29,7 @@ import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 @Sql("/data.sql")
@@ -219,56 +216,25 @@ class ReservationAcceptanceTest {
     void 여러_사용자가_동시에_예약을_요청하면_하나만_성공한다() throws Exception {
         // When: 여러 사용자가 동시에 'A-1' 사이트에 동일한 날짜로 예약을 요청하면
         int numberOfThreads = 10;
-        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch finishLatch = new CountDownLatch(numberOfThreads);
-        List<Integer> statusCodes = new CopyOnWriteArrayList<>(); // Thread-safe list
-
         LocalDate reservationDate = LocalDate.of(2025, 11, 1);
-
-        for (int i = 0; i < numberOfThreads; i++) {
-            int userIndex = i;
-            executorService.submit(() -> {
-                try {
-                    startLatch.await(); // Wait for the signal to start
-
-                    ReservationRequest request = ReservationRequestTestBuilder.builder()
-                            .withCustomerName("User " + userIndex)
-                            .withPhoneNumber("010-1234-" + String.format("%04d", userIndex))
+        AtomicInteger userIndex = new AtomicInteger(0);
+        ConcurrencyTestHelper.ConcurrencyTestResult concurrencyTestResult = ConcurrencyTestHelper.executeConcurrentTask(
+                () -> {
+                    int userId = userIndex.getAndIncrement();
+                    return ReservationRequestTestBuilder.builder()
+                            .withCustomerName("user" + userId)
                             .withStartDate(reservationDate)
-                            .withEndDate(reservationDate.plusDays(1))
-                            .withSiteNumber("A-1")
-                            .withNumberOfPeople(2)
+                            .withPhoneNumber("010-1234-" + String.format("%04d", userId))
+                            .withCarNumber("12가" + String.format("%04d", userId))
                             .build();
+                    },
+                request -> {예약_생성_요청(request, HttpStatus.CREATED); return null;},
+                numberOfThreads
+        );
 
-                    int statusCode = RestAssured
-                            .given()
-                            .contentType(ContentType.JSON)
-                            .body(objectMapper.writeValueAsString(request))
-                            .when()
-                            .post("/api/reservations")
-                            .then()
-                            .extract().statusCode();
-
-                    statusCodes.add(statusCode);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    finishLatch.countDown();
-                }
-            });
-        }
-
-        startLatch.countDown(); // Signal all threads to start
-        finishLatch.await(); // Wait for all threads to finish
-        executorService.shutdown();
-
-        // Then: 오직 하나의 예약 요청만 성공하고, 나머지 요청은 모두 실패한다.
-        long successCount = statusCodes.stream().filter(code -> code == HttpStatus.CREATED.value()).count();
-        long conflictCount = statusCodes.stream().filter(code -> code == HttpStatus.CONFLICT.value()).count();
-
-        assertThat(successCount).isEqualTo(1);
-        assertThat(conflictCount).isEqualTo(numberOfThreads - 1);
+        // Then 오직 하나의 예약 요청만 성공하고, 나머지 요청은 모두 실패한다.
+        assertThat(concurrencyTestResult.successCount()).isEqualTo(1);
+        assertThat(concurrencyTestResult.failCount()).isEqualTo(numberOfThreads - 1);
 
         // And: 해당 날짜에는 하나의 예약만 생긴다.
         List<ReservationResponse> reservations = RestAssured
