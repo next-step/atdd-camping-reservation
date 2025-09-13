@@ -4,12 +4,14 @@ import com.camping.legacy.utils.AcceptanceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static com.camping.legacy.reservation.ReservationSteps.고객이_30일_초과_연박_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객이_연박_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트가_기간동안_예약_가능하다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트가_날짜에_예약_가능하다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트가_날짜에_이미_예약되어_있다;
 import static com.camping.legacy.reservation.ReservationSteps.연박_예약이_성공적으로_생성된다;
 import static com.camping.legacy.reservation.ReservationSteps.연박_예약이_실패한다;
+import static com.camping.legacy.reservation.ReservationSteps.오늘_날짜가_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.오류_메시지가_반환된다;
 import static com.camping.legacy.reservation.ReservationSteps.전체_기간에_대한_예약이_생성된다;
 
@@ -47,19 +49,17 @@ public class ConsecutiveReservationAcceptanceTest extends AcceptanceTest {
         오류_메시지가_반환된다(response, "해당 기간에 이미 예약이 존재합니다.");
     }
 
-    // todo: bug - 30일 초과 예약 불가능하게 수정
-//    @DisplayName("30일 초과 연박 예약은 실패한다.")
-//    @Test
-//    void 연박_예약_30일_제한_확인() {
-//        // given
-//        오늘_날짜가_설정된다("2024-01-01");
-//
-//        // when
-//        var response = 고객이_30일_초과_연박_예약을_요청한다(
-//                "한지민", "010-6666-6666", "2024-01-30", "2024-02-05", "A-1");
-//
-//        // then
-//        연박_예약이_실패한다(response);
-//        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다.");
-//    }
+    @DisplayName("30일 초과 연박 예약은 실패한다.")
+    @Test
+    void 연박_예약_30일_제한_확인() {
+        // given
+        오늘_날짜가_설정된다();
+
+        // when
+        var response = 고객이_30일_초과_연박_예약을_요청한다();
+
+        // then
+        연박_예약이_실패한다(response);
+        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다.");
+    }
 }

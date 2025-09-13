@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -28,9 +27,10 @@ public class ReservationService {
     
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+
+        Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-        
+
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
         
@@ -45,13 +45,17 @@ public class ReservationService {
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
             throw new RuntimeException("예약자 이름을 입력해주세요.");
         }
-        
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
+
+        if (endDate.isAfter(startDate.plusDays(MAX_RESERVATION_DAYS))) {
+            throw new RuntimeException("30일 이내에만 예약 가능합니다.");
+        }
+
+        boolean hasConflict = reservationRepository.existsActiveByCampsiteAndDateRange(
+                campsite, startDate, endDate);
         if (hasConflict) {
             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
-        
+
         try {
             Thread.sleep(100); // 100ms 지연으로 동시성 문제 재현 가능성 증가
         } catch (InterruptedException e) {
@@ -102,13 +106,12 @@ public class ReservationService {
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
-        if (reservation.getStartDate().equals(today)) {
+        if (reservation.getStartDate().equals(LocalDate.now())) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");

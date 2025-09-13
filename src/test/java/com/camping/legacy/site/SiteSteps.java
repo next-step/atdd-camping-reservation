@@ -2,7 +2,9 @@ package com.camping.legacy.site;
 
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import org.springframework.http.HttpStatus;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +17,14 @@ public class SiteSteps {
         return given().log().all()
                 .when().get("/api/sites")
                 .then().log().all().extract();
+    }
+
+    public static void 전체_사이트_목록이_성공적으로_조회된다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+
+        A구역_대형_사이트들이_반환된다(response);
+        B구역_소형_사이트들이_반환된다(response);
+        각_사이트의_최대_수용_인원이_포함된다(response);
     }
 
     public static void A구역_대형_사이트들이_반환된다(ExtractableResponse<Response> response) {
@@ -46,7 +56,7 @@ public class SiteSteps {
                 .then().log().all().extract();
     }
 
-    public static void 사이트_A001에_예약이_존재한다(String date) {
+    public static void 사이트_A1에_예약이_존재한다(String date) {
         var reservationRequest = Map.of(
                 "siteNumber", "A-1",
                 "startDate", date,
@@ -64,20 +74,20 @@ public class SiteSteps {
         assertThat(response.statusCode()).isEqualTo(201);
     }
 
-    public static void 사이트_A002는_예약이_없다() {
+    public static void 사이트_A2는_예약이_없다() {
     }
 
-    public static void A002_사이트가_가용_사이트로_반환된다(ExtractableResponse<Response> response) {
+    public static void A2_사이트가_가용_사이트로_반환된다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).contains("A-2");
     }
 
-    public static void A001_사이트는_반환되지_않는다(ExtractableResponse<Response> response) {
+    public static void A1_사이트는_반환되지_않는다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
     }
 
-    public static void 사이트_A001에_기간_예약이_존재한다(String startDate, String endDate) {
+    public static void 사이트_A1에_기간_예약이_존재한다(String startDate, String endDate) {
         var reservationRequest = Map.of(
                 "siteNumber", "A-1",
                 "startDate", startDate,
@@ -95,19 +105,37 @@ public class SiteSteps {
         assertThat(response.statusCode()).isEqualTo(201);
     }
 
+    public static void 사이트_B1에_기간_예약이_존재한다(String startDate, String endDate) {
+        // B-1, B-2, B-3에도 동일 기간 예약 생성
+        for (String siteNumber : Arrays.asList("B-1", "B-2", "B-3")) {
+            var reservationRequest = Map.of(
+                    "siteNumber", siteNumber,
+                    "startDate", startDate,
+                    "endDate", endDate,
+                    "customerName", "테스트고객",
+                    "phoneNumber", "010-1234-5678"
+            );
+
+            given().contentType("application/json")
+                    .body(reservationRequest)
+                    .when().post("/api/reservations")
+                    .then().statusCode(HttpStatus.CREATED.value());
+        }
+    }
+
     public static ExtractableResponse<Response> 기간별_가용_사이트_검색_요청(String startDate, String endDate) {
         return given().log().all()
                 .when().get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
                 .then().log().all().extract();
     }
 
-    public static void A002_사이트만_반환된다(ExtractableResponse<Response> response) {
+    public static void A2_사이트만_반환된다(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
-        assertThat(availableSites).hasSize(1);
-        assertThat(availableSites).contains("A-2");
+        assertThat(availableSites).hasSize(2);
+        assertThat(availableSites).contains("A-2", "A-3");
     }
 
-    public static void A001_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
+    public static void A1_사이트는_반환되지_않는다_기간검색(ExtractableResponse<Response> response) {
         List<String> availableSites = response.jsonPath().getList("siteNumber", String.class);
         assertThat(availableSites).doesNotContain("A-1");
     }

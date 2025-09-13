@@ -55,8 +55,8 @@ public class SiteController {
     
     @GetMapping("/search")
     public ResponseEntity<List<SiteAvailabilityResponse>> searchSites(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String size) {
         
         SiteSearchRequest request = new SiteSearchRequest(startDate, endDate, size);

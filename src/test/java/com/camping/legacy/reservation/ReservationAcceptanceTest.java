@@ -4,25 +4,16 @@ import com.camping.legacy.utils.AcceptanceTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static com.camping.legacy.reservation.ReservationSteps.고객명_사이트번호_예약기간이_포함된다;
 import static com.camping.legacy.reservation.ReservationSteps.고객명으로_예약을_조회한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객의_예약이_존재한다;
-import static com.camping.legacy.reservation.ReservationSteps.고객이_30일_초과_연박_예약을_요청한다;
-import static com.camping.legacy.reservation.ReservationSteps.고객이_연박_예약을_요청한다;
 import static com.camping.legacy.reservation.ReservationSteps.고객이_예약을_요청한다;
-import static com.camping.legacy.reservation.ReservationSteps.나머지_예약은_실패한다;
-import static com.camping.legacy.reservation.ReservationSteps.동시에_예약을_요청한다;
-import static com.camping.legacy.reservation.ReservationSteps.사이트가_기간동안_예약_가능하다;
-import static com.camping.legacy.reservation.ReservationSteps.사이트가_날짜에_예약_가능하다;
-import static com.camping.legacy.reservation.ReservationSteps.사이트가_날짜에_이미_예약되어_있다;
 import static com.camping.legacy.reservation.ReservationSteps.사이트에_예약이_존재한다;
-import static com.camping.legacy.reservation.ReservationSteps.사이트에_취소된_예약이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.시작일인_예약이_존재한다;
-import static com.camping.legacy.reservation.ReservationSteps.실패한_예약에_오류_메시지가_반환된다;
-import static com.camping.legacy.reservation.ReservationSteps.연박_예약이_성공적으로_생성된다;
-import static com.camping.legacy.reservation.ReservationSteps.연박_예약이_실패한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_ID로_조회한다;
-import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A001이_존재한다;
+import static com.camping.legacy.reservation.ReservationSteps.예약_가능한_캠핑_사이트_A1이_존재한다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CANCELLED_SAME_DAY로_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CANCELLED로_변경된다;
 import static com.camping.legacy.reservation.ReservationSteps.예약_상태가_CONFIRMED로_설정된다;
@@ -34,9 +25,6 @@ import static com.camping.legacy.reservation.ReservationSteps.예약이_존재�
 import static com.camping.legacy.reservation.ReservationSteps.예약이_취소된다;
 import static com.camping.legacy.reservation.ReservationSteps.오늘_날짜가_설정된다;
 import static com.camping.legacy.reservation.ReservationSteps.오류_메시지가_반환된다;
-import static com.camping.legacy.reservation.ReservationSteps.전체_기간에_대한_예약이_생성된다;
-import static com.camping.legacy.reservation.ReservationSteps.취소된_예약은_중복_체크에서_제외된다;
-import static com.camping.legacy.reservation.ReservationSteps.하나의_예약만_성공한다;
 import static com.camping.legacy.reservation.ReservationSteps.해당_고객의_모든_예약이_반환된다;
 import static com.camping.legacy.reservation.ReservationSteps.확인코드_6자리가_생성된다;
 import static com.camping.legacy.reservation.ReservationSteps.확인코드로_예약을_취소한다;
@@ -49,8 +37,8 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @Test
     void 정상적인_예약_생성() {
         // given
-        예약_가능한_캠핑_사이트_A001이_존재한다();
-        오늘_날짜가_설정된다("2024-01-01");
+        예약_가능한_캠핑_사이트_A1이_존재한다();
+        오늘_날짜가_설정된다();
 
         // when
         var response = 고객이_예약을_요청한다(
@@ -62,21 +50,24 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         예약_상태가_CONFIRMED로_설정된다(response);
     }
 
-    // todo: 버그 30일 제한 검증 로직을 추가해야 함
-//    @DisplayName("30일 초과 예약 시도")
-//    @Test
-//    void 예약_30일_초과_시도() {
-//        // given
-//        오늘_날짜가_설정된다("2024-01-01");
-//
-//        // when
-//        var response = 고객이_예약을_요청한다(
-//                "김철수", "010-1234-5678", "2024-02-01", "2024-02-02", "A-1");
-//
-//        // then
-//        예약이_실패한다(response);
-//        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다");
-//    }
+    @DisplayName("30일 초과 예약 시도")
+    @Test
+    void 예약_30일_초과_시도() {
+        // given
+        오늘_날짜가_설정된다();
+
+        // when
+        var response = 고객이_예약을_요청한다(
+                "김철수",
+                "010-1234-5678",
+                LocalDate.now().toString(),
+                LocalDate.now().plusDays(32).toString(),
+                "A-1");
+
+        // then
+        예약이_실패한다(response);
+        오류_메시지가_반환된다(response, "30일 이내에만 예약 가능합니다.");
+    }
 
     @DisplayName("중복 예약 시도")
     @Test
@@ -140,24 +131,23 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         예약_상태가_CANCELLED로_변경된다(reservationId);
     }
 
-    // todo: 시간을 주입받아 테스트할 수 있도록 변경해야 함
-//    @DisplayName("당일 예약을 취소한다.")
-//    @Test
-//    void 당일_예약_취소() {
-//        // given
-//        오늘_날짜가_설정된다("2024-01-15");
-//        Long reservationId = 시작일인_예약이_존재한다("2024-01-15");
-//
-//        var getResponse = given().log().all()
-//                .when().get("/api/reservations/" + reservationId)
-//                .then().log().all().extract();
-//        String confirmationCode = getResponse.jsonPath().getString("confirmationCode");
-//
-//        // when
-//        var response = 예약을_취소한다(reservationId, confirmationCode);
-//
-//        // then
-//        예약이_취소된다(response);
-//        예약_상태가_CANCELLED_SAME_DAY로_설정된다(reservationId);
-//    }
+    @DisplayName("당일 예약을 취소한다.")
+    @Test
+    void 당일_예약_취소() {
+        // given
+        오늘_날짜가_설정된다();
+        Long reservationId = 시작일인_예약이_존재한다(LocalDate.now().toString());
+
+        var getResponse = given().log().all()
+                .when().get("/api/reservations/" + reservationId)
+                .then().log().all().extract();
+        String confirmationCode = getResponse.jsonPath().getString("confirmationCode");
+
+        // when
+        var response = 예약을_취소한다(reservationId, confirmationCode);
+
+        // then
+        예약이_취소된다(response);
+        예약_상태가_CANCELLED_SAME_DAY로_설정된다(reservationId);
+    }
 }
