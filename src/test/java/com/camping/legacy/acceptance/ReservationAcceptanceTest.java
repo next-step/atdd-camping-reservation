@@ -8,7 +8,6 @@ import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.test_config.TestConfig;
 import com.camping.legacy.test_utils.CleanUp;
 import com.camping.legacy.test_utils.ConcurrencyTestHelper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -41,9 +40,6 @@ class ReservationAcceptanceTest {
 
     @LocalServerPort
     private int port;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Autowired
     private CleanUp cleanUp;
