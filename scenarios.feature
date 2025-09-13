@@ -61,7 +61,6 @@ Feature: 캠핑장 예약 생성
       | customerName | phoneNumber   | siteNumber | startDate  | endDate    |
       | 이영희       | 010-9876-5432 | A-1        | 2025-01-16 | 2025-01-18 |
     When 주어진 정보로 예약을 시도한다
-  >>>>>>> intrager
     Then 예약이 실패한다
     And "해당 기간에 이미 예약이 존재합니다" 오류 메시지가 반환된다
 
