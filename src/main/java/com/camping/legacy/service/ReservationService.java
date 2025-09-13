@@ -27,25 +27,31 @@ public class ReservationService {
     private static final int MAX_RESERVATION_DAYS = 30;
     
     public ReservationResponse createReservation(ReservationRequest request) {
-        String siteNumber = request.getSiteNumber();
-        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-        
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
-        
+
         if (startDate == null || endDate == null) {
-            throw new RuntimeException("예약 기간을 선택해주세요.");
+            throw new IllegalArgumentException("예약 기간을 선택해주세요.");
         }
-        
+
+        LocalDate limitDate = LocalDate.now().plusDays(30);
+        if (startDate.isAfter(limitDate)|| endDate.isAfter(limitDate)) {
+            throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
+        }
+
         if (endDate.isBefore(startDate)) {
-            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+            throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
         }
         
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
+            throw new IllegalArgumentException("예약자 이름을 입력해주세요.");
         }
-        
+
+        String siteNumber = request.getSiteNumber();
+        Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
         if (hasConflict) {

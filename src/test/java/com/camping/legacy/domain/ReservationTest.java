@@ -61,7 +61,7 @@ class ReservationTest {
         ExtractableResponse<Response> response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -76,7 +76,7 @@ class ReservationTest {
         final var response = ReservationRequestSender.send(API_RESERVATIONS, params);
 
         // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
