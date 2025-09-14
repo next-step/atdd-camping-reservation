@@ -35,7 +35,7 @@ public class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
      * and 예약 완료 시 6자리 영숫자 확인 코드 자동 생성된다.
      */
     @Test
-    @DisplayName("유효한 날짜로 예약 신청시, 예약이 성공한다.")
+    @DisplayName("유효한 날짜로 예약 신청시, 예약이 생성된다.")
     void 정상적인_예약_생성_테스트() {
         // Given: 오늘 날짜는 2024-12-01이
 
