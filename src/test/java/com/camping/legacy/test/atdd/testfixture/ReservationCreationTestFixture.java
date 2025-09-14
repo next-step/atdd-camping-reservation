@@ -20,16 +20,16 @@ public class ReservationCreationTestFixture {
 
     public static HashMap<String, Object> defaultRequest(LocalDateTime startDate, LocalDateTime endDate) {
         var request = defaultRequest();
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
+        request.put("startDate", startDate.toLocalDate().toString());
+        request.put("endDate", endDate.toLocalDate().toString());
         return request;
     }
 
     public static HashMap<String, Object> defaultRequest() {
         var request = new HashMap<String, Object>();
         request.put("customerName", "홍길동");
-        request.put("startDate", now().plusDays(1).toString());
-        request.put("endDate", now().plusDays(10).toString());
+        request.put("startDate", now().plusDays(1).toLocalDate().toString());
+        request.put("endDate", now().plusDays(10).toLocalDate().toString());
         request.put("siteNumber", "A-1");
         request.put("phoneNumber", "010-1234-5678");
         request.put("numberOfPeople", 4);
