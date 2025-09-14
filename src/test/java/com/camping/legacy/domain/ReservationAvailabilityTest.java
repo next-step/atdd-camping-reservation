@@ -59,9 +59,8 @@ public class ReservationAvailabilityTest {
         List<SiteAvailabilityResponse> siteAvailabilityResponses =
                 availabilityResponse.as(new TypeRef<List<SiteAvailabilityResponse>>() {});
 
-
         Boolean isExist = siteAvailabilityResponses.stream()
-                .anyMatch(siteAvailabilityResponse -> siteAvailabilityResponse.getSiteNumber().equals(siteName));
+                .anyMatch(siteAvailabilityResponse -> siteAvailabilityResponse.getSiteNumber().equals(siteName) && siteAvailabilityResponse.getAvailable());
 
         // then
         Assertions.assertAll(

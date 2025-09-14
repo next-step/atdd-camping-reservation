@@ -20,22 +20,26 @@ import java.util.Map;
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class ReservationController {
-    
+
     private final ReservationService reservationService;
     private final CalendarService calendarService;
-    
+
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
         try {
             ReservationResponse response = reservationService.createReservation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getReservation(@PathVariable Long id) {
         try {
@@ -47,12 +51,12 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
-    
+
     @GetMapping
     public ResponseEntity<List<ReservationResponse>> getReservations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String customerName) {
-        
+
         if (date != null) {
             return ResponseEntity.ok(reservationService.getReservationsByDate(date));
         } else if (customerName != null) {
@@ -61,7 +65,7 @@ public class ReservationController {
             return ResponseEntity.ok(reservationService.getAllReservations());
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> cancelReservation(
             @PathVariable Long id,
@@ -77,7 +81,7 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
             @PathVariable Long id,
@@ -92,14 +96,14 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
     @GetMapping("/my")
     public ResponseEntity<List<ReservationResponse>> getMyReservations(
             @RequestParam String name,
             @RequestParam String phone) {
         return ResponseEntity.ok(reservationService.getReservationsByNameAndPhone(name, phone));
     }
-    
+
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> getReservationCalendar(
             @RequestParam Integer year,
