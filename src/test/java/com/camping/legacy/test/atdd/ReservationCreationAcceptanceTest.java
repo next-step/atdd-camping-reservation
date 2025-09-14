@@ -110,7 +110,7 @@ public class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
         // When: 고객이 30일 이후 날짜로 A-1 사이트를 예약한다
         var request = defaultRequest(
                 now().plusDays(1),
-                now().plusDays(30).plusSeconds(1)); // 30일 1초 이후
+                now().plusDays(31).plusSeconds(1)); // 31일 이후
 
         var response = given()
                 .contentType(JSON)
