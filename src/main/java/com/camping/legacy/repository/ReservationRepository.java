@@ -3,6 +3,7 @@ package com.camping.legacy.repository;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -23,6 +24,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByCustomerName(String customerName);
     
     List<Reservation> findByCustomerNameAndPhoneNumber(String customerName, String phoneNumber);
-    
+
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END " +
+            "FROM Reservation r " +
+            "WHERE r.campsite = :campsite " +
+            "AND :date BETWEEN r.startDate AND r.endDate")
     boolean existsByCampsiteAndReservationDate(Campsite campsite, LocalDate date);
 }
