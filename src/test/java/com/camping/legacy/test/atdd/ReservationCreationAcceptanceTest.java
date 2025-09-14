@@ -15,20 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.*;
+import static io.restassured.http.ContentType.JSON;
 import static org.springframework.http.HttpStatus.CREATED;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("예약 생성 테스트")
-public class ReservationCreationAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port; // 동적 포트 설정
-        RestAssured.baseURI = "http://localhost"; // 기본 호스트 설정
-    }
+public class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
 
     /**
      * Scenario: 정상적인 예약 생성
@@ -60,7 +51,7 @@ public class ReservationCreationAcceptanceTest {
         request.put("requests", "조용한 구역 부탁드립니다");
 
         ExtractableResponse<Response> response = given()
-                .contentType(ContentType.JSON)
+                .contentType(JSON)
                 .body(request)
                 .when()
                 .post("/api/reservations")
