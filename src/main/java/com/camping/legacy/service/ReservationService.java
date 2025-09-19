@@ -144,25 +144,38 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+    public synchronized ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalStateException("예약을 찾을 수 없습니다."));
         
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
-            throw new RuntimeException("확인 코드가 일치하지 않습니다.");
+            throw new IllegalArgumentException("확인 코드가 일치하지 않습니다.");
+        }
+        
+        // 날짜 검증
+        if (request.getStartDate() != null) {
+            if (request.getStartDate().isBefore(now())) {
+                throw new IllegalArgumentException("과거 날짜로는 예약할 수 없습니다.");
+            }
+            reservation.setStartDate(request.getStartDate());
+        }
+        
+        if (request.getEndDate() != null) {
+            if (request.getEndDate().isAfter(now().plusDays(MAX_RESERVATION_DAYS))) {
+                throw new IllegalArgumentException("30일 이후 날짜로는 예약할 수 없습니다.");
+            }
+            reservation.setEndDate(request.getEndDate());
+        }
+        
+        // 종료일이 시작일보다 이전인지 검증
+        if (reservation.getEndDate().isBefore(reservation.getStartDate())) {
+            throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
         }
         
         if (request.getSiteNumber() != null) {
             Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
-                    .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+                    .orElseThrow(() -> new IllegalStateException("존재하지 않는 캠핑장입니다."));
             reservation.setCampsite(campsite);
-        }
-        
-        if (request.getStartDate() != null) {
-            reservation.setStartDate(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            reservation.setEndDate(request.getEndDate());
         }
         
         if (request.getCustomerName() != null) {
