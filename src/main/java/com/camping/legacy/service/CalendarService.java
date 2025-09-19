@@ -26,7 +26,7 @@ public class CalendarService {
     
     public CalendarResponse getMonthlyCalendar(Integer year, Integer month, Long siteId) {
         Campsite campsite = campsiteRepository.findById(siteId)
-                .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다."));
         
         YearMonth yearMonth = YearMonth.of(year, month);
         LocalDate startDate = yearMonth.atDay(1);
