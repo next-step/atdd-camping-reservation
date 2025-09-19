@@ -14,6 +14,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 import static java.time.LocalDate.now;
 
@@ -26,6 +28,7 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
 
     private static final int MAX_RESERVATION_DAYS = 30;
+    private static final Map<Long, Boolean> processingReservations = new ConcurrentHashMap<>();
     
     public synchronized ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
@@ -144,49 +147,66 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public synchronized ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
-        Reservation reservation = reservationRepository.findById(id)
-                .orElseThrow(() -> new IllegalStateException("예약을 찾을 수 없습니다."));
-        
-        if (!reservation.getConfirmationCode().equals(confirmationCode)) {
-            throw new IllegalArgumentException("확인 코드가 일치하지 않습니다.");
+    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+        // 동시성 제어: 이미 처리 중인 예약인지 확인
+        if (processingReservations.putIfAbsent(id, true) != null) {
+            throw new RuntimeException("다른 요청에 의해 예약이 이미 수정 중입니다.");
         }
         
-        // 날짜 검증
-        if (request.getStartDate() != null) {
-            if (request.getStartDate().isBefore(now())) {
-                throw new IllegalArgumentException("과거 날짜로는 예약할 수 없습니다.");
+        try {
+            Reservation reservation = reservationRepository.findById(id)
+                    .orElseThrow(() -> new IllegalStateException("예약을 찾을 수 없습니다."));
+            
+            if (!reservation.getConfirmationCode().equals(confirmationCode)) {
+                throw new IllegalArgumentException("확인 코드가 일치하지 않습니다.");
             }
-            reservation.setStartDate(request.getStartDate());
-        }
-        
-        if (request.getEndDate() != null) {
-            if (request.getEndDate().isAfter(now().plusDays(MAX_RESERVATION_DAYS))) {
-                throw new IllegalArgumentException("30일 이후 날짜로는 예약할 수 없습니다.");
+            
+            // 동시성 테스트를 위한 지연
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             }
-            reservation.setEndDate(request.getEndDate());
+            
+            // 날짜 검증
+            if (request.getStartDate() != null) {
+                if (request.getStartDate().isBefore(now())) {
+                    throw new IllegalArgumentException("과거 날짜로는 예약할 수 없습니다.");
+                }
+                reservation.setStartDate(request.getStartDate());
+            }
+            
+            if (request.getEndDate() != null) {
+                if (request.getEndDate().isAfter(now().plusDays(MAX_RESERVATION_DAYS))) {
+                    throw new IllegalArgumentException("30일 이후 날짜로는 예약할 수 없습니다.");
+                }
+                reservation.setEndDate(request.getEndDate());
+            }
+            
+            // 종료일이 시작일보다 이전인지 검증
+            if (reservation.getEndDate().isBefore(reservation.getStartDate())) {
+                throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
+            }
+            
+            if (request.getSiteNumber() != null) {
+                Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+                        .orElseThrow(() -> new IllegalStateException("존재하지 않는 캠핑장입니다."));
+                reservation.setCampsite(campsite);
+            }
+            
+            if (request.getCustomerName() != null) {
+                reservation.setCustomerName(request.getCustomerName());
+            }
+            if (request.getPhoneNumber() != null) {
+                reservation.setPhoneNumber(request.getPhoneNumber());
+            }
+            
+            Reservation updated = reservationRepository.save(reservation);
+            return ReservationResponse.from(updated);
+        } finally {
+            // 처리 완료 후 플래그 제거
+            processingReservations.remove(id);
         }
-        
-        // 종료일이 시작일보다 이전인지 검증
-        if (reservation.getEndDate().isBefore(reservation.getStartDate())) {
-            throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
-        }
-        
-        if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
-                    .orElseThrow(() -> new IllegalStateException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
-        }
-        
-        if (request.getCustomerName() != null) {
-            reservation.setCustomerName(request.getCustomerName());
-        }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
-        }
-        
-        Reservation updated = reservationRepository.save(reservation);
-        return ReservationResponse.from(updated);
     }
     
     @Transactional(readOnly = true)
