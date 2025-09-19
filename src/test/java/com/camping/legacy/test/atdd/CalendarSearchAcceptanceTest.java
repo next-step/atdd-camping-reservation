@@ -1,14 +1,10 @@
 package com.camping.legacy.test.atdd;
 
 import com.camping.legacy.dto.CalendarResponse;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.jdbc.Sql;
-
-import java.time.LocalDate;
 
 import static com.camping.legacy.test.atdd.testfixture.CalendarSearchTestFixture.createReservationRequest;
 import static io.restassured.RestAssured.*;
