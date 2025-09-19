@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static java.time.LocalDate.now;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -33,9 +35,13 @@ public class ReservationService {
         
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
-        
+
         if (startDate == null || endDate == null) {
             throw new RuntimeException("예약 기간을 선택해주세요.");
+        }
+        
+        if (startDate.isBefore(now())) {
+            throw new IllegalArgumentException("과거 날짜로는 예약할 수 없습니다.");
         }
         
         if (endDate.isBefore(startDate)) {
@@ -107,7 +113,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
