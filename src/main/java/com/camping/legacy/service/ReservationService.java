@@ -36,8 +36,7 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     
-    @Transactional(isolation = Isolation.SERIALIZABLE)
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public synchronized ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 캠핑장입니다."));
@@ -65,8 +64,6 @@ public class ReservationService {
             throw new IllegalArgumentException("예약자 이름을 입력해주세요.");
         }
         
-        // 캠핑장에 대한 배타적 락 획득
-        entityManager.lock(campsite, LockModeType.PESSIMISTIC_WRITE);
         
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
