@@ -33,6 +33,10 @@ public class ReservationController {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        } catch (IllegalStateException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());

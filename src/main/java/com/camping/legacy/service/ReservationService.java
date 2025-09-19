@@ -8,7 +8,12 @@ import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -26,31 +31,42 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
     
+    @PersistenceContext
+    private EntityManager entityManager;
+    
     private static final int MAX_RESERVATION_DAYS = 30;
     
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public ReservationResponse createReservation(ReservationRequest request) {
         String siteNumber = request.getSiteNumber();
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+                .orElseThrow(() -> new IllegalStateException("존재하지 않는 캠핑장입니다."));
         
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
 
         if (startDate == null || endDate == null) {
-            throw new RuntimeException("예약 기간을 선택해주세요.");
+            throw new IllegalArgumentException("예약 기간을 선택해주세요.");
         }
         
         if (startDate.isBefore(now())) {
             throw new IllegalArgumentException("과거 날짜로는 예약할 수 없습니다.");
         }
         
+        if (endDate.isAfter(now().plusDays(MAX_RESERVATION_DAYS))) {
+            throw new IllegalArgumentException("30일 이후 날짜로는 예약할 수 없습니다.");
+        }
+        
         if (endDate.isBefore(startDate)) {
-            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+            throw new IllegalArgumentException("종료일이 시작일보다 이전일 수 없습니다.");
         }
         
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) {
-            throw new RuntimeException("예약자 이름을 입력해주세요.");
+            throw new IllegalArgumentException("예약자 이름을 입력해주세요.");
         }
+        
+        // 캠핑장에 대한 배타적 락 획득
+        entityManager.lock(campsite, LockModeType.PESSIMISTIC_WRITE);
         
         boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                 campsite, endDate, startDate);
