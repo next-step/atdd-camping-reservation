@@ -25,27 +25,15 @@ public class ReservationController {
     private final CalendarService calendarService;
     
     @PostMapping
-    public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
-        try {
-            ReservationResponse response = reservationService.createReservation(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-        }
+    public ResponseEntity<ReservationResponse> createReservation(@RequestBody ReservationRequest request) {
+        ReservationResponse response = reservationService.createReservation(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
     
     @GetMapping("/{id}")
-    public ResponseEntity<?> getReservation(@PathVariable Long id) {
-        try {
-            ReservationResponse response = reservationService.getReservation(id);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-        }
+    public ResponseEntity<ReservationResponse> getReservation(@PathVariable Long id) {
+        ReservationResponse response = reservationService.getReservation(id);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping
@@ -63,34 +51,22 @@ public class ReservationController {
     }
     
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> cancelReservation(
+    public ResponseEntity<Map<String, String>> cancelReservation(
             @PathVariable Long id,
             @RequestParam String confirmationCode) {
-        try {
-            reservationService.cancelReservation(id, confirmationCode);
-            Map<String, String> response = new HashMap<>();
-            response.put("message", "예약이 취소되었습니다.");
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        reservationService.cancelReservation(id, confirmationCode);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "예약이 취소되었습니다.");
+        return ResponseEntity.ok(response);
     }
     
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateReservation(
+    public ResponseEntity<ReservationResponse> updateReservation(
             @PathVariable Long id,
             @RequestBody ReservationRequest request,
             @RequestParam String confirmationCode) {
-        try {
-            ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            Map<String, String> error = new HashMap<>();
-            error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-        }
+        ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/my")
