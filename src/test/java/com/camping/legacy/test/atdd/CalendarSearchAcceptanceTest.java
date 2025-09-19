@@ -20,7 +20,7 @@ import static org.springframework.http.HttpStatus.*;
 @Sql(scripts = "/sql/modify-reservation_create-campsites.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/clear-reservations.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @DisplayName("예약 캘린더 조회 테스트")
-public class CalendarSearchAcceptanceTest extends AcceptanceTestBase {
+class CalendarSearchAcceptanceTest extends AcceptanceTestBase {
 
     /**
      * Scenario: 정상적인 캘린더 조회

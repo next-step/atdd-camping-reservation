@@ -22,7 +22,7 @@ import static org.springframework.http.HttpStatus.*;
 @Sql(scripts = "/sql/create-campsites.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 @Sql(scripts = "/sql/clear-reservations.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)
 @DisplayName("예약 생성 테스트")
-public class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
+class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
 
     @Autowired
     private ReservationService reservationService;
@@ -312,9 +312,9 @@ public class ReservationCreationAcceptanceTest extends AcceptanceTestBase {
 
         // Then: 단 하나의 예약만 성공한다 & 나머지 예약은 실패한다.
         SoftAssertions.assertSoftly(softly -> {
-           softly.assertThat(responses.stream().map(ExtractableResponse::statusCode).toList())
-                   .containsExactlyInAnyOrder(CREATED.value(), CONFLICT.value());
-           softly.assertThat(reservationService.getAllReservations().size()).isEqualTo(1);
+            softly.assertThat(responses.stream().map(ExtractableResponse::statusCode).toList())
+                    .containsExactlyInAnyOrder(CREATED.value(), CONFLICT.value());
+            softly.assertThat(reservationService.getAllReservations().size()).isEqualTo(1);
         });
     }
 }
