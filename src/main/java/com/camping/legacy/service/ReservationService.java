@@ -8,15 +8,9 @@ import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -30,10 +24,7 @@ public class ReservationService {
     
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
-    
-    @PersistenceContext
-    private EntityManager entityManager;
-    
+
     private static final int MAX_RESERVATION_DAYS = 30;
     
     public synchronized ReservationResponse createReservation(ReservationRequest request) {
