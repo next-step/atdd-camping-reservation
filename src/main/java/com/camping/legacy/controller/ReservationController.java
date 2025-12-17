@@ -20,9 +20,13 @@ import java.util.Map;
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 public class ReservationController {
-    
+
     private final ReservationService reservationService;
-    private final CalendarService calendarService;
+
+    // CalendarService는 Deprecated 되었으나 하위 호환성을 위해 유지
+    // 실제로는 ReservationService의 캘린더 메서드를 사용함
+    // @Deprecated
+    // private final CalendarService calendarService;
     
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
@@ -100,11 +104,22 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.getReservationsByNameAndPhone(name, phone));
     }
     
+    /**
+     * 예약 캘린더 조회
+     *
+     * 2020-06-15 변경사항:
+     * - CalendarService 대신 ReservationService를 사용하도록 변경
+     * - 기존 API 스펙은 유지
+     */
     @GetMapping("/calendar")
     public ResponseEntity<CalendarResponse> getReservationCalendar(
             @RequestParam Integer year,
             @RequestParam Integer month,
             @RequestParam Long siteId) {
-        return ResponseEntity.ok(calendarService.getMonthlyCalendar(year, month, siteId));
+        // 구 방식 (주석 처리됨)
+        // return ResponseEntity.ok(calendarService.getMonthlyCalendar(year, month, siteId));
+
+        // 신규 방식 (ReservationService 사용)
+        return ResponseEntity.ok(reservationService.getMonthlyCalendar(year, month, siteId));
     }
 }

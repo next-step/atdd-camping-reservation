@@ -16,6 +16,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 캘린더 서비스
+ *
+ * @deprecated 2020-06-15 이후 ReservationService로 통합되었습니다.
+ *             이 클래스는 하위 호환성을 위해 유지되고 있으나 더 이상 사용하지 않습니다.
+ *             신규 개발 시 ReservationService.getMonthlyCalendar()를 사용하세요.
+ *
+ * 작성자: 김개발 (2019-03-15)
+ * 수정자: 이개발 (2020-06-15) - Deprecated 처리
+ *
+ * TODO: 2025년 1분기에 완전히 제거 예정
+ */
+@Deprecated
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -24,6 +37,12 @@ public class CalendarService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
     
+    /**
+     * 월별 캘린더 조회
+     *
+     * @deprecated ReservationService.getMonthlyCalendar()를 사용하세요
+     */
+    @Deprecated
     public CalendarResponse getMonthlyCalendar(Integer year, Integer month, Long siteId) {
         Campsite campsite = campsiteRepository.findById(siteId)
                 .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다."));
