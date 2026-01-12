@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Profile(value = "test")
 @SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest {
@@ -136,7 +138,7 @@ public class ReservationAcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).contains("이미 예약된 사이트입니다");
+        assertThat(response.jsonPath().getString("message")).contains("해당 기간에 이미 예약이 존재합니다.");
     }
 
     /**
