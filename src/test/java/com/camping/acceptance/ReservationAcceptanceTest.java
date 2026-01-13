@@ -1,17 +1,21 @@
 package com.camping.acceptance;
 
 import com.camping.legacy.CampingApplication;
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.repository.CampsiteRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -24,7 +28,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Profile(value = "test")
+@ActiveProfiles("test")
 @SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest {
@@ -38,6 +42,10 @@ public class ReservationAcceptanceTest {
     private static final long SITE_A3_ID = 3L;
     private static final String SITE_B2_NUMBER = "B-2";
     private static final long SITE_B2_ID = 22L;
+
+
+    @Autowired
+    CampsiteRepository campsiteRepository;
 
     @BeforeEach
     void setUp() {
@@ -56,6 +64,9 @@ public class ReservationAcceptanceTest {
         // given
         LocalDate startDate = LocalDate.of(2026, 12, 20);
         LocalDate endDate = LocalDate.of(2026, 12, 22);
+
+        Campsite campsite = create(SITE_A1_NUMBER);
+        campsiteRepository.save(campsite);
 
         Map<String, Object> reservationRequest = new HashMap<>();
         reservationRequest.put("siteNumber", SITE_A1_NUMBER);
@@ -211,5 +222,14 @@ public class ReservationAcceptanceTest {
         // 실패 응답 메시지("예약이 마감되었습니다")를 직접 확인하려면 각 요청의 응답을 개별적으로 캡처해야 합니다.
         // 현재 구현은 최종 상태 검증에 초점을 맞춥니다.
         assertThat(successfulReservations).hasSize(1);
+    }
+
+
+    private Campsite create(String siteNumber) {
+        return Campsite.builder()
+                .siteNumber("A-1")
+                .description("test")
+                .maxPeople(10)
+                .build();
     }
 }
