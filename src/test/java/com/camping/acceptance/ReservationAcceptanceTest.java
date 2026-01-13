@@ -3,15 +3,18 @@ package com.camping.acceptance;
 import com.camping.legacy.CampingApplication;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.repository.CampsiteRepository;
+import com.camping.support.DatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("test")
 @SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(DatabaseCleaner.class)
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest {
 
@@ -43,13 +47,20 @@ public class ReservationAcceptanceTest {
     private static final String SITE_B2_NUMBER = "B-2";
     private static final long SITE_B2_ID = 22L;
 
-
     @Autowired
     CampsiteRepository campsiteRepository;
+    @Autowired
+    DatabaseCleaner databaseCleaner;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+    }
+
+
+    @AfterEach
+    void tearDown() {
+        databaseCleaner.execute();
     }
 
     /**
