@@ -55,13 +55,9 @@ public class ReservationAcceptanceTest {
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
-    }
-
-
-    @AfterEach
-    void tearDown() {
         databaseCleaner.execute();
     }
+
 
     /**
      * 시나리오: 성공적인 단일 예약
@@ -73,11 +69,13 @@ public class ReservationAcceptanceTest {
     @DisplayName("예약_가능한_날짜에_캠핑장을_예약하면_예약에_성공한다")
     void createReservation_Success() {
         // given
+        // - 캠핑 사이트 등록
+        Campsite campsite = create(SITE_A1_NUMBER);
+        campsiteRepository.save(campsite);
+
         LocalDate startDate = LocalDate.of(2026, 12, 20);
         LocalDate endDate = LocalDate.of(2026, 12, 22);
 
-        Campsite campsite = create(SITE_A1_NUMBER);
-        campsiteRepository.save(campsite);
 
         Map<String, Object> reservationRequest = new HashMap<>();
         reservationRequest.put("siteNumber", SITE_A1_NUMBER);
@@ -124,9 +122,14 @@ public class ReservationAcceptanceTest {
     @Test
     @DisplayName("이미_예약된_날짜에_예약을_시도하면_예약에_실패한다")
     void createReservation_Fail_WhenDuplicate() {
-        // given - 먼저 예약을 하나 생성
-        LocalDate startDate = LocalDate.of(2026, 3, 5);
-        LocalDate endDate = LocalDate.of(2026, 3, 6);
+        // given
+        // - 캠핑 사이트 등록
+        // - 먼저 예약을 하나 생성
+        Campsite campsite = create(SITE_A3_NUMBER);
+        campsiteRepository.save(campsite);
+
+        LocalDate startDate = LocalDate.of(2026, 12, 5);
+        LocalDate endDate = LocalDate.of(2026, 12, 10);
 
         Map<String, Object> initialRequest = new HashMap<>();
         initialRequest.put("siteNumber", SITE_A3_NUMBER);
@@ -139,7 +142,8 @@ public class ReservationAcceptanceTest {
             .contentType(MediaType.APPLICATION_JSON_VALUE)
             .body(initialRequest)
             .post("/api/reservations")
-            .then().assertThat().statusCode(HttpStatus.CREATED.value());
+            .then()
+                .assertThat().statusCode(HttpStatus.CREATED.value());
 
         // when - 중복 예약을 시도
         Map<String, Object> duplicateRequest = new HashMap<>();
