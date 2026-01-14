@@ -20,7 +20,7 @@ public class CalendarResponse {
     private String siteNumber;
     private List<DayStatus> days;
     private Map<String, Integer> summary;
-    
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

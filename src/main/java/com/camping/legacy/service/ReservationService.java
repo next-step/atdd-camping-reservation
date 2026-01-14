@@ -8,8 +8,6 @@ import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
-import com.camping.legacy.util.StringUtils;
-import com.camping.legacy.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,11 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,9 +43,9 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
-    
+
     private static final int MAX_RESERVATION_DAYS = 30;
-    
+
     /**
      * 예약 생성 (절차적 방식)
      * - 긴 메서드 (100+ 줄)
@@ -160,7 +154,7 @@ public class ReservationService {
                 // 주말 체크
                 java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
                 boolean isWeekend = (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                                   dayOfWeek == java.time.DayOfWeek.SUNDAY);
+                        dayOfWeek == java.time.DayOfWeek.SUNDAY);
 
                 // 성수기 체크 (7월, 8월)
                 int month = current.getMonthValue();
@@ -190,7 +184,7 @@ public class ReservationService {
             while (!current.isAfter(endDate)) {
                 java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
                 if (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                    dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+                        dayOfWeek == java.time.DayOfWeek.SUNDAY) {
                     hasWeekend = true;
                     break;
                 }
@@ -272,51 +266,51 @@ public class ReservationService {
             return response;
         }
     }
-    
+
     @Transactional(readOnly = true)
     public ReservationResponse getReservation(Long id) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
         return ReservationResponse.from(reservation);
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByDate(LocalDate date) {
         List<Reservation> reservations = reservationRepository.findAll().stream()
                 .filter(r -> r.getStartDate() != null && r.getEndDate() != null)
                 .filter(r -> !date.isBefore(r.getStartDate()) && !date.isAfter(r.getEndDate()))
                 .collect(Collectors.toList());
-        
+
         return reservations.stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getAllReservations() {
         return reservationRepository.findAll().stream()
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
+
         LocalDate today = LocalDate.now();
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");
         }
-        
+
         reservationRepository.save(reservation);
     }
-    
+
     // 고객 이름으로 예약 조회
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByCustomerName(String customerName) {
@@ -324,7 +318,7 @@ public class ReservationService {
                 .map(ReservationResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> searchReservations(String keyword) {
         // 키워드 검증 (중복 코드 1)
@@ -334,7 +328,7 @@ public class ReservationService {
 
         List<Reservation> reservations = reservationRepository.findAll().stream()
                 .filter(r -> r.getCustomerName().contains(keyword) ||
-                           (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
+                        (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
                 .collect(Collectors.toList());
 
         // DTO 변환 로직 중복 - ReservationResponse.from() 대신 직접 변환
@@ -354,7 +348,7 @@ public class ReservationService {
 
         return responses;
     }
-    
+
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
@@ -429,7 +423,7 @@ public class ReservationService {
 
         return response;
     }
-    
+
     @Transactional(readOnly = true)
     public List<ReservationResponse> getReservationsByNameAndPhone(String name, String phone) {
         // 이름/전화번호 검증 (중복 코드 5)
@@ -465,7 +459,7 @@ public class ReservationService {
 
         return responses;
     }
-    
+
     /**
      * 결제를 포함한 예약 처리 (절차적 방식)
      * 예약 생성 + 결제 + 알림을 모두 한 메서드에서 처리
@@ -492,7 +486,7 @@ public class ReservationService {
 
         // 허용된 결제 수단인지 확인
         if (!paymentMethod.equals("CARD") && !paymentMethod.equals("CASH") &&
-            !paymentMethod.equals("TRANSFER") && !paymentMethod.equals("MOBILE")) {
+                !paymentMethod.equals("TRANSFER") && !paymentMethod.equals("MOBILE")) {
             throw new RuntimeException("지원하지 않는 결제 수단입니다.");
         }
 
@@ -601,7 +595,7 @@ public class ReservationService {
             }
 
             earnedPoints = (int) (totalPrice * pointRate);
-            log.info("적립 포인트: {}P (적립률: {}%)", earnedPoints, (int)(pointRate * 100));
+            log.info("적립 포인트: {}P (적립률: {}%)", earnedPoints, (int) (pointRate * 100));
         }
 
         // ============================================================
@@ -678,7 +672,7 @@ public class ReservationService {
         // 예약 기간 내의 모든 날짜에 대해 예약 정보 추가
         for (Reservation reservation : allReservations) {
             if (reservation.getCampsite().getId().equals(siteId) &&
-                reservation.getStartDate() != null && reservation.getEndDate() != null) {
+                    reservation.getStartDate() != null && reservation.getEndDate() != null) {
                 LocalDate current = reservation.getStartDate();
                 // 날짜를 하나씩 증가시키면서 맵에 추가
                 while (!current.isAfter(reservation.getEndDate()) && !current.isAfter(endDate)) {

@@ -3,7 +3,6 @@ package com.camping.legacy.controller;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
-import com.camping.legacy.service.CalendarService;
 import com.camping.legacy.service.ReservationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -27,7 +26,7 @@ public class ReservationController {
     // 실제로는 ReservationService의 캘린더 메서드를 사용함
     // @Deprecated
     // private final CalendarService calendarService;
-    
+
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
         try {
@@ -39,7 +38,7 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
     }
-    
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getReservation(@PathVariable Long id) {
         try {
@@ -51,12 +50,12 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
         }
     }
-    
+
     @GetMapping
     public ResponseEntity<List<ReservationResponse>> getReservations(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) String customerName) {
-        
+
         if (date != null) {
             return ResponseEntity.ok(reservationService.getReservationsByDate(date));
         } else if (customerName != null) {
@@ -65,7 +64,7 @@ public class ReservationController {
             return ResponseEntity.ok(reservationService.getAllReservations());
         }
     }
-    
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> cancelReservation(
             @PathVariable Long id,
@@ -81,7 +80,7 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
             @PathVariable Long id,
@@ -96,14 +95,14 @@ public class ReservationController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         }
     }
-    
+
     @GetMapping("/my")
     public ResponseEntity<List<ReservationResponse>> getMyReservations(
             @RequestParam String name,
             @RequestParam String phone) {
         return ResponseEntity.ok(reservationService.getReservationsByNameAndPhone(name, phone));
     }
-    
+
     /**
      * 예약 캘린더 조회
      *

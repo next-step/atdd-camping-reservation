@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReservationRequest {
-    
+
     private String customerName;
     private LocalDate startDate;
     private LocalDate endDate;

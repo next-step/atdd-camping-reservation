@@ -36,20 +36,3 @@ VALUES ('A-1', '대형 사이트 - 전기 있음, 화장실 인근', 6),
        ('B-13', '소형 사이트 - 전기 있음, 바비큐장 인근', 6),
        ('B-14', '소형 사이트 - 전기 있음, 운동장 인근', 6),
        ('B-15', '소형 사이트 - 전기 있음, 운동장 인근', 6);
-
--- -- 샘플 예약 데이터 (현재 날짜 기준으로 미래 예약)
--- INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at)
--- VALUES ('홍길동', DATEADD('DAY', 7, CURRENT_DATE), DATEADD('DAY', 9, CURRENT_DATE), DATEADD('DAY', 7, CURRENT_DATE), 1, '010-1234-5678', 'CONFIRMED', 'ABC123', CURRENT_TIMESTAMP);
---
--- INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at)
--- VALUES ('김철수', DATEADD('DAY', 14, CURRENT_DATE), DATEADD('DAY', 15, CURRENT_DATE), DATEADD('DAY', 14, CURRENT_DATE), 3, '010-2345-6789', 'CONFIRMED', 'DEF456', CURRENT_TIMESTAMP);
---
--- INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at)
--- VALUES ('이영희', DATEADD('DAY', 21, CURRENT_DATE), DATEADD('DAY', 23, CURRENT_DATE), DATEADD('DAY', 21, CURRENT_DATE), 6, '010-3456-7890', 'CONFIRMED', 'GHI789', CURRENT_TIMESTAMP);
---
--- -- 과거 예약 (버그 테스트용 - 과거 날짜 예약이 가능한 버그 확인용)
--- INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at)
--- VALUES ('박민수', DATEADD('DAY', -7, CURRENT_DATE), DATEADD('DAY', -5, CURRENT_DATE), DATEADD('DAY', -7, CURRENT_DATE), 2, '010-4567-8901', 'CONFIRMED', 'JKL012', DATEADD('DAY', -14, CURRENT_TIMESTAMP));
---
--- INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at)
--- VALUES ('정수진', DATEADD('DAY', -3, CURRENT_DATE), DATEADD('DAY', -2, CURRENT_DATE), DATEADD('DAY', -3, CURRENT_DATE), 4, '010-5678-9012', 'CONFIRMED', 'MNO345', DATEADD('DAY', -10, CURRENT_TIMESTAMP));

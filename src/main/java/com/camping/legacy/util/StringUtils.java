@@ -54,13 +54,13 @@ public class StringUtils {
         if (cleaned.length() == 11) {
             // 010-1234-5678
             return cleaned.substring(0, 3) + "-" +
-                   cleaned.substring(3, 7) + "-" +
-                   cleaned.substring(7, 11);
+                    cleaned.substring(3, 7) + "-" +
+                    cleaned.substring(7, 11);
         } else if (cleaned.length() == 10) {
             // 02-1234-5678 또는 031-123-4567
             return cleaned.substring(0, 2) + "-" +
-                   cleaned.substring(2, 6) + "-" +
-                   cleaned.substring(6, 10);
+                    cleaned.substring(2, 6) + "-" +
+                    cleaned.substring(6, 10);
         }
 
         // 포맷팅할 수 없으면 원본 반환

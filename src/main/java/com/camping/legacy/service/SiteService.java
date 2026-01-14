@@ -19,29 +19,29 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SiteService {
-    
+
     private final CampsiteRepository campsiteRepository;
     private final ReservationRepository reservationRepository;
-    
+
     public List<SiteResponse> getAllSites() {
         return campsiteRepository.findAll().stream()
                 .map(SiteResponse::from)
                 .collect(Collectors.toList());
     }
-    
+
     public SiteResponse getSiteById(Long siteId) {
         Campsite campsite = campsiteRepository.findById(siteId)
                 .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다."));
         return SiteResponse.from(campsite);
     }
-    
+
     public List<SiteAvailabilityResponse> getAvailableSites(LocalDate date) {
         List<Campsite> allSites = campsiteRepository.findAll();
         List<SiteAvailabilityResponse> responses = new ArrayList<>();
-        
+
         for (Campsite site : allSites) {
             boolean isAvailable = !reservationRepository.existsByCampsiteAndReservationDate(site, date);
-            
+
             responses.add(SiteAvailabilityResponse.builder()
                     .siteId(site.getId())
                     .siteNumber(site.getSiteNumber())
@@ -53,12 +53,12 @@ public class SiteService {
                     .description(site.getDescription())
                     .build());
         }
-        
+
         return responses.stream()
                 .filter(SiteAvailabilityResponse::getAvailable)
                 .collect(Collectors.toList());
     }
-    
+
     public List<SiteAvailabilityResponse> searchAvailableSites(SiteSearchRequest request) {
         // 날짜 유효성 검증 (중복 코드 - ReservationService와 동일)
         LocalDate startDate = request.getStartDate();
@@ -135,7 +135,7 @@ public class SiteService {
 
         return availableSites;
     }
-    
+
     public boolean isAvailable(String siteNumber, LocalDate date) {
         // 사이트 번호 검증 (중복 코드)
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
