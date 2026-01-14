@@ -14,14 +14,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-
 public class DatabaseCleaner {
     @Autowired
     private EntityManager entityManager;
 
     private List<String> tableNames;
-
-
 
     @PostConstruct
     void init() {

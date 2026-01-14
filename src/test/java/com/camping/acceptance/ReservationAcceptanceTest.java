@@ -4,6 +4,7 @@ import com.camping.legacy.CampingApplication;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
+import com.camping.legacy.repository.ReservationRepository;
 import com.camping.support.DatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
@@ -20,8 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,9 +28,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,6 +49,9 @@ public class ReservationAcceptanceTest {
 
     @Autowired
     CampsiteRepository campsiteRepository;
+    
+    @Autowired
+    ReservationRepository reservationRepository;
 
     @Autowired
     DatabaseCleaner databaseCleaner;
@@ -83,6 +82,7 @@ public class ReservationAcceptanceTest {
      * And 나머지 9개의 예약 요청은 "실패" 응답과 함께 "이미 예약이 완료되었거나 진행 중인 요청이 있습니다." 메시지를 받는다
      * And 최종적으로 데이터베이스에는 "A-01" 사이트의 "2027-08-15"부터 "2027-08-17"까지 단 1개의 예약만 저장된다
      */
+
     @Test
     @DisplayName("여러_사용자가_동시에_예약을_시도할_경우_오직_하나만_성공한다")
     void concurrencyControl_OnlyOneReservationSucceeds() throws InterruptedException {
@@ -129,17 +129,9 @@ public class ReservationAcceptanceTest {
 
         assertThat(successCount).isEqualTo(1);
         assertThat(failureCount).isEqualTo(9);
-
-        List<ReservationResponse> reservations = RestAssured.given()
-                .param("startDate", startDate.toString())
-                .param("endDate", endDate.toString())
-                .get("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract().body().jsonPath().getList(".", ReservationResponse.class);
-
-        long finalReservationCount = reservations.stream()
-                .filter(r -> r.getSiteNumber().equals(SITE_A1_NUMBER) &&
+        
+        long finalReservationCount = reservationRepository.findAll().stream()
+                .filter(r -> r.getCampsite().getSiteNumber().equals(SITE_A1_NUMBER) &&
                         r.getStartDate().equals(startDate) &&
                         r.getEndDate().equals(endDate))
                 .count();
@@ -160,7 +152,7 @@ public class ReservationAcceptanceTest {
         LocalDate reservationDate = LocalDate.of(2027, 9, 10);
 
         // when
-        createReservationFor(SITE_B2_NUMBER, "김캘린더", reservationDate, reservationDate.plusDays(1));
+        예약을_생성한다(SITE_B2_NUMBER, "김캘린더", reservationDate, reservationDate.plusDays(1));
 
         // then
         ExtractableResponse<Response> response = RestAssured
@@ -196,7 +188,7 @@ public class ReservationAcceptanceTest {
     void siteBecomesAvailableAfterCancellation() {
         // given
         LocalDate reservationDate = LocalDate.of(2027, 10, 20);
-        ReservationResponse reservation = createReservationFor(SITE_C3_NUMBER, "김영희", reservationDate, reservationDate.plusDays(1));
+        ReservationResponse reservation = 예약을_생성한다(SITE_C3_NUMBER, "김영희", reservationDate, reservationDate.plusDays(1));
 
         // when
         RestAssured
@@ -233,7 +225,7 @@ public class ReservationAcceptanceTest {
     void searchingForOverlappingDatesExcludesSite() {
         // given
         LocalDate reservedDate = LocalDate.of(2027, 11, 3);
-        createReservationFor(SITE_D4_NUMBER, "박중간", reservedDate, reservedDate.plusDays(1));
+        예약을_생성한다(SITE_D4_NUMBER, "박중간", reservedDate, reservedDate.plusDays(1));
 
         // when
         ExtractableResponse<Response> searchResponse = RestAssured
@@ -262,7 +254,7 @@ public class ReservationAcceptanceTest {
     void cancellationRequiresCorrectConfirmationCode() {
         // given
         LocalDate reservationDate = LocalDate.of(2026, 2, 14);
-        ReservationResponse reservation = createReservationFor(SITE_E5_NUMBER, "박서준", reservationDate, reservationDate.plusDays(1));
+        ReservationResponse reservation = 예약을_생성한다(SITE_E5_NUMBER, "박서준", reservationDate, reservationDate.plusDays(1));
         String correctCode = reservation.getConfirmationCode();
         String wrongCode = "WRONG456";
 
@@ -305,7 +297,8 @@ public class ReservationAcceptanceTest {
                 .build();
     }
 
-    private ReservationResponse createReservationFor(String siteNumber, String customerName, LocalDate startDate, LocalDate endDate) {
+    //예약이 성공을 가정에 사용?
+    private ReservationResponse 예약을_생성한다(String siteNumber, String customerName, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> request = new HashMap<>();
         request.put("siteNumber", siteNumber);
         request.put("startDate", startDate.toString());
