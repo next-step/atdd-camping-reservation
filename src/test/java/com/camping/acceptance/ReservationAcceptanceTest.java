@@ -2,12 +2,12 @@ package com.camping.acceptance;
 
 import com.camping.legacy.CampingApplication;
 import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.support.DatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,19 +15,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,211 +44,290 @@ public class ReservationAcceptanceTest {
     @LocalServerPort
     private int port;
 
-    private static final String SITE_A1_NUMBER = "A-1";
-    private static final long SITE_A1_ID = 1L;
-    private static final String SITE_A3_NUMBER = "A-3";
-    private static final long SITE_A3_ID = 3L;
-    private static final String SITE_B2_NUMBER = "B-2";
-    private static final long SITE_B2_ID = 22L;
+    private static final String SITE_A1_NUMBER = "A-01";
+    private static final String SITE_B2_NUMBER = "B-02";
+    private static final String SITE_C3_NUMBER = "C-03";
+    private static final String SITE_D4_NUMBER = "D-04";
+    private static final String SITE_E5_NUMBER = "E-05";
+
 
     @Autowired
     CampsiteRepository campsiteRepository;
+
     @Autowired
     DatabaseCleaner databaseCleaner;
+
+    private Campsite siteA1;
+    private Campsite siteB2;
+    private Campsite siteC3;
+    private Campsite siteD4;
+    private Campsite siteE5;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
         databaseCleaner.execute();
+
+        siteA1 = campsiteRepository.save(create(SITE_A1_NUMBER));
+        siteB2 = campsiteRepository.save(create(SITE_B2_NUMBER));
+        siteC3 = campsiteRepository.save(create(SITE_C3_NUMBER));
+        siteD4 = campsiteRepository.save(create(SITE_D4_NUMBER));
+        siteE5 = campsiteRepository.save(create(SITE_E5_NUMBER));
     }
 
-
     /**
-     * 시나리오: 성공적인 단일 예약
-     * given: 예약 가능한 캠핑장 "A-1"이 있고, 고객 "김그린"의 정보가 유효하다.
-     * when: 고객 "김그린"이 2026-12-20부터 2026-12-22까지 "A-1" 예약을 요청하면,
-     * then: 예약은 성공적으로 생성되고, 확인 코드가 발급되며, 해당 날짜의 사이트는 예약 불가능 상태가 된다.
+     * 시나리오: 여러 사용자가 동시에 예약을 시도할 경우 오직 하나만 성공한다 (동시성 제어)
+     * Given "A-01" 사이트의 "2027-08-15"부터 "2027-08-17"까지 예약이 비어있다
+     * When 10명의 사용자가 동시에 "A-01" 사이트의 "2027-08-15"부터 "2027-08-17"까지 예약을 요청한다
+     * Then 단 1개의 예약 요청만 "성공" 응답을 받는다
+     * And 나머지 9개의 예약 요청은 "실패" 응답과 함께 "이미 예약이 완료되었거나 진행 중인 요청이 있습니다." 메시지를 받는다
+     * And 최종적으로 데이터베이스에는 "A-01" 사이트의 "2027-08-15"부터 "2027-08-17"까지 단 1개의 예약만 저장된다
      */
     @Test
-    @DisplayName("예약_가능한_날짜에_캠핑장을_예약하면_예약에_성공한다")
-    void createReservation_Success() {
+    @DisplayName("여러_사용자가_동시에_예약을_시도할_경우_오직_하나만_성공한다")
+    void concurrencyControl_OnlyOneReservationSucceeds() throws InterruptedException {
         // given
-        // - 캠핑 사이트 등록
-        Campsite campsite = create(SITE_A1_NUMBER);
-        campsiteRepository.save(campsite);
+        int numberOfUsers = 10;
+        LocalDate startDate = LocalDate.of(2027, 8, 15);
+        LocalDate endDate = LocalDate.of(2027, 8, 17);
 
-        LocalDate startDate = LocalDate.of(2026, 12, 20);
-        LocalDate endDate = LocalDate.of(2026, 12, 22);
-
-
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("siteNumber", SITE_A1_NUMBER);
-        reservationRequest.put("startDate", startDate.toString());
-        reservationRequest.put("endDate", endDate.toString());
-        reservationRequest.put("customerName", "김그린");
-        reservationRequest.put("phoneNumber", "010-1111-2222");
+        ExecutorService executorService = Executors.newFixedThreadPool(numberOfUsers);
+        CountDownLatch latch = new CountDownLatch(numberOfUsers);
+        ConcurrentLinkedQueue<Response> responses = new ConcurrentLinkedQueue<>();
 
         // when
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(reservationRequest)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-        assertThat(response.jsonPath().getString("confirmationCode")).isNotNull();
-
-        // and - 해당 날짜의 캠핑 사이트 "A-1"은 더 이상 예약 불가능 상태가 되어야 한다.
-        for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
-            ExtractableResponse<Response> availabilityResponse = RestAssured
-                    .given().log().all()
-                    .param("date", date.toString())
-                    .when()
-                    .get("/api/sites/" + SITE_A1_NUMBER + "/availability")
-                    .then().log().all()
-                    .extract();
-            
-            assertThat(availabilityResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-            assertThat(availabilityResponse.jsonPath().getBoolean("available")).isFalse();
-        }
-    }
-
-    /**
-     * 시나리오: 이미 예약된 날짜에 대한 중복 예약 시도
-     * given: "홍길동"이 2026-03-05에 캠핑 사이트 "A-3"를 이미 예약했다.
-     * when: "박중복"이 동일한 날짜로 "A-3" 예약을 시도하면,
-     * then: 예약은 거부되고 "이미 예약된 사이트입니다"라는 메시지를 반환한다.
-     */
-    @Test
-    @DisplayName("이미_예약된_날짜에_예약을_시도하면_예약에_실패한다")
-    void createReservation_Fail_WhenDuplicate() {
-        // given
-        // - 캠핑 사이트 등록
-        // - 먼저 예약을 하나 생성
-        Campsite campsite = create(SITE_A3_NUMBER);
-        campsiteRepository.save(campsite);
-
-        LocalDate startDate = LocalDate.of(2026, 12, 5);
-        LocalDate endDate = LocalDate.of(2026, 12, 10);
-
-        Map<String, Object> initialRequest = new HashMap<>();
-        initialRequest.put("siteNumber", SITE_A3_NUMBER);
-        initialRequest.put("startDate", startDate.toString());
-        initialRequest.put("endDate", endDate.toString());
-        initialRequest.put("customerName", "홍길동");
-        initialRequest.put("phoneNumber", "010-3333-4444");
-
-        RestAssured.given()
-            .contentType(MediaType.APPLICATION_JSON_VALUE)
-            .body(initialRequest)
-            .post("/api/reservations")
-            .then()
-                .assertThat().statusCode(HttpStatus.CREATED.value());
-
-        // when - 중복 예약을 시도
-        Map<String, Object> duplicateRequest = new HashMap<>();
-        duplicateRequest.put("siteNumber", SITE_A3_NUMBER);
-        duplicateRequest.put("startDate", startDate.toString());
-        duplicateRequest.put("endDate", endDate.toString());
-        duplicateRequest.put("customerName", "박중복");
-        duplicateRequest.put("phoneNumber", "010-5555-6666");
-        
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(duplicateRequest)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .extract();
-
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).contains("해당 기간에 이미 예약이 존재합니다.");
-    }
-
-    /**
-     * 시나리오: 동일한 사이트에 대한 동시 예약 시도
-     * given: 캠핑 사이트 "B-2"가 2026-02-10부터 2026-02-12까지 예약 가능하다.
-     * when: "박동시"와 "이경쟁"이 거의 동시에 "B-2" 예약을 시도하면,
-     * then: 한 명의 예약만 성공하고, 다른 한 명의 예약은 "예약이 마감되었습니다"라는 메시지와 함께 실패한다.
-     */
-    @Test
-    @DisplayName("동일한_사이트에_동시에_예약을_시도하면_한명만_성공한다")
-    void createReservation_Success_WhenConcurrent() throws InterruptedException {
-        // given
-        int numberOfThreads = 2;
-        ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-        CountDownLatch latch = new CountDownLatch(numberOfThreads);
-
-        LocalDate startDate = LocalDate.of(2026, 2, 10);
-        LocalDate endDate = LocalDate.of(2026, 2, 12);
-        
-        Map<String, Object> request1 = new HashMap<>();
-        request1.put("siteNumber", SITE_B2_NUMBER);
-        request1.put("startDate", startDate.toString());
-        request1.put("endDate", endDate.toString());
-        request1.put("customerName", "박동시");
-        request1.put("phoneNumber", "010-7777-8888");
-
-        Map<String, Object> request2 = new HashMap<>();
-        request2.put("siteNumber", SITE_B2_NUMBER);
-        request2.put("startDate", startDate.toString());
-        request2.put("endDate", endDate.toString());
-        request2.put("customerName", "이경쟁");
-        request2.put("phoneNumber", "010-9999-0000");
-
-        // when
-        for (Map<String, Object> request : List.of(request1, request2)) {
+        for (int i = 0; i < numberOfUsers; i++) {
+            int userIndex = i;
             executorService.submit(() -> {
-                RestAssured.given()
-                        .contentType(MediaType.APPLICATION_JSON_VALUE)
-                        .body(request)
-                        .post("/api/reservations")
-                        .then();
-                latch.countDown();
+                try {
+                    Map<String, Object> request = new HashMap<>();
+                    request.put("siteNumber", SITE_A1_NUMBER);
+                    request.put("startDate", startDate.toString());
+                    request.put("endDate", endDate.toString());
+                    request.put("customerName", "사용자-" + userIndex);
+                    request.put("phoneNumber", "010-1234-567" + userIndex);
+
+                    Response response = RestAssured.given()
+                            .contentType(MediaType.APPLICATION_JSON_VALUE)
+                            .body(request)
+                            .when()
+                            .post("/api/reservations")
+                            .then()
+                            .extract().response();
+                    responses.add(response);
+                } finally {
+                    latch.countDown();
+                }
             });
         }
         latch.await();
-        
+        executorService.shutdown();
+
         // then
-        ExtractableResponse<Response> response = RestAssured.given()
-            .param("customerName", "박동시")
-            .get("/api/reservations")
-            .then().extract();
-        List<Map<String, Object>> user1Reservations = response.jsonPath().getList("$");
+        long successCount = responses.stream().filter(r -> r.statusCode() == HttpStatus.CREATED.value()).count();
+        long failureCount = responses.stream().filter(r -> r.statusCode() == HttpStatus.CONFLICT.value()).count();
 
-        response = RestAssured.given()
-            .param("customerName", "이경쟁")
-            .get("/api/reservations")
-            .then().extract();
-        List<Map<String, Object>> user2Reservations = response.jsonPath().getList("$");
+        assertThat(successCount).isEqualTo(1);
+        assertThat(failureCount).isEqualTo(9);
 
-        List<Map<String, Object>> successfulReservations = user1Reservations.stream()
-            .filter(r -> r.get("campsiteId").toString().equals(String.valueOf(SITE_B2_ID)))
-            .collect(Collectors.toList());
-        
-        successfulReservations.addAll(user2Reservations.stream()
-            .filter(r -> r.get("campsiteId").toString().equals(String.valueOf(SITE_B2_ID)))
-            .collect(Collectors.toList()));
-        
-        // then - 한 명의 예약만 성공했는지 검증
-        // 참고: 실제 동시성 테스트의 완벽한 검증은 복잡하며, 이 테스트는 결과론적으로 한 명의 예약만 생성되었는지를 확인합니다.
-        // 실패 응답 메시지("예약이 마감되었습니다")를 직접 확인하려면 각 요청의 응답을 개별적으로 캡처해야 합니다.
-        // 현재 구현은 최종 상태 검증에 초점을 맞춥니다.
-        assertThat(successfulReservations).hasSize(1);
+        List<ReservationResponse> reservations = RestAssured.given()
+                .param("startDate", startDate.toString())
+                .param("endDate", endDate.toString())
+                .get("/api/reservations")
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().body().jsonPath().getList(".", ReservationResponse.class);
+
+        long finalReservationCount = reservations.stream()
+                .filter(r -> r.getSiteNumber().equals(SITE_A1_NUMBER) &&
+                        r.getStartDate().equals(startDate) &&
+                        r.getEndDate().equals(endDate))
+                .count();
+        assertThat(finalReservationCount).isEqualTo(1);
     }
 
 
+    /**
+     * 시나리오: 예약 직후 월별 캘린더에 즉시 반영된다
+     * Given "B-02" 사이트의 "2027-09-10" 날짜가 비어있다
+     * When 사용자가 "B-02" 사이트의 "2027-09-10" 날짜를 예약한다
+     * Then 사용자가 "2027년 9월" 월별 캘린더를 조회하면 "10일"은 "예약 불가능" 상태로 표시된다
+     */
+    @Test
+    @DisplayName("예약_직후_월별_캘린더에_즉시_반영된다")
+    void calendarReflectsReservationImmediately() {
+        // given
+        LocalDate reservationDate = LocalDate.of(2027, 9, 10);
+
+        // when
+        createReservationFor(SITE_B2_NUMBER, "김캘린더", reservationDate, reservationDate.plusDays(1));
+
+        // then
+        ExtractableResponse<Response> response = RestAssured
+                .given().log().all()
+                .param("year", 2027)
+                .param("month", 9)
+                .param("siteId", siteB2.getId())
+                .when()
+                .get("/api/reservations/calendar")
+                .then().log().all()
+                .extract();
+
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+
+        List<Map<String, Object>> days = response.jsonPath().getList("days");
+        Map<String, Object> day10 = days.stream()
+                .filter(d -> d.get("date").equals("2027-09-10"))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(day10.get("available")).isEqualTo(false);
+        assertThat(day10.get("customerName")).isEqualTo("김캘린더");
+    }
+
+    /**
+     * 시나리오: 예약 취소 직후 예약 가능 목록에 즉시 반영된다
+     * Given "C-03" 사이트의 "2027-10-20" 날짜가 "김영희"에게 예약되어 있다
+     * When "김영희"가 해당 예약을 취소한다
+     * Then 사용자가 "2027-10-20" 날짜로 예약 가능한 사이트를 검색하면 결과에 "C-03" 사이트가 포함된다
+     */
+    @Test
+    @DisplayName("예약_취소_직후_예약_가능_목록에_즉시_반영된다")
+    void siteBecomesAvailableAfterCancellation() {
+        // given
+        LocalDate reservationDate = LocalDate.of(2027, 10, 20);
+        ReservationResponse reservation = createReservationFor(SITE_C3_NUMBER, "김영희", reservationDate, reservationDate.plusDays(1));
+
+        // when
+        RestAssured
+                .given().log().all()
+                .queryParam("confirmationCode", reservation.getConfirmationCode())
+                .when()
+                .delete("/api/reservations/" + reservation.getId())
+                .then().log().all()
+                .statusCode(HttpStatus.OK.value());
+
+        // then
+        ExtractableResponse<Response> searchResponse = RestAssured
+                .given().log().all()
+                .param("startDate", reservationDate.toString())
+                .param("endDate", reservationDate.plusDays(1).toString())
+                .when()
+                .get("/api/sites/search")
+                .then().log().all()
+                .extract();
+
+        assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+        List<String> availableSites = searchResponse.jsonPath().getList("siteNumber");
+        assertThat(availableSites).contains(SITE_C3_NUMBER);
+    }
+
+    /**
+     * 시나리오: 연박 예약 시 중간 날짜가 이미 예약된 경우 조회되지 않는다
+     * Given "D-04" 사이트의 "2027-11-03" 날짜가 이미 예약되어 있다
+     * When 사용자가 "D-04" 사이트에 대해 "2027-11-01"부터 "2027-11-05"까지 예약 가능 여부를 조회한다
+     * Then "D-04" 사이트는 예약 불가능한 것으로 나타나야 한다
+     */
+    @Test
+    @DisplayName("연박_예약_시_중간_날짜가_이미_예약된_경우_조회되지_않는다")
+    void searchingForOverlappingDatesExcludesSite() {
+        // given
+        LocalDate reservedDate = LocalDate.of(2027, 11, 3);
+        createReservationFor(SITE_D4_NUMBER, "박중간", reservedDate, reservedDate.plusDays(1));
+
+        // when
+        ExtractableResponse<Response> searchResponse = RestAssured
+                .given().log().all()
+                .param("startDate", "2027-11-01")
+                .param("endDate", "2027-11-05")
+                .when()
+                .get("/api/sites/search")
+                .then().log().all()
+                .extract();
+
+        // then
+        assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+        List<String> availableSites = searchResponse.jsonPath().getList("siteNumber");
+        assertThat(availableSites).doesNotContain(SITE_D4_NUMBER);
+    }
+
+    /**
+     * 시나리오: 정확한 확인 코드를 입력해야만 예약을 취소할 수 있다
+     * Given "E-05" 사이트가 "2026-02-14" 날짜에 "박서준"의 이름으로 예약되어 있고 확인 코드는 "ABC123"이다
+     * When "박서준"이 예약 취소를 위해 "ABC123", "WRONG456", "" 코드를 입력한다
+     * Then 각각 "취소됨", "유지됨", "유지됨" 상태가 되고 해당하는 메시지를 받는다
+     */
+    @Test
+    @DisplayName("정확한_확인_코드를_입력해야만_예약을_취소할_수_있다")
+    void cancellationRequiresCorrectConfirmationCode() {
+        // given
+        LocalDate reservationDate = LocalDate.of(2026, 2, 14);
+        ReservationResponse reservation = createReservationFor(SITE_E5_NUMBER, "박서준", reservationDate, reservationDate.plusDays(1));
+        String correctCode = reservation.getConfirmationCode();
+        String wrongCode = "WRONG456";
+
+        // when & then: Case 1 - Wrong Code
+        ExtractableResponse<Response> wrongCodeResponse = RestAssured
+                .given().log().all()
+                .queryParam("confirmationCode", wrongCode)
+                .when()
+                .delete("/api/reservations/" + reservation.getId())
+                .then().log().all()
+                .extract();
+
+        assertThat(wrongCodeResponse.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(wrongCodeResponse.jsonPath().getString("message")).isEqualTo("확인 코드가 일치하지 않습니다.");
+
+        ReservationResponse reservationAfterWrongCode = getReservationById(reservation.getId());
+        assertThat(reservationAfterWrongCode.getStatus()).isNotEqualTo("CANCELLED");
+
+        // when & then: Case 2 - Correct Code
+        ExtractableResponse<Response> correctCodeResponse = RestAssured
+                .given().log().all()
+                .queryParam("confirmationCode", correctCode)
+                .when()
+                .delete("/api/reservations/" + reservation.getId())
+                .then().log().all()
+                .extract();
+
+        assertThat(correctCodeResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(correctCodeResponse.jsonPath().getString("message")).isEqualTo("예약이 취소되었습니다.");
+
+        ReservationResponse reservationAfterCorrectCode = getReservationById(reservation.getId());
+        assertThat(reservationAfterCorrectCode.getStatus()).isEqualTo("CANCELLED");
+    }
+
     private Campsite create(String siteNumber) {
         return Campsite.builder()
-                .siteNumber("A-1")
+                .siteNumber(siteNumber)
                 .description("test")
                 .maxPeople(10)
                 .build();
+    }
+
+    private ReservationResponse createReservationFor(String siteNumber, String customerName, LocalDate startDate, LocalDate endDate) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("siteNumber", siteNumber);
+        request.put("startDate", startDate.toString());
+        request.put("endDate", endDate.toString());
+        request.put("customerName", customerName);
+        request.put("phoneNumber", "010-1234-5678");
+
+        return RestAssured
+                .given()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .body(request)
+                .when()
+                .post("/api/reservations")
+                .then()
+                .statusCode(HttpStatus.CREATED.value())
+                .extract().body().as(ReservationResponse.class);
+    }
+
+    private ReservationResponse getReservationById(Long reservationId) {
+        return RestAssured.when().get("/api/reservations/" + reservationId)
+                .then()
+                .statusCode(HttpStatus.OK.value())
+                .extract().body().as(ReservationResponse.class);
     }
 }
