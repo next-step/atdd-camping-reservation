@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReservationResponse {
-    
+
     private Long id;
     private String customerName;
     private LocalDate startDate;
@@ -24,7 +24,7 @@ public class ReservationResponse {
     private String status;
     private String confirmationCode;
     private LocalDateTime createdAt;
-    
+
     public static ReservationResponse from(Reservation reservation) {
         ReservationResponse response = new ReservationResponse();
         response.setId(reservation.getId());

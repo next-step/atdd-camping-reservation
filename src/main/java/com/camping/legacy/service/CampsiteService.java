@@ -14,24 +14,24 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CampsiteService {
-    
+
     private final CampsiteRepository campsiteRepository;
     private final ReservationRepository reservationRepository;
-    
+
     public List<Campsite> getAllCampsites() {
         return campsiteRepository.findAll();
     }
-    
+
     public Campsite getCampsiteById(Long id) {
         return campsiteRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("캠핑장을 찾을 수 없습니다."));
     }
-    
+
     public Campsite getCampsiteBySiteNumber(String siteNumber) {
         return campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("캠핑장을 찾을 수 없습니다."));
     }
-    
+
     public boolean isAvailable(String siteNumber, LocalDate date) {
         Campsite campsite = getCampsiteBySiteNumber(siteNumber);
         return !reservationRepository.existsByCampsiteAndReservationDate(campsite, date);

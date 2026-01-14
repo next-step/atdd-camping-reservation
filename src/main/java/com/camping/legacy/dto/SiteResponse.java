@@ -20,7 +20,7 @@ public class SiteResponse {
     private Integer toiletDistance;
     private String facilities;
     private String rules;
-    
+
     public static SiteResponse from(Campsite campsite) {
         return SiteResponse.builder()
                 .id(campsite.getId())
