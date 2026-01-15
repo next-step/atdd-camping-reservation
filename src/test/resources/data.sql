@@ -4,3 +4,5 @@
 INSERT INTO campsites (site_number, description, max_people)
 VALUES ('A-1', '테스트용 사이트 A-1', 6);
 
+INSERT INTO campsites (site_number, description, max_people)
+VALUES ('B-1', '테스트용 사이트 B-1', 4);
