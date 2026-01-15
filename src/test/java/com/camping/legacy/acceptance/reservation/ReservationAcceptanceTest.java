@@ -1,5 +1,6 @@
 package com.camping.legacy.acceptance.reservation;
 
+import com.camping.legacy.acceptance.AcceptanceTestBase;
 import com.camping.legacy.dto.ReservationRequest;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
@@ -26,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("예약 관련 기능")
 @Sql({"/truncate.sql", "/data.sql"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ReservationAcceptanceTest {
+public class ReservationAcceptanceTest extends AcceptanceTestBase {
 
     private static final String 사이트번호_A_1 = "A-1";
     private static final String 사이트_크기_대형 = "대형";
@@ -53,14 +54,6 @@ public class ReservationAcceptanceTest {
     private static final String 예약상태_당일취소 = "CANCELLED_SAME_DAY";
 
     private static final String 잘못된_확인코드 = "WRONG1";
-
-    @LocalServerPort
-    int port;
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     /**
      * Given: A-1 사이트가 2026년 2월 1일부터 2월 3일까지 예약 가능한 상태이다.
