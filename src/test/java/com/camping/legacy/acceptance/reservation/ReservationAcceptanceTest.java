@@ -67,12 +67,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 정상적으로_예약을_생성() {
 
         // Given
-        ExtractableResponse<Response> 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
         사이트가_존재한다(사이트정보, 사이트번호_A_1);
 
         // When
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
         예약이_되었다(홍길동_예약결과정보);
@@ -90,12 +90,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 중복_예약은_불가() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
         예약을_생성한다(홍길동_예약요청);
 
         // When
-        ReservationRequest 김철수_예약요청 = 예약요청_생성(김철수, 중복예약_시작일, 중복예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 김철수_예약결과정보 = 예약을_생성한다(김철수_예약요청);
+        var 김철수_예약요청 = 예약요청_생성(김철수, 중복예약_시작일, 중복예약_종료일, 사이트번호_A_1);
+        var 김철수_예약결과정보 = 예약을_생성한다(김철수_예약요청);
 
         // Then
         예약이_되지않았다(김철수_예약결과정보);
@@ -113,11 +113,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 동시_예약은_한건만_성공한다() throws InterruptedException {
 
         // Given
-        ExtractableResponse<Response> 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
         사이트가_존재한다(사이트정보, 사이트번호_A_1);
 
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ReservationRequest 김철수_예약요청 = 예약요청_생성(김철수, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 김철수_예약요청 = 예약요청_생성(김철수, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
 
         int 동시요청_개수 = 2;
 
@@ -186,14 +186,14 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 정상적으로_예약을_변경() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
-        ReservationRequest 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
+        var 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
 
         // Then
         예약이_수정되었다(예약수정정보);
@@ -211,13 +211,13 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 틀린_확인코드로_예약_수정_불가() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
 
         // When
-        ReservationRequest 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 예약수정정보 = 예약을_수정한다(예약ID, 잘못된_확인코드, 홍길동_예약변경요청);
+        var 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 예약수정정보 = 예약을_수정한다(예약ID, 잘못된_확인코드, 홍길동_예약변경요청);
 
         // Then
         예약이_수정되지않았다(예약수정정보);
@@ -235,17 +235,17 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 이미_예약된_날짜로_예약_수정_불가() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
-        ReservationRequest 김철수_예약요청 = 예약요청_생성(김철수, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 김철수_예약요청 = 예약요청_생성(김철수, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
         예약을_생성한다(김철수_예약요청);
 
         // When
-        ReservationRequest 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
+        var 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
 
         // Then
         예약이_수정되지않았다(예약수정정보);
@@ -264,20 +264,20 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 정상적으로_예약을_취소() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
-        ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
-        ExtractableResponse<Response> 예약정보 = 예약을_조회한다(예약ID);
+        var 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
+        var 예약정보 = 예약을_조회한다(예약ID);
 
         // Then
         예약이_취소되었다(예약취소정보);
         사전예약_취소_상태이다(예약정보);
 
-        ExtractableResponse<Response> 사이트정보 = 사이트를_조회한다(변경예약_시작일, 변경예약_종료일, 사이트_크기_대형);
+        var 사이트정보 = 사이트를_조회한다(변경예약_시작일, 변경예약_종료일, 사이트_크기_대형);
         사이트가_존재한다(사이트정보, 사이트번호_A_1);
     }
 
@@ -292,17 +292,17 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     @Test
     void 당일에_예약을_취소하면_당일예약취소_상태로_변경() {
         // Given
-        String 당일예약_시작일 = LocalDate.now().toString();
-        String 당일예약_종료일 = LocalDate.now().plusDays(3).toString();
+        var 당일예약_시작일 = LocalDate.now().toString();
+        var 당일예약_종료일 = LocalDate.now().plusDays(3).toString();
 
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 당일예약_시작일, 당일예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 당일예약_시작일, 당일예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
-        ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
-        ExtractableResponse<Response> 예약정보 = 예약을_조회한다(예약ID);
+        var 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
+        var 예약정보 = 예약을_조회한다(예약ID);
 
         // Then
         예약이_취소되었다(예약취소정보);
@@ -320,12 +320,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     void 틀린_확인코드로_예약_취소_불가() {
 
         // Given
-        ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
 
         // When
-        ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 잘못된_확인코드);
+        var 예약취소정보 = 예약을_취소한다(예약ID, 잘못된_확인코드);
 
         // Then
         예약이_취소되지않았다(예약취소정보);
