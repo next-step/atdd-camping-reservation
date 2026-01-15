@@ -79,12 +79,12 @@ public class ReservationAcceptanceTest {
 
         // When
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
-        예약이_되었다(홍길동_예약완료정보);
-        확인코드가_발급되었다(홍길동_예약완료정보, 확인코드_길이_6자리);
-        예약상태가_확정이다(홍길동_예약완료정보, 예약상태_예약완료);
+        예약이_되었다(홍길동_예약결과정보);
+        확인코드가_발급되었다(홍길동_예약결과정보, 확인코드_길이_6자리);
+        예약상태가_확정이다(홍길동_예약결과정보, 예약상태_예약완료);
     }
 
     /**
@@ -102,10 +102,10 @@ public class ReservationAcceptanceTest {
 
         // When
         ReservationRequest 김철수_예약요청 = 예약요청_생성(김철수, 중복예약_시작일, 중복예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 김철수_예약완료정보 = 예약을_생성한다(김철수_예약요청);
+        ExtractableResponse<Response> 김철수_예약결과정보 = 예약을_생성한다(김철수_예약요청);
 
         // Then
-        예약이_되지않았다(김철수_예약완료정보);
+        예약이_되지않았다(김철수_예약결과정보);
     }
 
     /**
@@ -194,9 +194,9 @@ public class ReservationAcceptanceTest {
 
         // Given
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
         ReservationRequest 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
@@ -219,8 +219,8 @@ public class ReservationAcceptanceTest {
 
         // Given
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
 
         // When
         ReservationRequest 홍길동_예약변경요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
@@ -243,9 +243,9 @@ public class ReservationAcceptanceTest {
 
         // Given
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         ReservationRequest 김철수_예약요청 = 예약요청_생성(김철수, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
         예약을_생성한다(김철수_예약요청);
@@ -272,9 +272,9 @@ public class ReservationAcceptanceTest {
 
         // Given
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
         ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
@@ -303,9 +303,9 @@ public class ReservationAcceptanceTest {
         String 당일예약_종료일 = LocalDate.now().plusDays(3).toString();
 
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 당일예약_시작일, 당일예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
-        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+        String 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
 
         // When
         ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
@@ -328,8 +328,8 @@ public class ReservationAcceptanceTest {
 
         // Given
         ReservationRequest 홍길동_예약요청 = 예약요청_생성(홍길동, 변경예약_시작일, 변경예약_종료일, 사이트번호_A_1);
-        ExtractableResponse<Response> 홍길동_예약완료정보 = 예약을_생성한다(홍길동_예약요청);
-        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약완료정보);
+        ExtractableResponse<Response> 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+        Long 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
 
         // When
         ExtractableResponse<Response> 예약취소정보 = 예약을_취소한다(예약ID, 잘못된_확인코드);
