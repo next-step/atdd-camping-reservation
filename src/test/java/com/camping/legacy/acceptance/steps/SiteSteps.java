@@ -10,11 +10,13 @@ import static io.restassured.RestAssured.given;
 
 public class SiteSteps {
 
+    private static final String API_SITES = "/api/sites";
+
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> 가용_사이트_조회(LocalDate date) {
         return given()
                 .when()
-                    .get("/api/sites/available?date=" + date)
+                    .get(API_SITES + "/available?date=" + date)
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .extract()
@@ -26,7 +28,7 @@ public class SiteSteps {
     public static List<Map<String, Object>> 가용_사이트_검색(LocalDate startDate, LocalDate endDate) {
         return given()
                 .when()
-                    .get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
+                    .get(API_SITES + "/search?startDate=" + startDate + "&endDate=" + endDate)
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .extract()

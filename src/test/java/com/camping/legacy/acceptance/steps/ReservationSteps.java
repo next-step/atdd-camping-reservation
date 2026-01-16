@@ -14,6 +14,8 @@ import static io.restassured.http.ContentType.JSON;
 
 public class ReservationSteps {
 
+    private static final String API_RESERVATIONS = "/api/reservations";
+
     public static ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
             String phoneNumber, LocalDate startDate, LocalDate endDate) {
         Map<String, Object> request = new HashMap<>();
@@ -28,7 +30,7 @@ public class ReservationSteps {
                     .contentType(JSON)
                     .body(request)
                 .when()
-                    .post("/api/reservations")
+                    .post(API_RESERVATIONS)
                 .then()
                     .extract();
     }
@@ -36,7 +38,7 @@ public class ReservationSteps {
     public static ExtractableResponse<Response> 예약_취소(Long reservationId, String confirmationCode) {
         return given()
                 .when()
-                    .delete("/api/reservations/" + reservationId + "?confirmationCode=" + confirmationCode)
+                    .delete(API_RESERVATIONS + "/" + reservationId + "?confirmationCode=" + confirmationCode)
                 .then()
                     .extract();
     }
@@ -44,7 +46,7 @@ public class ReservationSteps {
     public static List<?> 예약_목록_조회(LocalDate date) {
         return given()
                 .when()
-                    .get("/api/reservations?date=" + date.toString())
+                    .get(API_RESERVATIONS + "?date=" + date.toString())
                 .then()
                     .statusCode(HttpStatus.OK.value())
                     .extract()
