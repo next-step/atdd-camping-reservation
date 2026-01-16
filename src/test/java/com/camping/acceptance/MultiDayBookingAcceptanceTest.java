@@ -11,12 +11,11 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
+import static com.camping.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.acceptance.steps.SiteSteps.가용_사이트_검색;
 import static org.assertj.core.api.Assertions.assertThat;
 import com.camping.legacy.CampingApplication;
 
@@ -139,40 +138,5 @@ class MultiDayBookingAcceptanceTest {
         assertThat(containsB6)
                 .as("중간 날짜에 예약이 있는 B-6 사이트는 검색 결과에서 제외되어야 한다")
                 .isFalse();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 헬퍼 메서드
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    private ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
-            String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
-
-        return given()
-                    .contentType(JSON)
-                    .body(request)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> 가용_사이트_검색(LocalDate startDate, LocalDate endDate) {
-        return given()
-                .when()
-                    .get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .extract()
-                    .jsonPath()
-                    .getList("$");
     }
 }

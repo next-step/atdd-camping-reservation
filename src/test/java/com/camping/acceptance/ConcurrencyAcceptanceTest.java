@@ -12,16 +12,14 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
+import static com.camping.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.acceptance.steps.ReservationSteps.예약_목록_조회;
 import com.camping.legacy.CampingApplication;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -201,38 +199,8 @@ class ConcurrencyAcceptanceTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 헬퍼 메서드
+    // 동시성 테스트 전용 유틸리티 메서드
     // ═══════════════════════════════════════════════════════════════════════════
-
-    private ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
-            String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
-
-        return given()
-                    .contentType(JSON)
-                    .body(request)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
-    }
-
-    private List<?> 예약_목록_조회(LocalDate date) {
-        return given()
-                .when()
-                    .get("/api/reservations?date=" + date.toString())
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .extract()
-                    .jsonPath()
-                    .getList("$");
-    }
 
     private ExtractableResponse<Response> getResponse(Future<ExtractableResponse<Response>> future) {
         try {

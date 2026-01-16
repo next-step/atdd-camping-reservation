@@ -11,12 +11,12 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
+import static com.camping.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.acceptance.steps.ReservationSteps.예약_취소;
+import static com.camping.acceptance.steps.SiteSteps.가용_사이트_조회;
 import static org.assertj.core.api.Assertions.assertThat;
 import com.camping.legacy.CampingApplication;
 
@@ -159,48 +159,5 @@ class CancelRebookAcceptanceTest {
         assertThat(containsSite)
                 .as("취소 후 해당 사이트(%s)가 가용 사이트 검색에 포함되어야 한다", siteNumber)
                 .isTrue();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 헬퍼 메서드
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    private ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
-            String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
-
-        return given()
-                    .contentType(JSON)
-                    .body(request)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
-    }
-
-    private ExtractableResponse<Response> 예약_취소(Long reservationId, String confirmationCode) {
-        return given()
-                .when()
-                    .delete("/api/reservations/" + reservationId + "?confirmationCode=" + confirmationCode)
-                .then()
-                    .extract();
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> 가용_사이트_조회(LocalDate date) {
-        return given()
-                .when()
-                    .get("/api/sites/available?date=" + date)
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .extract()
-                    .jsonPath()
-                    .getList("$");
     }
 }
