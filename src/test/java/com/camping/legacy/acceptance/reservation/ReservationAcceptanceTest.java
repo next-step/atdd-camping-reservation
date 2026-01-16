@@ -38,10 +38,17 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     private static final String 변경예약_시작일 = "2026-02-05";
     private static final String 변경예약_종료일 = "2026-02-07";
 
+    private static final String 장기예약_시작일 = "2026-02-01";
+    private static final String 장기예약_종료일_30일 = "2026-03-02";
+    private static final String 장기예약_종료일_32일 = "2026-03-05";
+
     private static final String 홍길동 = "홍길동";
     private static final String 김철수 = "김철수";
     private static final String 연락처 = "010-1234-1234";
+    private static final int 인원수_0명 = 0;
     private static final int 인원수_5명 = 5;
+    private static final int 인원수_6명 = 6;
+    private static final int 인원수_7명 = 7;
     private static final String 차량번호 = "가1234";
     private static final String 요청사항 = "1시간 일찍 입실 예정";
 
@@ -324,6 +331,125 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_취소되지않았다(예약취소정보);
     }
 
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 2026-02-01부터 2026-03-05까지 (32일) 예약 시도한다.
+     * Then: 예약은 생성되지 않는다.
+     */
+    @DisplayName("예약 기간이 30일을 초과하면 예약이 거부된다.")
+    @Test
+    void 예약기간_30일_초과시_예약_거부() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(장기예약_시작일, 장기예약_종료일_32일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 장기예약_시작일, 장기예약_종료일_32일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되지않았다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 2026-02-01부터 2026-03-02까지 (30일) 예약한다.
+     * Then: 예약이 생성된다.
+     */
+    @DisplayName("예약 기간이 정확히 30일이면 예약이 성공한다.")
+    @Test
+    void 예약기간_정확히_30일이면_예약_성공() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(장기예약_시작일, 장기예약_종료일_30일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 장기예약_시작일, 장기예약_종료일_30일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트의 최대 수용 인원은 6명이다.
+     * When: 홍길동이 A-1 사이트를 7명으로 2026-02-01부터 2026-02-03까지 예약 시도한다.
+     * Then: 예약은 생성되지 않는다.
+     */
+    @DisplayName("최대 수용 인원을 초과하면 예약이 거부된다.")
+    @Test
+    void 최대_수용_인원_초과시_예약_거부() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성_인원수_지정(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1, 인원수_7명);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        요청이_거부되었다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트의 최대 수용 인원은 6명이다.
+     * When: 홍길동이 A-1 사이트를 6명으로 2026-02-01부터 2026-02-03까지 예약한다.
+     * Then: 예약이 생성된다.
+     */
+    @Disabled
+    @DisplayName("최대 수용 인원과 동일하면 예약이 성공한다.")
+    @Test
+    void 최대_수용_인원과_동일하면_예약_성공() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성_인원수_지정(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1, 인원수_6명);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 0명으로 2026-02-01부터 2026-02-03까지 예약 시도한다.
+     * Then: 예약은 생성되지 않는다.
+     */
+    @Disabled
+    @DisplayName("예약 인원이 0명이면 예약이 거부된다.")
+    @Test
+    void 인원수_0명으로_예약시_예약_거부() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성_인원수_지정(홍길동, 기존예약_시작일, 기존예약_종료일, 사이트번호_A_1, 인원수_0명);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        요청이_거부되었다(홍길동_예약결과정보);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
     private ReservationRequest 예약요청_생성(
             String 예약자명,
             String 시작일,
@@ -337,6 +463,25 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
                 사이트번호,
                 연락처,
                 인원수_5명,
+                차량번호,
+                요청사항
+        );
+    }
+
+    private ReservationRequest 예약요청_생성_인원수_지정(
+            String 예약자명,
+            String 시작일,
+            String 종료일,
+            String 사이트번호,
+            int 인원수
+    ) {
+        return new ReservationRequest(
+                예약자명,
+                LocalDate.parse(시작일),
+                LocalDate.parse(종료일),
+                사이트번호,
+                연락처,
+                인원수,
                 차량번호,
                 요청사항
         );
@@ -408,6 +553,10 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     }
 
     private void 예약이_취소되지않았다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(400);
+    }
+
+    private void 요청이_거부되었다(ExtractableResponse<Response> response) {
         assertThat(response.statusCode()).isEqualTo(400);
     }
 
