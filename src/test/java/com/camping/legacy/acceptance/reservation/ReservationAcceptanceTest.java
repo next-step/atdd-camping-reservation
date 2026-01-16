@@ -15,10 +15,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.camping.legacy.acceptance.reservation.ReservationApiExtractableResponse.*;
+import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.ReservationApiExtractableResponse.*;
 import static com.camping.legacy.acceptance.reservation.builder.ReservationRequestBuilder.Reservation;
 import static com.camping.legacy.acceptance.reservation.ReservationTestConstants.*;
-import static com.camping.legacy.acceptance.reservation.SiteApiExtractableResponse.사이트를_조회한다;
+import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.SiteApiExtractableResponse.사이트를_조회한다;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("예약 관련 기능")
@@ -30,6 +30,13 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     // 1. 예약 생성
     // =====================================================
 
+    /**
+     * Given A-1 사이트가 2026년 2월 1일부터 2월 3일까지 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 2026년 2월 1일부터 2월 3일까지 예약하면
+     * Then 예약이 성공적으로 생성되고
+     * And 6자리 확인 코드가 발급되고
+     * And 예약 상태가 "CONFIRMED"로 설정된다.
+     */
     @DisplayName("[예약/생성] 정상적으로 예약을 생성한다.")
     @Test
     void 정상적으로_예약을_생성() {
@@ -53,6 +60,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약상태가_확정이다(홍길동_예약결과정보, 예약상태_예약완료);
     }
 
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 2026-02-01부터 2026-03-05까지 (32일) 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/생성] 예약 기간이 30일을 초과하면 예약이 거부된다.")
     @Test
     void 예약기간_30일_초과시_예약_거부() {
@@ -74,6 +86,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 2026-02-01부터 2026-03-02까지 (30일) 예약하면
+     * Then 예약이 생성된다.
+     */
     @DisplayName("[예약/생성] 예약 기간이 정확히 30일이면 예약이 성공한다.")
     @Test
     void 예약기간_정확히_30일이면_예약_성공() {
@@ -95,6 +112,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되었다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given A-1 사이트의 최대 수용 인원은 6명이고
+     * When 홍길동이 A-1 사이트를 7명으로 2026-02-01부터 2026-02-03까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/생성] 최대 수용 인원을 초과하면 예약이 거부된다.")
     @Test
     void 최대_수용_인원_초과시_예약_거부() {
@@ -117,6 +139,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given A-1 사이트의 최대 수용 인원은 6명이고
+     * When 홍길동이 A-1 사이트를 6명으로 2026-02-01부터 2026-02-03까지 예약하면
+     * Then 예약이 생성된다.
+     */
     @DisplayName("[예약/생성] 최대 수용 인원과 동일하면 예약이 성공한다.")
     @Test
     void 최대_수용_인원과_동일하면_예약_성공() {
@@ -139,6 +166,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되었다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 0명으로 2026-02-01부터 2026-02-03까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/생성] 예약 인원이 0명이면 예약이 거부된다.")
     @Test
     void 인원수_0명으로_예약시_예약_거부() {
@@ -161,6 +193,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given 오늘 날짜 기준으로 과거 날짜이고
+     * When 홍길동이 A-1 사이트를 과거 날짜로 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/생성] 과거 날짜로 예약 시도하면 거부된다.")
     @Test
     void 과거_날짜로_예약_시도시_거부() {
@@ -182,6 +219,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(홍길동_예약결과정보);
     }
 
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 시작일 2026-02-05, 종료일 2026-02-03으로 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/생성] 종료일이 시작일보다 이전이면 예약이 거부된다.")
     @Test
     void 종료일이_시작일보다_이전이면_예약_거부() {
@@ -207,6 +249,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     // 2. 예약 중복/경계 (기간 겹침 규칙)
     // =====================================================
 
+    /**
+     * Given A-1 사이트가 2026년 2월 1일부터 2월 3일까지 홍길동에게 예약되어 있고
+     * When 김철수가 A-1 사이트를 2026년 2월 2일부터 2월 4일까지 예약 시도하면
+     * Then 예약이 거부된다.
+     */
     @DisplayName("[예약/중복] 이미 예약된 사이트는 예약되지 않는다.")
     @Test
     void 중복_예약은_불가() {
@@ -232,6 +279,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(김철수_예약결과정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-03까지 예약했고
+     * When 김철수가 A-1 사이트를 2026-02-03부터 2026-02-05까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/중복] 기존 예약 종료일과 새 예약 시작일이 같으면 중복으로 거부된다.")
     @Test
     void 기존_예약_종료일과_새_예약_시작일이_같으면_중복으로_거부() {
@@ -257,6 +309,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(김철수_예약결과정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-03까지 예약했고
+     * When 김철수가 A-1 사이트를 2026-02-04부터 2026-02-06까지 예약하면
+     * Then 예약이 생성된다.
+     */
     @DisplayName("[예약/중복] 기존 예약 종료일 다음날부터 시작하면 예약이 성공한다.")
     @Test
     void 기존_예약_종료일_다음날부터_시작하면_예약_성공() {
@@ -282,6 +339,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되었다(김철수_예약결과정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-03까지 예약했고
+     * When 김철수가 A-1 사이트를 2026-02-01부터 2026-02-02까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/중복] 기존 예약 시작일을 포함하는 기간으로 예약하면 거부된다.")
     @Test
     void 기존_예약_시작일을_포함하는_기간으로_예약하면_거부() {
@@ -307,6 +369,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(김철수_예약결과정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-03까지 예약했고
+     * When 김철수가 A-1 사이트를 2026-02-02부터 2026-02-03까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/중복] 기존 예약 종료일을 포함하는 기간으로 예약하면 거부된다.")
     @Test
     void 기존_예약_종료일을_포함하는_기간으로_예약하면_거부() {
@@ -332,6 +399,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_되지않았다(김철수_예약결과정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026-02-02부터 2026-02-03까지 예약했고
+     * When 김철수가 A-1 사이트를 2026-02-01부터 2026-02-04까지 예약 시도하면
+     * Then 예약은 생성되지 않는다.
+     */
     @DisplayName("[예약/중복] 기존 예약을 완전히 포함하는 기간으로 예약하면 거부된다.")
     @Test
     void 기존_예약을_완전히_포함하는_기간으로_예약하면_거부() {
@@ -361,6 +433,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     // 3. 동시성
     // =====================================================
 
+    /**
+     * Given A-1 사이트가 2026년 2월 1일에 예약 가능한 상태이고
+     * When 홍길동과 김철수가 동시에 같은 날짜로 A-1 사이트 예약을 요청하면
+     * Then 한 명의 예약만 성공하고
+     * And 나머지 한 명은 예약이 거부된다.
+     */
     @DisplayName("[예약/동시성] 동시에 같은 날짜/사이트로 예약 요청하면 한 건만 성공한다.")
     @Test
     void 동시_예약은_한건만_성공한다() throws InterruptedException {
@@ -438,6 +516,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     // 4. 예약 수정
     // =====================================================
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026년 2월 1일~3일로 예약을 하고
+     * When 홍길동이 확인 코드를 입력하고 날짜를 2월 5일~7일로 변경하면
+     * Then 예약 날짜가 2월 5일~7일로 수정되고
+     * And 기존 확인 코드는 유지된다.
+     */
     @DisplayName("[예약/수정] 정상적으로 예약을 수정한다.")
     @Test
     void 정상적으로_예약을_변경() {
@@ -468,6 +552,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         확인코드가_유지되었다(예약수정정보, 확인코드);
     }
 
+    /**
+     * Given A-1 사이트가 2026년 2월 1일부터 2월 3일까지 홍길동에게 예약되어 있고
+     * When 틀린 확인 코드를 입력하고 예약 수정을 시도하면
+     * Then 예약이 거부된다.
+     */
     @DisplayName("[예약/수정] 틀린 확인코드를 입력할 경우 예약이 수정되지 않는다.")
     @Test
     void 틀린_확인코드로_예약_수정_불가() {
@@ -495,6 +584,12 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         예약이_수정되지않았다(예약수정정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2월 1일~3일로 예약했고
+     * And 김철수가 A-1 사이트를 2월 5일~7일로 예약했고
+     * When 홍길동이 자신의 예약을 2월 5일~7일로 변경 시도하면
+     * Then 수정이 거부된다.
+     */
     @DisplayName("[예약/수정] 이미 예약된 날짜로는 예약이 수정되지 않는다.")
     @Test
     void 이미_예약된_날짜로_예약_수정_불가() {
@@ -534,6 +629,13 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     // 5. 예약 취소
     // =====================================================
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026년 2월 5일~7일로 예약했고
+     * When 홍길동이 올바른 확인 코드로 예약 취소를 요청하면
+     * Then 예약이 취소되고
+     * And A-1 사이트가 2월 5일~7일에 예약 가능해지고
+     * And 예약 상태가 '사전 취소' 상태로 변경된다.
+     */
     @DisplayName("[예약/취소] 정상적으로 예약을 취소한다.")
     @Test
     void 정상적으로_예약을_취소() {
@@ -561,6 +663,13 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         사이트가_존재한다(사이트정보, 사이트번호_A_1);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026년 2월 1일~3일로 예약했고
+     * And 오늘 날짜는 2026년 2월 1일이다 (예약 시작일)
+     * When 홍길동이 올바른 확인 코드로 예약 취소를 요청하면
+     * Then 예약이 취소되고
+     * And 예약 상태가 '당일 취소' 상태로 변경된다.
+     */
     @DisplayName("[예약/취소] 당일에 예약을 취소하면 당일예약취소 상태가 된다.")
     @Test
     void 당일에_예약을_취소하면_당일예약취소_상태로_변경() {
@@ -588,6 +697,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         당일예약_취소_상태이다(예약정보);
     }
 
+    /**
+     * Given 홍길동이 A-1 사이트를 2026년 2월 5일~7일로 예약했고
+     * When 틀린 확인 코드를 입력하고 예약 취소를 시도하면
+     * Then 취소가 거부된다.
+     */
     @DisplayName("[예약/취소] 틀린 확인코드를 입력할 경우 예약이 취소되지 않는다.")
     @Test
     void 틀린_확인코드로_예약_취소_불가() {
