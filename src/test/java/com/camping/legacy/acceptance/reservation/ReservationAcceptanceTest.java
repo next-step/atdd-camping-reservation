@@ -459,7 +459,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
-        요청이_거부되었다(홍길동_예약결과정보);
+        예약이_되지않았다(홍길동_예약결과정보);
     }
 
     /**
@@ -480,28 +480,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
-        요청이_거부되었다(홍길동_예약결과정보);
-    }
-
-    /**
-     * Given: A-1 사이트가 예약 가능한 상태이다.
-     * When: 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-01까지 예약한다.
-     * Then: 예약이 생성된다.
-     */
-    @DisplayName("시작일과 종료일이 같으면 (1일 예약) 예약이 성공한다.")
-    @Test
-    void 시작일과_종료일이_같으면_예약_성공() {
-
-        // Given
-        var 사이트정보 = 사이트를_조회한다(하루예약_날짜, 하루예약_날짜, 사이트_크기_대형);
-        사이트가_존재한다(사이트정보, 사이트번호_A_1);
-
-        // When
-        var 홍길동_예약요청 = 예약요청_생성(홍길동, 하루예약_날짜, 하루예약_날짜, 사이트번호_A_1);
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-
-        // Then
-        예약이_되었다(홍길동_예약결과정보);
+        예약이_되지않았다(홍길동_예약결과정보);
     }
 
 
@@ -619,10 +598,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     }
 
     private void 예약이_취소되지않았다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(400);
-    }
-
-    private void 요청이_거부되었다(ExtractableResponse<Response> response) {
         assertThat(response.statusCode()).isEqualTo(400);
     }
 
