@@ -1,6 +1,6 @@
 package com.camping.legacy.acceptance;
 
-import com.camping.legacy.acceptance.fixtures.ReservationRequestFixture;
+import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -14,7 +14,7 @@ import static io.restassured.RestAssured.given;
 @SuppressWarnings("NonAsciiCharacters")
 public abstract class ApiAcceptanceTestBase extends AcceptanceTestBase {
 
-    public ExtractableResponse<Response> 예약을_생성한다(ReservationRequestFixture request) {
+    public ExtractableResponse<Response> 예약을_생성한다(ReservationRequest request) {
         return given()
                 .contentType(ContentType.JSON)
                 .body(request)
@@ -27,7 +27,7 @@ public abstract class ApiAcceptanceTestBase extends AcceptanceTestBase {
     public ExtractableResponse<Response> 예약을_수정한다(
             Long reservationId,
             String confirmationCode,
-            ReservationRequestFixture request
+            ReservationRequest request
     ) {
         return given()
                 .contentType(ContentType.JSON)

@@ -2,7 +2,7 @@ package com.camping.legacy.acceptance.fixtures;
 
 import java.time.LocalDate;
 
-public class ReservationRequestFixture {
+public class ReservationRequest {
         private final String customerName;
         private final String startDate;
         private final String endDate;
@@ -12,7 +12,7 @@ public class ReservationRequestFixture {
         private final String carNumber;
         private final String requests;
 
-        private ReservationRequestFixture(Builder builder) {
+        private ReservationRequest(Builder builder) {
             this.customerName = builder.customerName;
             this.startDate = builder.startDate;
             this.endDate = builder.endDate;
@@ -82,8 +82,8 @@ public class ReservationRequestFixture {
                 return this;
             }
 
-            public ReservationRequestFixture build() {
-                return new ReservationRequestFixture(this);
+            public ReservationRequest build() {
+                return new ReservationRequest(this);
             }
         }
 
