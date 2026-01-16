@@ -151,7 +151,7 @@ public class ReservationService {
             // ============================================================
             int totalPrice = 0;
             LocalDate current = startDate;
-            while (!current.isAfter(endDate)) {
+            while (current.isBefore(endDate)) {
                 int dailyPrice = 0;
 
                 // 사이트 종류별 기본 가격
@@ -274,6 +274,7 @@ public class ReservationService {
             response.setSiteNumber(saved.getCampsite().getSiteNumber());
             response.setConfirmationCode(saved.getConfirmationCode());
             response.setStatus(saved.getStatus());
+            response.setTotalPrice(totalPrice);
 
             return response;
         }
