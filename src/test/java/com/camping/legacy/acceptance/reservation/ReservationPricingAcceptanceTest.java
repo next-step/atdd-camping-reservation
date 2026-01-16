@@ -1,0 +1,143 @@
+package com.camping.legacy.acceptance.reservation;
+
+import com.camping.legacy.acceptance.AcceptanceTestBase;
+import com.camping.legacy.dto.ReservationRequest;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.jdbc.Sql;
+
+import java.time.LocalDate;
+
+import static com.camping.legacy.acceptance.reservation.ReservationApiExtractableResponse.예약을_생성한다;
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DisplayName("예약 금액 관련 기능")
+@Sql({"/truncate.sql", "/data.sql"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
+
+    // ====== 사이트 정보 ======
+    private static final String 사이트번호_A_1 = "A-1";
+
+    // ====== 예약자 정보 ======
+    private static final String 홍길동 = "홍길동";
+    private static final String 연락처 = "010-1234-1234";
+    private static final int 인원수_5명 = 5;
+    private static final String 차량번호 = "가1234";
+    private static final String 요청사항 = "1시간 일찍 입실 예정";
+
+    // ====== 비수기 평일 (2026년 2월 - 월:2, 화:3, 수:4, 목:5, 금:6, 토:7, 일:8) ======
+    // 2026-02-02는 월요일, 2026-02-03은 화요일
+    private static final String 비수기_평일_시작일 = "2026-02-02";
+    private static final String 비수기_평일_종료일 = "2026-02-03";
+
+    // 2026-02-04는 수요일
+    private static final String 비수기_수요일_시작일 = "2026-02-04";
+    private static final String 비수기_수요일_종료일 = "2026-02-05";
+
+    // ====== 비수기 주말 (2026년 2월 - 토:7, 일:8) ======
+    // 2026-02-07은 토요일, 2026-02-08은 일요일
+    private static final String 비수기_토요일_시작일 = "2026-02-07";
+    private static final String 비수기_토요일_종료일 = "2026-02-08";
+
+    // ====== 기본 요금 ======
+    private static final int A_사이트_기본요금 = 80000;
+    private static final int 주말_할증_요금 = 104000;  // 80,000 * 1.3
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 비수기 평일 1박으로 예약한다.
+     * Then: 예약 금액은 80,000원이다.
+     */
+    @DisplayName("A 사이트(대형)의 기본 요금은 80,000원이다.")
+    @Test
+    void A_사이트_대형의_기본_요금은_80000원이다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 비수기_평일_시작일, 비수기_평일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        예약_금액이_일치한다(홍길동_예약결과정보, A_사이트_기본요금);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 비수기 토요일 1박으로 예약한다.
+     * Then: 예약 금액은 104,000원이다. (80,000 * 1.3)
+     */
+    @DisplayName("주말에는 30% 할증이 적용된다.")
+    @Test
+    void 주말에는_30퍼센트_할증이_적용된다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 비수기_토요일_시작일, 비수기_토요일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        예약_금액이_일치한다(홍길동_예약결과정보, 주말_할증_요금);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 비수기 수요일 1박으로 예약한다.
+     * Then: 예약 금액은 80,000원이다.
+     */
+    @DisplayName("평일에는 할증이 적용되지 않는다.")
+    @Test
+    void 평일에는_할증이_적용되지_않는다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 비수기_수요일_시작일, 비수기_수요일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        예약_금액이_일치한다(홍길동_예약결과정보, A_사이트_기본요금);
+    }
+
+    // ====== Fixture 생성/추출 ======
+
+    private ReservationRequest 예약요청_생성(
+            String 예약자명,
+            String 시작일,
+            String 종료일,
+            String 사이트번호
+    ) {
+        return new ReservationRequest(
+                예약자명,
+                LocalDate.parse(시작일),
+                LocalDate.parse(종료일),
+                사이트번호,
+                연락처,
+                인원수_5명,
+                차량번호,
+                요청사항
+        );
+    }
+
+    // ====== Custom Assertion ======
+
+    private void 예약이_되었다(ExtractableResponse<Response> response) {
+        assertThat(response.statusCode()).isEqualTo(201);
+    }
+
+    private void 예약_금액이_일치한다(ExtractableResponse<Response> response, int expectedPrice) {
+        Integer totalPrice = response.jsonPath().getInt("totalPrice");
+        assertThat(totalPrice).isEqualTo(expectedPrice);
+    }
+}
