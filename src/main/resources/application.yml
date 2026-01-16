@@ -3,7 +3,7 @@ spring:
     name: camping-reservation-legacy
   
   datasource:
-    url: jdbc:h2:mem:testdb
+    url: jdbc:h2:mem:localdb
     driver-class-name: org.h2.Driver
     username: sa
     password: 

@@ -1,6 +1,7 @@
 package com.camping.legacy.domain;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,8 +29,9 @@ public class Campsite {
     
     @OneToMany(mappedBy = "campsite", cascade = CascadeType.ALL)
     private List<Reservation> reservations = new ArrayList<>();
-    
-    public Campsite(String siteNumber, String description, Integer maxPeople) {
+
+    @Builder
+    private Campsite(String siteNumber, String description, Integer maxPeople) {
         this.siteNumber = siteNumber;
         this.description = description;
         this.maxPeople = maxPeople;
