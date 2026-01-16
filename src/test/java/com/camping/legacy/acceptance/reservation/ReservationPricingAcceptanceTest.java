@@ -78,6 +78,11 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
     private static final String 성수기_다음날_9월1일 = "2026-09-01";
     private static final String 성수기_다음날_9월2일 = "2026-09-02";
 
+    // ====== 장기 예약 (30박) ======
+    // 2026-02-02는 월요일, 2026-03-03은 화요일 (30일)
+    private static final String 장기예약_30박_시작일 = "2026-02-02";
+    private static final String 장기예약_30박_종료일 = "2026-03-03";
+
     // ====== 기본 요금 ======
     private static final int A_사이트_기본요금 = 80000;
     private static final int 주말_할증_요금 = 104000;  // 80,000 * 1.3
@@ -86,6 +91,10 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
     private static final int 평일_2박_요금 = 160000;  // 80,000 * 2
     private static final int 평일_주말_혼합_요금 = 184000;  // 80,000 + 104,000
     private static final int 비수기_성수기_혼합_요금 = 200000;  // 80,000 + 120,000
+    private static final int 장기예약_30박_요금 = 2592000;  // 평일 22일(1,760,000) + 주말 8일(832,000)
+    private static final int 평일_포인트 = 4000;  // 80,000 * 0.05
+    private static final int 주말_포인트 = 10400;  // 104,000 * 0.10
+    private static final int 성수기_포인트 = 3600;  // 120,000 * 0.03
 
     /**
      * Given: A-1 사이트가 예약 가능한 상태이다.
@@ -339,7 +348,68 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
         예약_금액이_일치한다(홍길동_예약결과정보, A_사이트_기본요금);
     }
 
-    // ====== Fixture 생성/추출 ======
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 비수기 평일 1박으로 예약한다.
+     * Then: 적립 포인트는 4,000포인트이다. (80,000 * 0.05)
+     */
+    @DisplayName("평일 예약 시 5% 포인트가 적립된다.")
+    @Test
+    void 평일_예약_시_5퍼센트_포인트가_적립된다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 비수기_평일_시작일, 비수기_평일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        포인트가_일치한다(홍길동_예약결과정보, 평일_포인트);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 비수기 토요일 1박으로 예약한다.
+     * Then: 적립 포인트는 10,400포인트이다. (104,000 * 0.10)
+     */
+    @DisplayName("주말 포함 예약 시 10% 포인트가 적립된다.")
+    @Test
+    void 주말_포함_예약_시_10퍼센트_포인트가_적립된다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 비수기_토요일_시작일, 비수기_토요일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        포인트가_일치한다(홍길동_예약결과정보, 주말_포인트);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 성수기 평일 1박으로 예약한다.
+     * Then: 적립 포인트는 3,600포인트이다. (120,000 * 0.03)
+     */
+    @DisplayName("성수기 예약 시 3% 포인트가 적립된다.")
+    @Test
+    void 성수기_예약_시_3퍼센트_포인트가_적립된다() {
+
+        // Given
+        // A-1 사이트가 예약 가능한 상태 (data.sql에서 설정됨)
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 성수기_7월_평일_시작일, 성수기_7월_평일_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
+        포인트가_일치한다(홍길동_예약결과정보, 성수기_포인트);
+    }
 
     private ReservationRequest 예약요청_생성(
             String 예약자명,
@@ -359,8 +429,6 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
         );
     }
 
-    // ====== Custom Assertion ======
-
     private void 예약이_되었다(ExtractableResponse<Response> response) {
         assertThat(response.statusCode()).isEqualTo(201);
     }
@@ -368,5 +436,10 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
     private void 예약_금액이_일치한다(ExtractableResponse<Response> response, int expectedPrice) {
         Integer totalPrice = response.jsonPath().getInt("totalPrice");
         assertThat(totalPrice).isEqualTo(expectedPrice);
+    }
+
+    private void 포인트가_일치한다(ExtractableResponse<Response> response, int expectedPoints) {
+        Integer earnedPoints = response.jsonPath().getInt("earnedPoints");
+        assertThat(earnedPoints).isEqualTo(expectedPoints);
     }
 }
