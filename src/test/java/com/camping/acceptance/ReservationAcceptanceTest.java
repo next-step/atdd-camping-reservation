@@ -38,6 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest {
 
+    public static final String API_RESERVATIONS_CALENDAR = "/api/reservations/calendar";
+    public static final String 예약시작일 = "2027-09-10";
+    public static final String WRONG_CODE = "WRONG456";
     @LocalServerPort
     private int port;
 
@@ -89,10 +92,38 @@ public class ReservationAcceptanceTest {
     @DisplayName("여러_사용자가_동시에_예약을_시도할_경우_오직_하나만_성공한다")
     void concurrencyControl_OnlyOneReservationSucceeds() throws InterruptedException {
         // given
-        int numberOfUsers = 10;
-        LocalDate startDate = LocalDate.of(2027, 8, 15);
-        LocalDate endDate = LocalDate.of(2027, 8, 17);
 
+        var 예약_시작_날짜 = 날짜_생성(2027, 8, 15);
+        var 예약_마감_날짜 = 날짜_생성(2027, 8, 17);
+
+        var 동시_요청_결과 = 동시에_예약을_요청한다(10, SITE_A1_NUMBER, 예약_시작_날짜, 예약_마감_날짜);
+
+        // then
+        assertThat(성공한_예약_개수(동시_요청_결과)).isEqualTo(1);
+        assertThat(실패한_예약_개수(동시_요청_결과)).isEqualTo(9);
+        
+        long 저장된_예약_개수 = 예약된_개수를_반환한다(예약_시작_날짜, 예약_마감_날짜);
+        assertThat(저장된_예약_개수).isEqualTo(1);
+    }
+
+    private long 예약된_개수를_반환한다(LocalDate 예약_시작_날짜, LocalDate 예약_마감_날짜) {
+        return reservationRepository.findAll().stream()
+                .filter(r -> r.getCampsite().getSiteNumber().equals(SITE_A1_NUMBER) &&
+                        r.getStartDate().equals(예약_시작_날짜) &&
+                        r.getEndDate().equals(예약_마감_날짜))
+                .count();
+    }
+
+    private static long 실패한_예약_개수(ConcurrentLinkedQueue<Response> responses) {
+        return responses.stream().filter(r -> r.statusCode() == HttpStatus.CONFLICT.value()).count();
+    }
+
+    private static long 성공한_예약_개수(ConcurrentLinkedQueue<Response> responses) {
+        long successCount = responses.stream().filter(r -> r.statusCode() == HttpStatus.CREATED.value()).count();
+        return successCount;
+    }
+
+    private static ConcurrentLinkedQueue<Response> 동시에_예약을_요청한다(int numberOfUsers, String site, LocalDate 예약_시작_날짜, LocalDate 예약_마감_날짜) throws InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(numberOfUsers);
         CountDownLatch latch = new CountDownLatch(numberOfUsers);
         ConcurrentLinkedQueue<Response> responses = new ConcurrentLinkedQueue<>();
@@ -102,20 +133,10 @@ public class ReservationAcceptanceTest {
             int userIndex = i;
             executorService.submit(() -> {
                 try {
-                    Map<String, Object> request = new HashMap<>();
-                    request.put("siteNumber", SITE_A1_NUMBER);
-                    request.put("startDate", startDate.toString());
-                    request.put("endDate", endDate.toString());
-                    request.put("customerName", "사용자-" + userIndex);
-                    request.put("phoneNumber", "010-1234-567" + userIndex);
+                    Map<String, Object> request = 예약_요청_생성(SITE_A1_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "사용자-" + userIndex, "010-1234-567" + userIndex);
 
-                    Response response = RestAssured.given()
-                            .contentType(MediaType.APPLICATION_JSON_VALUE)
-                            .body(request)
-                            .when()
-                            .post("/api/reservations")
-                            .then()
-                            .extract().response();
+                    ExtractableResponse<Response> 예약하기 = 예약을_생성한다(request);
+                    Response response = 예약하기.response();
                     responses.add(response);
                 } finally {
                     latch.countDown();
@@ -124,20 +145,7 @@ public class ReservationAcceptanceTest {
         }
         latch.await();
         executorService.shutdown();
-
-        // then
-        long successCount = responses.stream().filter(r -> r.statusCode() == HttpStatus.CREATED.value()).count();
-        long failureCount = responses.stream().filter(r -> r.statusCode() == HttpStatus.CONFLICT.value()).count();
-
-        assertThat(successCount).isEqualTo(1);
-        assertThat(failureCount).isEqualTo(9);
-        
-        long finalReservationCount = reservationRepository.findAll().stream()
-                .filter(r -> r.getCampsite().getSiteNumber().equals(SITE_A1_NUMBER) &&
-                        r.getStartDate().equals(startDate) &&
-                        r.getEndDate().equals(endDate))
-                .count();
-        assertThat(finalReservationCount).isEqualTo(1);
+        return responses;
     }
 
 
@@ -151,48 +159,19 @@ public class ReservationAcceptanceTest {
     @DisplayName("예약_직후_월별_캘린더에_즉시_반영된다")
     void calendarReflectsReservationImmediately() {
         // given
-        LocalDate reservationDate = LocalDate.of(2027, 9, 10);
+        LocalDate 예약_시작_날짜 = 날짜_생성(2027, 9, 10);
+        LocalDate 예약_마감_날짜 = 날짜_생성(2027, 9, 11);
 
-        // when
-        LocalDate endDate = reservationDate.plusDays(1);
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", SITE_B2_NUMBER);
-        request.put("startDate", reservationDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("customerName", "김캘린더");
-        request.put("phoneNumber", "010-1234-5678");
+        Map<String, Object> request = 예약_요청_생성(SITE_B2_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "김캘린더", "010-1234-5678");
 
-        RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract().body().as(ReservationResponse.class);
+        예약을_생성한다(request);
 
         // then
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                .param("year", 2027)
-                .param("month", 9)
-                .param("siteId", siteB2.getId())
-                .when()
-                .get("/api/reservations/calendar")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> response = 캘린터에서_특정사이트_예약을_조회한다(2027, 9, siteB2);
+        Map<String, Object> 특정_날짜_응답 = 특정_날짜_응답(response, 예약시작일);
 
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-
-        List<Map<String, Object>> days = response.jsonPath().getList("days");
-        Map<String, Object> day10 = days.stream()
-                .filter(d -> d.get("date").equals("2027-09-10"))
-                .findFirst()
-                .orElseThrow();
-
-        assertThat(day10.get("available")).isEqualTo(false);
-        assertThat(day10.get("customerName")).isEqualTo("김캘린더");
+        assertThat(특정_날짜_응답.get("available")).isEqualTo(false);
+        assertThat(특정_날짜_응답.get("customerName")).isEqualTo("김캘린더");
     }
 
     /**
@@ -208,42 +187,17 @@ public class ReservationAcceptanceTest {
         // given
         LocalDate reservationDate = LocalDate.of(2027, 10, 20);
         LocalDate endDate = reservationDate.plusDays(1);
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", SITE_C3_NUMBER);
-        request.put("startDate", reservationDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("customerName", "김영희");
-        request.put("phoneNumber", "010-1234-5678");
+        Map<String, Object> request = 예약_요청_생성(SITE_C3_NUMBER, reservationDate, endDate, "김영희", "010-1234-5678");
 
-        ReservationResponse reservation = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then().log().all()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract().body().as(ReservationResponse.class);
+
+        ExtractableResponse<Response> 예약생성 = 예약을_생성한다(request);
+        ReservationResponse reservation = 예약생성.body().as(ReservationResponse.class);
 
         // when
-        RestAssured
-                .given().log().all()
-                .queryParam("confirmationCode", reservation.getConfirmationCode())
-                .when()
-                .delete("/api/reservations/" + reservation.getId())
-                .then().log().all()
-                .statusCode(HttpStatus.OK.value());
+        정확한_코드로_예약을_취소한다(reservation.getConfirmationCode(), reservation.getId());
 
         // then
-        ExtractableResponse<Response> searchResponse = RestAssured
-                .given().log().all()
-                .param("startDate", reservationDate.toString())
-                .param("endDate", reservationDate.plusDays(1).toString())
-                .when()
-                .get("/api/sites/search")
-                .then().log().all()
-                .extract();
-
+        ExtractableResponse<Response> searchResponse = 날짜로_예약을_조회한다(reservationDate, reservationDate.plusDays(1));
         assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
         List<String> availableSites = searchResponse.jsonPath().getList("siteNumber");
         assertThat(availableSites).contains(SITE_C3_NUMBER);
@@ -262,32 +216,12 @@ public class ReservationAcceptanceTest {
         // given
         LocalDate reservedDate = LocalDate.of(2027, 11, 3);
         LocalDate endDate = reservedDate.plusDays(1);
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", SITE_D4_NUMBER);
-        request.put("startDate", reservedDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("customerName", "박중간");
-        request.put("phoneNumber", "010-1234-5678");
 
-        RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract().body().as(ReservationResponse.class);
+        Map<String, Object> request = 예약_요청_생성(SITE_D4_NUMBER, reservedDate, endDate, "박중간", "010-1234-5678");
+        예약을_생성한다(request);
 
         // when
-        ExtractableResponse<Response> searchResponse = RestAssured
-                .given().log().all()
-                .param("startDate", "2027-11-01")
-                .param("endDate", "2027-11-05")
-                .when()
-                .get("/api/sites/search")
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> searchResponse = 날짜로_예약을_조회한다(reservedDate, endDate);
 
         // then
         assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -307,67 +241,55 @@ public class ReservationAcceptanceTest {
         // given
         LocalDate reservationDate = LocalDate.of(2026, 2, 14);
         LocalDate endDate = reservationDate.plusDays(1);
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", SITE_E5_NUMBER);
-        request.put("startDate", reservationDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("customerName", "박서준");
-        request.put("phoneNumber", "010-1234-5678");
+        Map<String, Object> request = 예약_요청_생성(SITE_E5_NUMBER, reservationDate, endDate, "박서준", "010-1234-5678");
 
-        ReservationResponse reservation = RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(HttpStatus.CREATED.value())
-                .extract().body().as(ReservationResponse.class);
+        ExtractableResponse<Response> reservationResult = 예약을_생성한다(request);
 
+        ReservationResponse reservation = reservationResult.body().as(ReservationResponse.class);
         String correctCode = reservation.getConfirmationCode();
-        String wrongCode = "WRONG456";
 
         // when & then: Case 1 - Wrong Code
-        ExtractableResponse<Response> wrongCodeResponse = RestAssured
-                .given().log().all()
-                .queryParam("confirmationCode", wrongCode)
-                .when()
-                .delete("/api/reservations/" + reservation.getId())
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> wrongCodeResponse = 잘못된_코드로_예약을_취소한다(reservation);
 
         assertThat(wrongCodeResponse.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(wrongCodeResponse.jsonPath().getString("message")).isEqualTo("확인 코드가 일치하지 않습니다.");
 
-        ReservationResponse reservationAfterWrongCode = RestAssured
-                .when()
-                .get("/api/reservations/" + reservation.getId())
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract().body().as(ReservationResponse.class);
 
+        ExtractableResponse<Response> responseExtractableResponse = 예약ID로_예약을_조회한다(reservation);
+
+        ReservationResponse reservationAfterWrongCode = responseExtractableResponse.body().as(ReservationResponse.class);
         assertThat(reservationAfterWrongCode.getStatus()).isNotEqualTo("CANCELLED");
 
         // when & then: Case 2 - Correct Code
-        ExtractableResponse<Response> correctCodeResponse = RestAssured
-                .given().log().all()
-                .queryParam("confirmationCode", correctCode)
-                .when()
-                .delete("/api/reservations/" + reservation.getId())
-                .then().log().all()
-                .extract();
+        ExtractableResponse<Response> correctCodeResponse = 정확한_코드로_예약을_취소한다(correctCode, reservation.getId());
 
         assertThat(correctCodeResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
         assertThat(correctCodeResponse.jsonPath().getString("message")).isEqualTo("예약이 취소되었습니다.");
 
-        ReservationResponse reservationAfterCorrectCode = RestAssured
-                .when()
-                .get("/api/reservations/" + reservation.getId())
-                .then()
-                .statusCode(HttpStatus.OK.value())
-                .extract().body().as(ReservationResponse.class);
+        ExtractableResponse<Response> responseExtractableResponse1 = 예약ID로_예약을_조회한다(reservation);
+        ReservationResponse reservationAfterCorrectCode = responseExtractableResponse1.body().as(ReservationResponse.class);
+
 
         assertThat(reservationAfterCorrectCode.getStatus()).isEqualTo("CANCELLED");
+    }
+
+    private static ExtractableResponse<Response> 예약ID로_예약을_조회한다(ReservationResponse reservation) {
+        return RestAssured
+                .when()
+                .get("/api/reservations/" + reservation.getId())
+                .then().log().all()
+                .extract();
+    }
+
+    private static ExtractableResponse<Response> 잘못된_코드로_예약을_취소한다(ReservationResponse reservation) {
+        ExtractableResponse<Response> wrongCodeResponse = RestAssured
+                .given().log().all()
+                .queryParam("confirmationCode", WRONG_CODE)
+                .when()
+                .delete("/api/reservations/" + reservation.getId())
+                .then().log().all()
+                .extract();
+        return wrongCodeResponse;
     }
 
     private Campsite create(String siteNumber) {
@@ -379,4 +301,78 @@ public class ReservationAcceptanceTest {
     }
 
 
+    private LocalDate 날짜_생성(int 년도, int 월, int 날짜) {
+        return LocalDate.of(년도, 월, 날짜);
+    }
+
+    private static Map<String, Object> 특정_날짜_응답(ExtractableResponse<Response> response, String 확인날짜) {
+        List<Map<String, Object>> days = response.jsonPath().getList("days");
+        Map<String, Object> day10 = days.stream()
+                .filter(d -> d.get("date").equals(확인날짜))
+                .findFirst()
+                .orElseThrow();
+        return day10;
+    }
+
+
+    //=====예약 관련 API 호출 ======
+
+    private static ExtractableResponse<Response> 정확한_코드로_예약을_취소한다(String confirmationCode, Long id) {
+
+        return RestAssured
+                .given().log().all()
+                .queryParam("confirmationCode", confirmationCode)
+                .when()
+                .delete("/api/reservations/" + id)
+                .then().log().all()
+                .extract();
+    }
+
+
+    private static ExtractableResponse<Response> 예약을_생성한다(Map<String, Object> request) {
+        return RestAssured.given()
+                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                .body(request)
+                .when()
+                .post("/api/reservations")
+                .then().log().all()
+                .extract();
+    }
+
+
+
+    private ExtractableResponse<Response> 캘린터에서_특정사이트_예약을_조회한다(int 년도, int 월, Campsite 사이트) {
+        return RestAssured
+                .given().log().all()
+                .param("year", 년도)
+                .param("month", 월)
+                .param("siteId", 사이트.getId())
+                .when()
+                .get(API_RESERVATIONS_CALENDAR)
+                .then().log().all()
+                .extract();
+    }
+
+
+    private static ExtractableResponse<Response> 날짜로_예약을_조회한다(LocalDate reservationDate, LocalDate reservationEndDate) {
+        return RestAssured
+                .given().log().all()
+                .param("startDate", reservationDate.toString())
+                .param("endDate", reservationEndDate.toString())
+                .when()
+                .get("/api/sites/search")
+                .then().log().all()
+                .extract();
+    }
+
+
+    private static Map<String, Object> 예약_요청_생성(String 사이트_번호, LocalDate 시작날짜, LocalDate 마감날짜, String 이름, String 핸드폰번호) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("siteNumber", 사이트_번호);
+        request.put("startDate", 시작날짜);
+        request.put("endDate", 마감날짜);
+        request.put("customerName", 이름);
+        request.put("phoneNumber", 핸드폰번호);
+        return request;
+    }
 }
