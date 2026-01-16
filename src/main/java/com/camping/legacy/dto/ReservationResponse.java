@@ -25,6 +25,7 @@ public class ReservationResponse {
     private String confirmationCode;
     private LocalDateTime createdAt;
     private Integer totalPrice;
+    private Integer earnedPoints;
 
     public static ReservationResponse from(Reservation reservation) {
         ReservationResponse response = new ReservationResponse();

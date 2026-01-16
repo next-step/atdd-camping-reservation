@@ -193,18 +193,28 @@ public class ReservationService {
             double pointRate = 0.05; // 기본 5%
             current = startDate;
             boolean hasWeekend = false;
-            while (!current.isAfter(endDate)) {
+            boolean isPeakSeasonReservation = false;
+            
+            while (current.isBefore(endDate)) {
                 DayOfWeek dayOfWeek = current.getDayOfWeek();
                 if (dayOfWeek == DayOfWeek.SATURDAY ||
                         dayOfWeek == DayOfWeek.SUNDAY) {
                     hasWeekend = true;
                     break;
                 }
+                
+                int month = current.getMonthValue();
+                if (month >= 7 && month <= 8) {
+                    isPeakSeasonReservation = true;
+                }
+                
                 current = current.plusDays(1);
             }
 
             if (hasWeekend) {
                 pointRate = 0.10; // 주말 10%
+            } else if (isPeakSeasonReservation) {
+                pointRate = 0.03; // 성수기 3%
             }
 
             int earnedPoints = (int) (totalPrice * pointRate);
@@ -275,6 +285,7 @@ public class ReservationService {
             response.setConfirmationCode(saved.getConfirmationCode());
             response.setStatus(saved.getStatus());
             response.setTotalPrice(totalPrice);
+            response.setEarnedPoints(earnedPoints);
 
             return response;
         }

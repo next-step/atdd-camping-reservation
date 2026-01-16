@@ -78,11 +78,6 @@ public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
     private static final String 성수기_다음날_9월1일 = "2026-09-01";
     private static final String 성수기_다음날_9월2일 = "2026-09-02";
 
-    // ====== 장기 예약 (30박) ======
-    // 2026-02-02는 월요일, 2026-03-03은 화요일 (30일)
-    private static final String 장기예약_30박_시작일 = "2026-02-02";
-    private static final String 장기예약_30박_종료일 = "2026-03-03";
-
     // ====== 기본 요금 ======
     private static final int A_사이트_기본요금 = 80000;
     private static final int 주말_할증_요금 = 104000;  // 80,000 * 1.3
