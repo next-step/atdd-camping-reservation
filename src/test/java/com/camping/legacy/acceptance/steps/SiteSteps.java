@@ -1,4 +1,4 @@
-package com.camping.acceptance.steps;
+package com.camping.legacy.acceptance.steps;
 
 import org.springframework.http.HttpStatus;
 

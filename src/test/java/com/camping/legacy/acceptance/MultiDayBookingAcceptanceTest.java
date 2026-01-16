@@ -1,4 +1,4 @@
-package com.camping.acceptance;
+package com.camping.legacy.acceptance;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
@@ -14,8 +14,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-import static com.camping.acceptance.steps.ReservationSteps.예약_요청;
-import static com.camping.acceptance.steps.SiteSteps.가용_사이트_검색;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.legacy.acceptance.steps.SiteSteps.가용_사이트_검색;
 import static org.assertj.core.api.Assertions.assertThat;
 import com.camping.legacy.CampingApplication;
 

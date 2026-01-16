@@ -1,4 +1,4 @@
-package com.camping.acceptance;
+package com.camping.legacy.acceptance;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
@@ -18,8 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.camping.acceptance.steps.ReservationSteps.예약_요청;
-import static com.camping.acceptance.steps.ReservationSteps.예약_목록_조회;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_목록_조회;
 import com.camping.legacy.CampingApplication;
 
 import static org.assertj.core.api.Assertions.assertThat;
