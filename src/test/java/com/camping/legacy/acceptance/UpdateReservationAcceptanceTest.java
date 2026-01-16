@@ -12,7 +12,6 @@ import java.time.LocalDate;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class UpdateReservationAcceptanceTest extends AcceptanceTestBase {
 
     private static final String RESERVATIONS_API = "/api/reservations";

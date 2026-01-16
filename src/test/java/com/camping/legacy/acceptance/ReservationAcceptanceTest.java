@@ -5,6 +5,7 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -13,11 +14,6 @@ import java.util.concurrent.*;
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * top3 인수 시나리오용 스켈레톤 테스트.
- *
- * 실제 시나리오(Gherkin)에 맞춰 given/when/then을 채워 넣으면 됩니다.
- */
 class ReservationAcceptanceTest extends AcceptanceTestBase {
 
     private static final String RESERVATIONS_API = "/api/reservations";
