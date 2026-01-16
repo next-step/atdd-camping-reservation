@@ -42,6 +42,11 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     private static final String 장기예약_종료일_30일 = "2026-03-02";
     private static final String 장기예약_종료일_32일 = "2026-03-05";
 
+    private static final String 역전예약_시작일 = "2026-02-05";
+    private static final String 역전예약_종료일 = "2026-02-03";
+
+    private static final String 하루예약_날짜 = "2026-02-01";
+
     private static final String 홍길동 = "홍길동";
     private static final String 김철수 = "김철수";
     private static final String 연락처 = "010-1234-1234";
@@ -391,7 +396,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
-        요청이_거부되었다(홍길동_예약결과정보);
+        예약이_되지않았다(홍길동_예약결과정보);
     }
 
     /**
@@ -399,7 +404,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * When: 홍길동이 A-1 사이트를 6명으로 2026-02-01부터 2026-02-03까지 예약한다.
      * Then: 예약이 생성된다.
      */
-    @Disabled
     @DisplayName("최대 수용 인원과 동일하면 예약이 성공한다.")
     @Test
     void 최대_수용_인원과_동일하면_예약_성공() {
@@ -421,7 +425,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * When: 홍길동이 A-1 사이트를 0명으로 2026-02-01부터 2026-02-03까지 예약 시도한다.
      * Then: 예약은 생성되지 않는다.
      */
-    @Disabled
     @DisplayName("예약 인원이 0명이면 예약이 거부된다.")
     @Test
     void 인원수_0명으로_예약시_예약_거부() {
@@ -435,7 +438,70 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
+        예약이_되지않았다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: 오늘 날짜 기준으로 과거 날짜이다.
+     * When: 홍길동이 A-1 사이트를 과거 날짜로 예약 시도한다.
+     * Then: 예약은 생성되지 않는다.
+     */
+    @DisplayName("과거 날짜로 예약 시도하면 거부된다.")
+    @Test
+    void 과거_날짜로_예약_시도시_거부() {
+
+        // Given
+        var 과거예약_시작일 = LocalDate.now().minusDays(2).toString();
+        var 과거예약_종료일 = LocalDate.now().minusDays(1).toString();
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 과거예약_시작일, 과거예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
         요청이_거부되었다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 시작일 2026-02-05, 종료일 2026-02-03으로 예약 시도한다.
+     * Then: 예약은 생성되지 않는다.
+     */
+    @DisplayName("종료일이 시작일보다 이전이면 예약이 거부된다.")
+    @Test
+    void 종료일이_시작일보다_이전이면_예약_거부() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(기존예약_시작일, 기존예약_종료일, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 역전예약_시작일, 역전예약_종료일, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        요청이_거부되었다(홍길동_예약결과정보);
+    }
+
+    /**
+     * Given: A-1 사이트가 예약 가능한 상태이다.
+     * When: 홍길동이 A-1 사이트를 2026-02-01부터 2026-02-01까지 예약한다.
+     * Then: 예약이 생성된다.
+     */
+    @DisplayName("시작일과 종료일이 같으면 (1일 예약) 예약이 성공한다.")
+    @Test
+    void 시작일과_종료일이_같으면_예약_성공() {
+
+        // Given
+        var 사이트정보 = 사이트를_조회한다(하루예약_날짜, 하루예약_날짜, 사이트_크기_대형);
+        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+
+        // When
+        var 홍길동_예약요청 = 예약요청_생성(홍길동, 하루예약_날짜, 하루예약_날짜, 사이트번호_A_1);
+        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
+
+        // Then
+        예약이_되었다(홍길동_예약결과정보);
     }
 
 

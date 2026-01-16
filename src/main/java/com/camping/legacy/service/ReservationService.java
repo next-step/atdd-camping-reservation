@@ -136,6 +136,16 @@ public class ReservationService {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
 
+            // campsite 인원수 유효성 검사
+            Integer numberOfPeople = request.getNumberOfPeople();
+            if (numberOfPeople == null || numberOfPeople <= 0) {
+                throw new IllegalArgumentException("예약 인원은 1명 이상이어야 합니다.");
+            }
+            if (numberOfPeople > campsite.getMaxPeople()) {
+                throw new IllegalArgumentException("예약 인원이 사이트 최대 수용 인원(" + campsite.getMaxPeople() + "명)을 초과합니다.");
+            }
+
+
             // ============================================================
             // STEP 5: 가격 계산
             // ============================================================
