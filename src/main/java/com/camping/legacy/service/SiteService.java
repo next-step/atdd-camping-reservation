@@ -98,10 +98,10 @@ public class SiteService {
                 }
             }
 
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDateAndStatus(
+                    site, request.getStartDate(), "CONFIRMED");
+            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDateAndStatus(
+                    site, request.getEndDate(), "CONFIRMED");
 
             if (startAvailable && endAvailable) {
                 // 사이트 크기 결정 (중복된 로직)

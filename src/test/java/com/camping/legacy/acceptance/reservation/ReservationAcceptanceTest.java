@@ -2,15 +2,12 @@ package com.camping.legacy.acceptance.reservation;
 
 import com.camping.legacy.acceptance.AcceptanceTestBase;
 import com.camping.legacy.dto.ReservationRequest;
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
@@ -258,7 +255,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * And: A-1 사이트가 2월 5일~7일에 예약 가능해진다.
      * And: 예약 상태가 '사전 취소' 상태로 변경된다.
      */
-    @Disabled
     @DisplayName("정상적으로 예약을 취소한다.")
     @Test
     void 정상적으로_예약을_취소() {
