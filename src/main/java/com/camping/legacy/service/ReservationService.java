@@ -13,8 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -86,7 +88,7 @@ public class ReservationService {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
                         // 예약 기간 체크 (30일 이내)
-                        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+                        long days = ChronoUnit.DAYS.between(startDate, endDate);
                         if (days > 30) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
@@ -152,9 +154,9 @@ public class ReservationService {
                 }
 
                 // 주말 체크
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                boolean isWeekend = (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                        dayOfWeek == java.time.DayOfWeek.SUNDAY);
+                DayOfWeek dayOfWeek = current.getDayOfWeek();
+                boolean isWeekend = (dayOfWeek == DayOfWeek.SATURDAY ||
+                        dayOfWeek == DayOfWeek.SUNDAY);
 
                 // 성수기 체크 (7월, 8월)
                 int month = current.getMonthValue();
@@ -182,9 +184,9 @@ public class ReservationService {
             current = startDate;
             boolean hasWeekend = false;
             while (!current.isAfter(endDate)) {
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                if (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                        dayOfWeek == java.time.DayOfWeek.SUNDAY) {
+                DayOfWeek dayOfWeek = current.getDayOfWeek();
+                if (dayOfWeek == DayOfWeek.SATURDAY ||
+                        dayOfWeek == DayOfWeek.SUNDAY) {
                     hasWeekend = true;
                     break;
                 }
@@ -361,10 +363,13 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+
         // 날짜 유효성 검증 (중복 코드 3 - createReservation과 유사)
         if (request.getStartDate() != null && request.getEndDate() != null) {
-            LocalDate startDate = request.getStartDate();
-            LocalDate endDate = request.getEndDate();
+            startDate = request.getStartDate();
+            endDate = request.getEndDate();
 
             if (startDate == null || endDate == null) {
                 throw new RuntimeException("예약 기간을 선택해주세요.");
@@ -388,10 +393,19 @@ public class ReservationService {
             }
         }
 
+        Campsite campsite = null;
+
         if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+            campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
             reservation.setCampsite(campsite);
+        }
+
+        // 중복 예약 확인
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                campsite, endDate, startDate);
+        if (hasConflict) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
 
         if (request.getStartDate() != null) {
@@ -517,8 +531,8 @@ public class ReservationService {
             }
 
             // 주말/성수기 할증
-            java.time.DayOfWeek day = current.getDayOfWeek();
-            boolean isWeekend = (day == java.time.DayOfWeek.SATURDAY || day == java.time.DayOfWeek.SUNDAY);
+            DayOfWeek day = current.getDayOfWeek();
+            boolean isWeekend = (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY);
             int month = current.getMonthValue();
             boolean isPeakSeason = (month >= 7 && month <= 8);
 

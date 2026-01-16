@@ -226,7 +226,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * When: 홍길동이 자신의 예약을 2월 5일~7일로 변경 시도한다.
      * Then: 수정이 거부된다.
      */
-    @Disabled
     @DisplayName("이미 예약된 날짜로는 예약이 수정되지 않는다.")
     @Test
     void 이미_예약된_날짜로_예약_수정_불가() {
@@ -310,7 +309,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * When: 확인 코드 "WRONG1"을 입력하고 예약 취소를 시도한다.
      * Then: 취소가 거부된다.
      */
-    @Disabled
     @DisplayName("틀린 확인코드를 입력할 경우 예약이 취소되지 않는다.")
     @Test
     void 틀린_확인코드로_예약_취소_불가() {
