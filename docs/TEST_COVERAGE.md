@@ -19,28 +19,39 @@
 ### 3.1 예약 생성
 - [x] 정상 예약 생성 → 201 + confirmationCode(6자리) + status=CONFIRMED
 - [x] 중복 예약 방지 → 409 Conflict
-- [ ] 동시 예약 요청 → (현재 Disabled / 원인: 서버 측 동시성 제어 미적용 또는 DB 제약 미구성)
+- [X] 동시 예약 요청
 
 ### 3.2 예약 수정
 - [x] 정상 수정 → 200 + 날짜 변경 반영 + confirmationCode 유지
 - [x] 잘못된 confirmationCode → 400
-- [ ] 다른 예약과 충돌하는 날짜로 수정 → Disabled
+- [X] 다른 예약과 충돌하는 날짜로 수정
 
 ### 3.3 예약 취소
-- [ ] 정상 취소(사전 취소) → 200 + status=CANCELLED → Disabled
+- [X] 정상 취소(사전 취소) → 200 + status=CANCELLED
 - [x] 당일 취소 → 200 + status=CANCELLED_SAME_DAY (LocalDate.now 기반)
-- [ ] 잘못된 confirmationCode 취소 → Disabled
+- [X] 잘못된 confirmationCode 취소
 
-## 4. Data / Environment Coverage
-- DB 초기화: @Sql(truncate.sql, data.sql)
-- 사이트 데이터는 seed로 존재한다고 가정하되,
-  일부 테스트는 "사이트 조회 API가 정상 동작"도 함께 확인하기 위해 GET /api/sites/search를 호출함.
-- 날짜:
-    - 당일 취소 테스트는 LocalDate.now() 기반으로 동작
-    - 시간 의존 이슈를 줄이기 위해 추후 Clock 주입 방식 고려 가능
+## 4. Edge Case Coverage (P1 - Critical)
 
-## 5. Non-functional Coverage
-- 동시성:
-    - 동시 예약 테스트는 작성되어 있으나 현재 Disabled
-    - 향후 DB Unique 제약 또는 Lock 전략 적용 후 활성화 예정
-- 보안/권한: Out of Scope (인증/인가 없음 가정)
+> 리스크: 금전적 손실, 데이터 무결성, 안전 문제
+> 우선순위: 반드시 테스트 필요
+
+### 4.1 경계값 (Boundary)
+| 케이스 | 설명 | 예상 결과 | 테스트 |
+|--------|------|----------|--------|
+| 예약 기간 30일 초과 | 31일 이상 예약 시도 | 400 Bad Request | [ ] |
+| 최대 인원수 초과 | maxPeople(6명) 초과 시 | 400 Bad Request | [ ] |
+
+### 4.2 날짜 경계 (Date Boundary)
+| 케이스 | 설명 | 예상 결과 | 테스트 |
+|--------|------|----------|--------|
+| 과거 날짜 예약 | 어제 날짜로 예약 시도 | 400 Bad Request | [ ] |
+| 종료일 < 시작일 | 날짜 역전 | 400 Bad Request | [ ] |
+
+### 4.3 중복 데이터 (Duplicate)
+| 케이스 | 설명 | 예상 결과 | 테스트 |
+|--------|------|----------|--------|
+| 날짜 범위 경계 중복 | 기존(2/1~2/3) 후 2/3~2/5 시도 | 409 Conflict | [ ] |
+| 시작일 경계 중복 | 기존(2/1~2/3) 후 2/1~2/2 시도 | 409 Conflict | [ ] |
+| 종료일 경계 중복 | 기존(2/1~2/3) 후 2/2~2/3 시도 | 409 Conflict | [ ] |
+
