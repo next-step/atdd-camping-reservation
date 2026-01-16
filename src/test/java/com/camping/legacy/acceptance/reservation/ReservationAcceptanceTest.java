@@ -104,7 +104,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
      * Then: 한 명의 예약만 성공한다.
      * And: 나머지 한 명은 예약이 거부된다.
      */
-    @Disabled
     @DisplayName("동시에 같은 날짜/사이트로 예약 요청하면 한 건만 성공한다.")
     @Test
     void 동시_예약은_한건만_성공한다() throws InterruptedException {
