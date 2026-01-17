@@ -272,3 +272,150 @@ public static Long 기본_사이트_생성() {
             .jsonPath().getLong("id");
 }
 ```
+
+---
+
+## 7. 테스트 데이터 관리
+
+### 7.1 테스트 독립성 보장
+
+#### 독립성 보장 메커니즘
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    각 테스트 실행 흐름                        │
+├─────────────────────────────────────────────────────────────┤
+│  @BeforeEach (AcceptanceTest)                               │
+│  ├── RestAssured.port = port                                │
+│  └── databaseCleanup.execute()  ◀── 모든 테이블 TRUNCATE    │
+│                                                             │
+│  @BeforeEach (각 테스트 클래스의 setUpFixture)               │
+│  └── Fixture를 통해 필요한 데이터 생성                        │
+│                                                             │
+│  @Test 실행                                                  │
+│  └── 독립적인 데이터 환경에서 테스트                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 독립성 검증 체크리스트
+
+| 항목 | 보장 여부 | 설명 |
+|------|----------|------|
+| 테스트 순서 변경 | ✅ 보장 | 어떤 순서로 실행해도 동일한 결과 |
+| 테스트 단독 실행 | ✅ 보장 | 개별 테스트만 실행해도 통과 |
+| 테스트 병렬 실행 | ⚠️ 주의 | 기본 설정(순차 실행)에서만 보장 |
+| 동시성 테스트 | ⚠️ 주의 | `@DirtiesContext` 권장 |
+
+#### 병렬 실행 시 주의사항
+
+```java
+// 동시성 테스트에는 @DirtiesContext 추가 권장
+@Test
+@DirtiesContext
+@DisplayName("두 고객이 동시에 같은 사이트를 예약하면 한 명만 성공한다")
+void 동시_예약_테스트() {
+    // ExecutorService를 사용한 동시 요청 테스트
+}
+```
+
+### 7.2 Fixture 클래스
+
+#### 파일 구조
+
+```
+src/test/java/com/camping/acceptance/common/
+├── AcceptanceTest.java      # 베이스 클래스
+├── AcceptanceTestConfig.java # 테스트 설정
+├── DatabaseCleanup.java     # DB 초기화
+├── SiteFixture.java         # 사이트 데이터 생성
+└── ReservationFixture.java  # 예약 데이터 생성
+```
+
+#### SiteFixture - 사이트 데이터 생성
+
+| 메서드 | 설명 | 사용 예시 |
+|--------|------|----------|
+| `대형_사이트_생성(siteNumber)` | 대형 사이트 1개 생성 | `대형_사이트_생성("A-1")` |
+| `소형_사이트_생성(siteNumber)` | 소형 사이트 1개 생성 | `소형_사이트_생성("B-1")` |
+| `대형_사이트_여러개_생성(siteNumbers...)` | 대형 사이트 여러개 생성 | `대형_사이트_여러개_생성("A-1", "A-2")` |
+| `소형_사이트_여러개_생성(siteNumbers...)` | 소형 사이트 여러개 생성 | `소형_사이트_여러개_생성("B-1", "B-2")` |
+| `기본_사이트_설정()` | A-1, A-2, B-1, B-2 생성 | `기본_사이트_설정()` |
+
+
+#### ReservationFixture - 예약 데이터 생성
+
+| 메서드 | 설명 | 사용 예시 |
+|--------|------|----------|
+| `예약_생성(campsite, customerName, phone, startDate, endDate, confirmationCode)` | 모든 정보 지정 | 확인코드 검증 테스트 |
+| `예약_생성(campsite, startDate, endDate)` | 기본 고객 정보 사용 | 간단한 예약 생성 |
+| `예약_생성(campsite, customerName, startDate, endDate)` | 고객명만 지정 | 고객별 테스트 |
+| `취소된_예약_생성(campsite, customerName, phone, startDate, endDate)` | 취소 상태 예약 생성 | 취소 관련 테스트 |
+| `취소된_예약_생성(campsite, startDate, endDate)` | 기본 정보로 취소 예약 | 간단한 취소 예약 |
+
+
+### 7.3 테스트 순서 의존성
+
+#### 원칙: 테스트 간 순서 의존성 없음
+
+```java
+// ❌ Bad - 다른 테스트의 데이터에 의존
+@Test
+void 예약_조회_테스트() {
+    // 다른 테스트에서 생성한 예약이 있다고 가정 (위험!)
+    var response = 예약_조회_요청(1L);
+    assertThat(response.statusCode()).isEqualTo(200);
+}
+
+// ✅ Good - 테스트 내에서 필요한 데이터 직접 생성
+@Test
+void 예약_조회_테스트() {
+    // given - 테스트에 필요한 데이터 직접 생성
+    Campsite 사이트 = siteFixture.대형_사이트_생성("A-1");
+    Reservation 예약 = reservationFixture.예약_생성(사이트, 시작일, 종료일);
+
+    // when
+    var response = 예약_조회_요청(예약.getId());
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(200);
+}
+```
+
+#### 테스트 클래스 구조 권장 패턴
+
+```java
+@DisplayName("예약 생성")
+class ReservationCreateAcceptanceTest extends AcceptanceTest {
+
+    @Autowired
+    private SiteFixture siteFixture;
+
+    @Autowired
+    private ReservationFixture reservationFixture;
+
+    // 테스트에서 공통으로 사용할 데이터
+    private Campsite 대형사이트;
+    private LocalDate 시작일;
+    private LocalDate 종료일;
+
+    @BeforeEach
+    void setUpFixture() {
+        // 각 테스트 전에 필요한 기본 데이터 생성
+        대형사이트 = siteFixture.대형_사이트_생성("A-1");
+        시작일 = LocalDate.now().plusDays(1);
+        종료일 = LocalDate.now().plusDays(3);
+    }
+
+    @Test
+    @DisplayName("빈 사이트를 예약하면 확인 코드를 받는다")
+    void 빈_사이트를_예약하면_확인_코드를_받는다() {
+        // given - setUpFixture에서 생성된 데이터 활용
+
+        // when
+        var response = 예약_생성_요청("A-1", "홍길동", "010-1234-5678", 시작일, 종료일);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(201);
+    }
+}
+```
