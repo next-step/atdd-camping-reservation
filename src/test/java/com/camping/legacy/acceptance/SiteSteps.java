@@ -19,7 +19,7 @@ public class SiteSteps {
                     .queryParam("startDate", LocalDate.now().plusDays(startDaysFromNow).toString())
                     .queryParam("endDate", LocalDate.now().plusDays(endDaysFromNow).toString())
                 .when()
-                    .get(SITES_URL)
+                    .get(SITES_URL + "/search")
                 .then()
                     .extract();
     }

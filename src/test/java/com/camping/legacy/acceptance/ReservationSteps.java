@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
+import static com.camping.legacy.acceptance.TestFixture.*;
 
 public class ReservationSteps {
 
@@ -48,6 +49,35 @@ public class ReservationSteps {
                    .extract();
     }
 
+    public static ExtractableResponse<Response> createReservationWithName(
+            String customerName, String siteNumber, int startDaysFromNow, int endDaysFromNow
+    ) {
+        var request = createReservationRequest(customerName, siteNumber, startDaysFromNow, endDaysFromNow);
+        return given()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post(RESERVATIONS_URL)
+                .then()
+                .extract();
+    }
+
+    public static ExtractableResponse<Response> createReservationWithPeriod(
+            String customerName, String siteNumber, int startDaysFromNow, int endDaysFromNow
+    ) {
+        return createReservationWithName(customerName, siteNumber, startDaysFromNow, endDaysFromNow);
+    }
+
+    public static ExtractableResponse<Response> createReservation(ReservationRequestBuilder builder) {
+        return given()
+                .contentType(ContentType.JSON)
+                .body(builder.build())
+            .when()
+                .post(RESERVATIONS_URL)
+            .then()
+                .extract();
+    }
+
     public static ExtractableResponse<Response> cancelReservation(Long reservationId, String confirmationCode) {
         return given()
                     .queryParam("confirmationCode", confirmationCode)
@@ -84,7 +114,7 @@ public class ReservationSteps {
     ) {
         var request = new HashMap<String, Object>();
         request.put("customerName", customerName);
-        request.put("phoneNumber", "01012345678");
+        request.put("phoneNumber", DEFAULT_PHONE);
         request.put("siteNumber", siteNumber);
         request.put("startDate", LocalDate.now().plusDays(startDaysFromNow).toString());
         request.put("endDate", LocalDate.now().plusDays(endDaysFromNow).toString());
