@@ -10,7 +10,7 @@ Feature: 예약 취소
     When 확인코드 "ABC123"으로 예약 취소를 요청한다
     Then 예약이 취소된다
 
-  Scenario: 체크인 당일에 취소하면 CANCELLED_SAME_DAY 상태가 된다
+  Scenario: 체크인 당일 취소 시 당일 취소로 처리된다
     Given 예약 시작일이 오늘이다
     When 확인코드 "ABC123"으로 예약 취소를 요청한다
     Then 예약 상태가 "CANCELLED_SAME_DAY"로 변경된다
