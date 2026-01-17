@@ -97,7 +97,6 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         assertThat(response.jsonPath().getString("message")).contains("전화번호");
     }
 
-    //사이트를 선택하지 않으면 예약할 수 없다
     @Test
     @DisplayName("사이트를 선택하지 않으면 예약할 수 없다")
     void 사이트를_선택하지_않으면_예약할_수_없다() {
