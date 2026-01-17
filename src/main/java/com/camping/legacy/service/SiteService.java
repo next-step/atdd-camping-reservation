@@ -83,47 +83,29 @@ public class SiteService {
 
         for (Campsite site : allSites) {
             // 크기 필터링 (하드코딩)
-            if (request.getSize() != null) {
-                String siteSize = "";
-                if (site.getSiteNumber().startsWith("A")) {
-                    siteSize = "대형";
-                } else if (site.getSiteNumber().startsWith("B")) {
-                    siteSize = "소형";
-                } else {
-                    siteSize = "일반";
-                }
-
-                if (!siteSize.equals(request.getSize())) {
-                    continue;
-                }
+            String siteSize = "";
+            if (site.getSiteNumber().startsWith("A")) {
+                siteSize = "대형";
+            } else if (site.getSiteNumber().startsWith("B")) {
+                siteSize = "소형";
+            } else {
+                siteSize = "일반";
+            }
+            if (request.getSize() != null && !siteSize.equals(request.getSize())) {
+                continue;
             }
 
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            boolean isBooked = reservationRepository.existsByCampsiteAndStatusAndEndDateGreaterThanAndStartDateLessThan(
+                    site, "CONFIRMED", startDate, endDate);
 
-            if (startAvailable && endAvailable) {
-                // 사이트 크기 결정 (중복된 로직)
-                String size = "";
-                if (site.getSiteNumber().startsWith("A")) {
-                    size = "대형";
-                } else if (site.getSiteNumber().startsWith("B")) {
-                    size = "소형";
-                } else {
-                    size = "일반";
-                }
-
+            if (!isBooked) {
                 // 전기 사용 가능 여부 (하드코딩)
-                boolean hasElectricity = false;
-                if (site.getSiteNumber().startsWith("A")) {
-                    hasElectricity = true;
-                }
+                boolean hasElectricity = site.getSiteNumber().startsWith("A");
 
                 availableSites.add(SiteAvailabilityResponse.builder()
                         .siteId(site.getId())
                         .siteNumber(site.getSiteNumber())
-                        .size(size)
+                        .size(siteSize)
                         .hasElectricity(hasElectricity)
                         .date(request.getStartDate())
                         .available(true)

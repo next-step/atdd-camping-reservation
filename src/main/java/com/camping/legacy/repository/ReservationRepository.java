@@ -25,4 +25,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findByCustomerNameAndPhoneNumber(String customerName, String phoneNumber);
     
     boolean existsByCampsiteAndReservationDate(Campsite campsite, LocalDate date);
+
+    boolean existsByCampsiteAndStatusAndEndDateGreaterThanAndStartDateLessThan(
+            Campsite campsite, String status, LocalDate startDate, LocalDate endDate);
 }
