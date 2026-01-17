@@ -27,7 +27,7 @@ public class ConcurrencyTestHelper {
         }
 
         readyLatch.await();     // 모든 스레드가 준비될 때까지 대기
-        startLatch.countDown(); // "빵!" 하고 동시에 시작
+        startLatch.countDown(); // 동시에 시작
 
         doneLatch.await();      // 모든 작업 완료 대기
         executorService.shutdown();
