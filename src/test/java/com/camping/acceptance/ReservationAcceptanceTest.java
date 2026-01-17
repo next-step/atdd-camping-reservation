@@ -145,16 +145,15 @@ public class ReservationAcceptanceTest {
      * When "김영희"가 해당 예약을 취소한다
      * Then 사용자가 "2027-10-20" 날짜로 예약 가능한 사이트를 검색하면 결과에 "C-03" 사이트가 포함된다
      */
-    @Disabled
     @Test
     @DisplayName("예약_취소_직후_예약_가능_목록에_즉시_반영된다")
     void siteBecomesAvailableAfterCancellation() {
         // given
         var 예약_시작_날짜 = 날짜_생성(2027, 10, 20);
         var 예약_마감_날짜 = 예약_시작_날짜.plusDays(1);
-        var request = 예약_요청_생성(SITE_C3_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "김영희", "010-1234-5678");
+        var 예약요청 = 예약_요청_생성(SITE_C3_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "김영희", "010-1234-5678");
 
-        var 예약응답 = 예약을_생성한다(request);
+        var 예약응답 = 예약을_생성한다(예약요청);
         var 예약 = 예약응답.body().as(ReservationResponse.class);
 
         var 예약_확인코드 = 예약.getConfirmationCode();
