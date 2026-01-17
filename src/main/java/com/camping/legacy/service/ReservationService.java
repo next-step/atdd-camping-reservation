@@ -10,6 +10,7 @@ import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
 import com.camping.legacy.util.StringUtils;
 import com.camping.legacy.util.ValidationUtils;
+import com.camping.legacy.util.aop.RetryOnOptimisticLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ public class ReservationService {
      * - 깊은 중첩
      * - 모든 로직을 한 곳에
      */
+    @RetryOnOptimisticLock
     public ReservationResponse createReservation(ReservationRequest request) {
         // ============================================================
         // STEP 1: 입력 데이터 추출
@@ -134,8 +136,8 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStatusAndEndDateGreaterThanAndStartDateLessThan(
+                    campsite, "CONFIRMED", endDate, startDate);
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
