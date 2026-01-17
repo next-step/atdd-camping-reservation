@@ -168,7 +168,6 @@
   - DB에 저장된 `Reservation.confirmationCode`와 일치해야 함
 
 - 부분 업데이트 허용
-  - `siteNumber`, `startDate`, `endDate`, `customerName`, `phoneNumber` 등이 null이 아니면 갱신
 
 - 날짜 검증(부분 구현)
   - `startDate`와 `endDate`가 “둘 다 존재할 때만” 검증 수행

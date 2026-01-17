@@ -37,7 +37,10 @@ dependencies {
     
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    // RestAssured (ATDD)
     testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'io.rest-assured:json-path'
 }
 
 tasks.named('test') {
