@@ -10,7 +10,6 @@ import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +44,8 @@ public class ReservationAcceptanceTest {
     public static final String WRONG_CODE = "WRONG456";
     public static final String 김캘린더 = "김캘린더";
     public static final String API_RESERVATIONS = "/api/reservations/";
+    public static final String API_SITES_SEARCH = "/api/sites/search";
+    public static final String API_RESERVATIONS_FOR_POST = "/api/reservations";
 
 
     @LocalServerPort
@@ -339,7 +340,7 @@ public class ReservationAcceptanceTest {
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .body(request)
                 .when()
-                .post("/api/reservations")
+                .post(API_RESERVATIONS_FOR_POST)
                 .then().log().all()
                 .extract();
     }
@@ -365,7 +366,7 @@ public class ReservationAcceptanceTest {
                 .param("startDate", reservationDate.toString())
                 .param("endDate", reservationEndDate.toString())
                 .when()
-                .get("/api/sites/search")
+                .get(API_SITES_SEARCH)
                 .then().log().all()
                 .extract();
     }
