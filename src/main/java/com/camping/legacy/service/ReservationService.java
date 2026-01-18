@@ -132,6 +132,14 @@ public class ReservationService {
                 }
             }
 
+            if (campsite.getMaxPeople() < request.getNumberOfPeople()) {
+                throw new RuntimeException("해당 사이트의 최대 인원 수를 초과했습니다.");
+            }
+
+            if (request.getNumberOfPeople() < 1) {
+                throw new RuntimeException("최소 1명 이상의 인원이 필요합니다.");
+            }
+
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
@@ -407,6 +415,14 @@ public class ReservationService {
         long days = ChronoUnit.DAYS.between(targetStart, targetEnd);
         if (days > 30) {
             throw new RuntimeException("예약 기간은 최대 30일입니다.");
+        }
+
+        if (targetCampsite.getMaxPeople() > request.getNumberOfPeople()) {
+            throw new RuntimeException("해당 사이트의 최대 인원 수를 초과했습니다.");
+        }
+
+        if (request.getNumberOfPeople() < 1) {
+            throw new RuntimeException("최소 1명 이상의 인원이 필요합니다.");
         }
 
         if (reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndIdNot(
