@@ -372,7 +372,7 @@ public class ReservationAcceptanceTest {
     }
 
 
-    private static Map<String, Object> 예약_요청_생성(String 사이트_번호, LocalDate 시작날짜, LocalDate 마감날짜, String 이름, String 핸드폰번호) {
+    public static Map<String, Object> 예약_요청_생성(String 사이트_번호, LocalDate 시작날짜, LocalDate 마감날짜, String 이름, String 핸드폰번호) {
         Map<String, Object> request = new HashMap<>();
         request.put("siteNumber", 사이트_번호);
         request.put("startDate", 시작날짜);
@@ -380,5 +380,118 @@ public class ReservationAcceptanceTest {
         request.put("customerName", 이름);
         request.put("phoneNumber", 핸드폰번호);
         return request;
+    }
+
+    /**
+     * Scenario: 유효하지 않은 예약 날짜로 생성을 시도하면 실패한다
+     */
+    @Test
+    @DisplayName("과거_날짜로_예약하면_실패한다")
+    void createReservation_WithPastDate_ShouldFail() {
+        // given
+        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), "김과거", "010-0000-0000");
+
+        // when
+        var response = 예약을_생성한다(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("종료일이_시작일보다_빠르면_예약에_실패한다")
+    void createReservation_WithEndDateBeforeStartDate_ShouldFail() {
+        // given
+        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(3), LocalDate.now().plusDays(1), "김역행", "010-0000-0000");
+
+        // when
+        var response = 예약을_생성한다(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    /**
+     * Scenario: 필수 예약자 정보가 누락된 경우 예약에 실패한다
+     */
+    @Test
+    @DisplayName("예약자_이름이_없으면_예약에_실패한다")
+    void createReservation_WithoutCustomerName_ShouldFail() {
+        // given
+        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), "", "010-0000-0000");
+
+        // when
+        var response = 예약을_생성한다(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("전화번호가_없으면_예약에_실패한다")
+    void createReservation_WithoutPhoneNumber_ShouldFail() {
+        // given
+        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), "김누락", null);
+
+        // when
+        var response = 예약을_생성한다(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    /**
+     * Scenario: 당일 예약을 취소하는 경우 환불을 받을 수 없다 (API 응답 확인)
+     */
+    @Test
+    @DisplayName("당일_예약을_취소하면_성공한다")
+    void cancelReservation_OnStartDate_ShouldSucceed() {
+        // given
+        var reservation = 예약을_미리_만든다(SITE_A1_NUMBER, LocalDate.now(), LocalDate.now().plusDays(2), "박당일", "010-1234-0000");
+
+        // when
+        var response = 정확한_확인_코드로_예약을_취소한다(reservation.getConfirmationCode(), reservation.getId());
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getString("message")).isEqualTo("예약이 취소되었습니다.");
+    }
+
+    /**
+     * Scenario: 내 예약 정보를 이름과 전화번호로 조회할 수 있다
+     */
+    @Test
+    @DisplayName("이름과_전화번호로_내_예약을_조회한다")
+    void findMyReservations_ByNameAndPhone() {
+        // given
+        var name = "김조회";
+        var phone = "010-9876-5432";
+        예약을_미리_만든다(SITE_B2_NUMBER, LocalDate.now().plusDays(5), LocalDate.now().plusDays(7), name, phone);
+
+        // when
+        var response = 이름과_전화번호로_예약을_조회한다(name, phone);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getList("")).hasSize(1);
+        assertThat(response.jsonPath().getString("[0].customerName")).isEqualTo(name);
+        assertThat(response.jsonPath().getString("[0].phoneNumber")).isEqualTo(phone);
+        assertThat(response.jsonPath().getString("[0].siteNumber")).isEqualTo(SITE_B2_NUMBER);
+    }
+    
+    private ReservationResponse 예약을_미리_만든다(String siteNumber, LocalDate startDate, LocalDate endDate, String name, String phone) {
+        var request = 예약_요청_생성(siteNumber, startDate, endDate, name, phone);
+        return 예약을_생성한다(request).as(ReservationResponse.class);
+    }
+
+    private ExtractableResponse<Response> 이름과_전화번호로_예약을_조회한다(String name, String phone) {
+        return RestAssured
+                .given().log().all()
+                .param("name", name)
+                .param("phone", phone)
+                .when()
+                .get("/api/reservations/my")
+                .then().log().all()
+                .extract();
     }
 }
