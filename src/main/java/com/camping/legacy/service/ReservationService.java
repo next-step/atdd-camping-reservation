@@ -410,6 +410,13 @@ public class ReservationService {
         if (request.getSiteNumber() != null) {
             Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+            LocalDate startDate = reservation.getStartDate();
+            LocalDate endDate = reservation.getEndDate();
+            if (reservationRepository.existsActiveReservation(campsite, endDate, startDate)) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
+
             reservation.setCampsite(campsite);
         }
 

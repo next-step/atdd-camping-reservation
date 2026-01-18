@@ -95,7 +95,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     }
 
     @Test
-    @DisplayName("다른 예약이 있는 날짜로 변경할 수 없다")
+    @DisplayName("다른 예약이 있는 날짜로 변경할 수 없다 (같은 사이트로 날짜를 변경하는 경우)")
     void 다른_예약이_있는_날짜로_변경할_수_없다() {
         // given
         LocalDate 충돌시작일 = LocalDate.now().plusDays(10);
@@ -232,7 +232,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     }
 
     @Test
-    @DisplayName("해당 기간에 예약된 사이트로는 변경할 수 없다")
+    @DisplayName("해당 기간에 예약된 사이트로는 변경할 수 없다 (같은 날짜로 사이트만 변경하는 경우)")
     void 해당_기간에_예약된_사이트로는_변경할_수_없다() {
         // given
         reservationFixture.예약_생성(사이트A2, "김철수", "010-9999-9999",
