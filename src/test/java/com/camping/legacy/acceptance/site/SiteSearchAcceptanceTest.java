@@ -99,8 +99,6 @@ class SiteSearchAcceptanceTest extends ApiAcceptanceTestBase {
                 .response(it -> assertThat(it.getList("siteNumber")).doesNotContain("A-1"));
     }
 
-    // FIXME 에러 문구 처리되도록 수정 필요
-    @Disabled
     @Test
     void 예외_과거_날짜로_기간_검색을_시도하면_실패한다() {
         LocalDate start = LocalDate.now().minusDays(3);
