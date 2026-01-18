@@ -13,6 +13,7 @@ import static com.camping.acceptance.ReservationSteps.예약_요청_생성;
 import static com.camping.acceptance.ReservationSteps.예약을_생성한다;
 import static com.camping.acceptance.SiteSteps.사이트_상세_정보를_조회한다;
 import static com.camping.acceptance.SiteSteps.예약_가능_사이트를_검색한다;
+import static com.camping.acceptance.TestFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("캠핑 사이트 인수 테스트")
@@ -23,9 +24,9 @@ public class SiteAcceptanceTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        siteA01 = campsiteRepository.save(Campsite.builder().siteNumber("A-01").maxPeople(4).description("A-01").build());
-        siteA02 = campsiteRepository.save(Campsite.builder().siteNumber("A-02").maxPeople(4).description("A-02").build());
-        siteB01 = campsiteRepository.save(Campsite.builder().siteNumber("B-01").maxPeople(2).description("B-01").build());
+        siteA01 = campsiteRepository.save(createCampsite(SITE_A1_NUMBER));
+        siteA02 = campsiteRepository.save(createCampsite("A-02"));
+        siteB01 = campsiteRepository.save(createCampsite("B-01"));
     }
 
     @Test
@@ -33,7 +34,7 @@ public class SiteAcceptanceTest extends AcceptanceTest {
     void searchAvailableSitesByDate() {
         // given
         var searchDate = LocalDate.of(2025, 11, 15);
-        var request = 예약_요청_생성(siteA01.getSiteNumber(), searchDate, searchDate.plusDays(2), "김예약", "010-1111-1111");
+        var request = 예약_요청_생성(siteA01.getSiteNumber(), searchDate, searchDate.plusDays(2), CUSTOMER_KIM, "010-1111-1111");
         예약을_생성한다(request);
 
         // when
@@ -66,7 +67,9 @@ public class SiteAcceptanceTest extends AcceptanceTest {
     @DisplayName("특정_캠핑_사이트의_상세_정보를_조회한다")
     void getSiteDetails() {
         // given
-        var site = campsiteRepository.save(Campsite.builder().siteNumber("C-07").maxPeople(6).description("강가 전망 사이트").build());
+        var site = campsiteRepository.save(createCampsite("C-07",6, "강가 전망 사이트"));
+        campsiteRepository.save(site);
+
 
         // when
         var response = 사이트_상세_정보를_조회한다(site.getId());

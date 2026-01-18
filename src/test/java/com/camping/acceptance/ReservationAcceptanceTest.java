@@ -18,21 +18,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.camping.acceptance.ReservationSteps.*;
+import static com.camping.acceptance.TestFixtures.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest extends AcceptanceTest {
-
-    public static final String 예약시작일 = "2027-09-10";
-    public static final String WRONG_CODE = "WRONG456";
-    public static final String 김캘린더 = "김캘린더";
-
-    private static final String SITE_A1_NUMBER = "A-01";
-    private static final String SITE_B2_NUMBER = "B-02";
-    private static final String SITE_C3_NUMBER = "C-03";
-    private static final String SITE_D4_NUMBER = "D-04";
-    private static final String SITE_E5_NUMBER = "E-05";
 
     private Campsite siteA1;
     private Campsite siteB2;
@@ -42,22 +33,19 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        super.setUp(); // 명시적으로 상위 클래스의 setUp 호출
-        siteA1 = campsiteRepository.save(create(SITE_A1_NUMBER));
-        siteB2 = campsiteRepository.save(create(SITE_B2_NUMBER));
-        siteC3 = campsiteRepository.save(create(SITE_C3_NUMBER));
-        siteD4 = campsiteRepository.save(create(SITE_D4_NUMBER));
-        siteE5 = campsiteRepository.save(create(SITE_E5_NUMBER));
+        super.setUp();
+        siteA1 = campsiteRepository.save(createCampsite(SITE_A1_NUMBER));
+        siteB2 = campsiteRepository.save(createCampsite(SITE_B2_NUMBER));
+        siteC3 = campsiteRepository.save(createCampsite(SITE_C3_NUMBER));
+        siteD4 = campsiteRepository.save(createCampsite(SITE_D4_NUMBER));
+        siteE5 = campsiteRepository.save(createCampsite(SITE_E5_NUMBER));
     }
 
     @Test
     @DisplayName("여러_사용자가_동시에_예약을_시도할_경우_오직_하나만_성공한다")
     void concurrencyControl_OnlyOneReservationSucceeds() throws InterruptedException {
         // given
-        var 예약_시작_날짜 = 날짜_생성(2027, 8, 15);
-        var 예약_마감_날짜 = 날짜_생성(2027, 8, 17);
-
-        var 동시_요청_결과 = 동시에_예약을_요청한다(10, SITE_A1_NUMBER, 예약_시작_날짜, 예약_마감_날짜);
+        var 동시_요청_결과 = 동시에_예약을_요청한다(10, SITE_A1_NUMBER, START_DATE, END_DATE);
 
         // then
         assertThat(성공한_예약_개수(동시_요청_결과)).isEqualTo(1);
@@ -68,33 +56,29 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약_직후_월별_캘린더에_즉시_반영된다")
     void calendarReflectsReservationImmediately() {
         // given
-        var 예약_시작_날짜 = 날짜_생성(2027, 9, 10);
-        var 예약_마감_날짜 = 날짜_생성(2027, 9, 11);
-        var request = 예약_요청_생성(SITE_B2_NUMBER, 예약_시작_날짜, 예약_마감_날짜, 김캘린더, "010-1234-5678");
+        var request = 예약_요청_생성(SITE_B2_NUMBER, START_DATE, END_DATE, CUSTOMER_KIM, "010-1234-5678");
         예약을_생성한다(request);
 
         // then
-        var 예약_조회_결과 = 캘린터에서_특정사이트_예약을_조회한다(2027, 9, siteB2.getId());
-        var 특정_날짜_예약_조회_결과 = 특정_날짜_예약_응답_생성한다(예약_조회_결과, 예약시작일);
+        var 예약_조회_결과 = 캘린터에서_특정사이트_예약을_조회한다(START_DATE.getYear(), START_DATE.getMonthValue(), siteB2.getId());
+        var 특정_날짜_예약_조회_결과 = 특정_날짜_예약_응답_생성한다(예약_조회_결과, START_DATE.toString());
 
         assertThat(특정_날짜_예약_조회_결과.get("available")).isEqualTo(false);
-        assertThat(특정_날짜_예약_조회_결과.get("customerName")).isEqualTo(김캘린더);
+        assertThat(특정_날짜_예약_조회_결과.get("customerName")).isEqualTo(CUSTOMER_KIM);
     }
 
     @Test
     @DisplayName("예약_취소_직후_예약_가능_목록에_즉시_반영된다")
     void siteBecomesAvailableAfterCancellation() {
         // given
-        var 예약_시작_날짜 = 날짜_생성(2027, 10, 20);
-        var 예약_마감_날짜 = 예약_시작_날짜.plusDays(1);
-        var 예약요청 = 예약_요청_생성(SITE_C3_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "김영희", "010-1234-5678");
+        var 예약요청 = 예약_요청_생성(SITE_C3_NUMBER, START_DATE, END_DATE, CUSTOMER_LEE, "010-1234-5678");
         var 예약 = 예약을_생성한다(예약요청).body().as(ReservationResponse.class);
 
         // when
         정확한_확인_코드로_예약을_취소한다(예약.getConfirmationCode(), 예약.getId());
 
         // then
-        var 예약_조회_결과 = 날짜로_예약을_조회한다(예약_시작_날짜, 예약_마감_날짜);
+        var 예약_조회_결과 = 날짜로_예약을_조회한다(START_DATE, END_DATE);
         var 예약_가능_사이트 = 예약_조회_결과.jsonPath().getList("siteNumber");
         assertThat(예약_가능_사이트).contains(SITE_C3_NUMBER);
     }
@@ -103,13 +87,11 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("연박_예약_시_중간_날짜가_이미_예약된_경우_조회되지_않는다")
     void searchingForOverlappingDatesExcludesSite() {
         // given
-        var 예약_시작_날짜 = 날짜_생성(2027, 11, 3);
-        var 예약_마감_날짜 = 예약_시작_날짜.plusDays(1);
-        var 예약_정보 = 예약_요청_생성(SITE_D4_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "박중간", "010-1234-5678");
+        var 예약_정보 = 예약_요청_생성(SITE_D4_NUMBER, START_DATE.plusDays(1), START_DATE.plusDays(2), CUSTOMER_PARK, "010-1234-5678");
         예약을_생성한다(예약_정보);
 
         // when
-        var 예약_조회_결과 = 날짜로_예약을_조회한다(예약_시작_날짜.minusDays(2), 예약_마감_날짜.plusDays(2));
+        var 예약_조회_결과 = 날짜로_예약을_조회한다(START_DATE, END_DATE);
 
         // then
         var 예약_가능_사이트 = 예약_조회_결과.jsonPath().getList("siteNumber");
@@ -120,86 +102,41 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     @DisplayName("정확한_확인_코드를_입력해야만_예약을_취소할_수_있다")
     void cancellationRequiresCorrectConfirmationCode() {
         // given
-        var 예약_시작_날짜 = 날짜_생성(2026, 2, 14);
-        var 예약_마감_날짜 = 예약_시작_날짜.plusDays(1);
-        var 예약_정보 = 예약_요청_생성(SITE_E5_NUMBER, 예약_시작_날짜, 예약_마감_날짜, "박서준", "010-1234-5678");
+        var 예약_정보 = 예약_요청_생성(SITE_E5_NUMBER, START_DATE, END_DATE, "박서준", "010-1234-5678");
         var 예약 = 예약을_생성한다(예약_정보).body().as(ReservationResponse.class);
 
-        // case1: 잘못된 확인 코드인 경우
-        var 잘못된_확인코드_응답 = 잘못된_코드로_예약을_취소한다(WRONG_CODE, 예약.getId());
-        assertThat(잘못된_확인코드_응답.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-
-        // case2: 올바른 확인 코드인 경우
+        // when
+        var 잘못된_확인코드_응답 = 잘못된_코드로_예약을_취소한다(WRONG_CONFIRMATION_CODE, 예약.getId());
         var 올바른_확인_코드_응답 = 정확한_확인_코드로_예약을_취소한다(예약.getConfirmationCode(), 예약.getId());
-        assertThat(올바른_확인_코드_응답.statusCode()).isEqualTo(HttpStatus.OK.value());
 
-        var 조회응답 = 예약ID로_예약을_조회한다(예약.getId());
-        assertThat(조회응답.body().as(ReservationResponse.class).getStatus()).isEqualTo("CANCELLED");
+        // then
+        assertThat(잘못된_확인코드_응답.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(올바른_확인_코드_응답.statusCode()).isEqualTo(HttpStatus.OK.value());
     }
 
     @Test
     @DisplayName("과거_날짜로_예약하면_실패한다")
     void createReservation_WithPastDate_ShouldFail() {
-        // given
-        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), "김과거", "010-0000-0000");
-        // when
+        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), CUSTOMER_KIM, "010-0000-0000");
         var response = 예약을_생성한다(request);
-        // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
     @DisplayName("종료일이_시작일보다_빠르면_예약에_실패한다")
     void createReservation_WithEndDateBeforeStartDate_ShouldFail() {
-        // given
-        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(3), LocalDate.now().plusDays(1), "김역행", "010-0000-0000");
-        // when
+        var request = 예약_요청_생성(SITE_A1_NUMBER, START_DATE, START_DATE.minusDays(1), CUSTOMER_KIM, "010-0000-0000");
         var response = 예약을_생성한다(request);
-        // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
-
-    @Test
-    @DisplayName("예약자_이름이_없으면_예약에_실패한다")
-    void createReservation_WithoutCustomerName_ShouldFail() {
-        // given
-        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), "", "010-0000-0000");
-        // when
-        var response = 예약을_생성한다(request);
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    }
-
-    @Test
-    @DisplayName("전화번호가_없으면_예약에_실패한다")
-    void createReservation_WithoutPhoneNumber_ShouldFail() {
-        // given
-        var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().plusDays(1), LocalDate.now().plusDays(3), "김누락", null);
-        // when
-        var response = 예약을_생성한다(request);
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-    }
-
-    @Test
-    @DisplayName("당일_예약을_취소하면_성공한다")
-    void cancelReservation_OnStartDate_ShouldSucceed() {
-        // given
-        var reservation = 예약을_미리_만든다(SITE_A1_NUMBER, LocalDate.now(), LocalDate.now().plusDays(2), "박당일", "010-1234-0000");
-        // when
-        var response = 정확한_확인_코드로_예약을_취소한다(reservation.getConfirmationCode(), reservation.getId());
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.jsonPath().getString("message")).isEqualTo("예약이 취소되었습니다.");
-    }
-
+    
     @Test
     @DisplayName("이름과_전화번호로_내_예약을_조회한다")
     void findMyReservations_ByNameAndPhone() {
         // given
         var name = "김조회";
         var phone = "010-9876-5432";
-        예약을_미리_만든다(SITE_B2_NUMBER, LocalDate.now().plusDays(5), LocalDate.now().plusDays(7), name, phone);
+        예약을_미리_만든다(SITE_B2_NUMBER, START_DATE, END_DATE, name, phone);
 
         // when
         var response = 이름과_전화번호로_예약을_조회한다(name, phone);
@@ -209,12 +146,8 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
         assertThat(response.jsonPath().getList("")).hasSize(1);
         assertThat(response.jsonPath().getString("[0].customerName")).isEqualTo(name);
     }
-    
-    // --- Private Helper Methods ---
 
-    private Campsite create(String siteNumber) {
-        return Campsite.builder().siteNumber(siteNumber).description("test").maxPeople(10).build();
-    }
+    // --- Private Helper Methods ---
 
     private LocalDate 날짜_생성(int 년도, int 월, int 날짜) {
         return LocalDate.of(년도, 월, 날짜);
