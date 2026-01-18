@@ -157,4 +157,42 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
         List<String> siteNumbers = response.jsonPath().getList("siteNumber");
         assertThat(siteNumbers).contains("A-1");
     }
+
+    @Test
+    @DisplayName("검색 기간 중간에 예약이 있는 사이트는 제외된다")
+    void 검색_기간_중간에_예약이_있는_사이트는_제외된다() {
+        // given - 검색 기간: 1일~10일, 기존 예약: 5일~7일 (중간에 있음)
+        LocalDate 검색_시작 = LocalDate.now().plusDays(1);
+        LocalDate 검색_종료 = LocalDate.now().plusDays(10);
+        LocalDate 예약_시작 = LocalDate.now().plusDays(5);
+        LocalDate 예약_종료 = LocalDate.now().plusDays(7);
+
+        reservationFixture.예약_생성(대형사이트A1, "홍길동", "010-1234-5678",
+                예약_시작, 예약_종료, "ABC123");
+
+        // when
+        ExtractableResponse<Response> response = 사이트_검색_요청(검색_시작, 검색_종료);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        List<String> siteNumbers = response.jsonPath().getList("siteNumber");
+        assertThat(siteNumbers).contains("A-2", "B-1");
+        assertThat(siteNumbers).doesNotContain("A-1");
+    }
+
+    @Test
+    @DisplayName("오늘 입실로 검색할 수 있다")
+    void 오늘_입실로_검색할_수_있다() {
+        // given
+        LocalDate 오늘 = LocalDate.now();
+        LocalDate 내일 = 오늘.plusDays(1);
+
+        // when
+        ExtractableResponse<Response> response = 사이트_검색_요청(오늘, 내일);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        List<String> siteNumbers = response.jsonPath().getList("siteNumber");
+        assertThat(siteNumbers).contains("A-1", "A-2", "B-1");
+    }
 }
