@@ -4,12 +4,11 @@ import static com.camping.legacy.fixture.ReservationFixture.*;
 import static org.assertj.core.api.Assertions.*;
 
 import com.camping.legacy.domain.Campsite;
-import com.camping.legacy.dto.ReservationRequest;
+import com.camping.legacy.fixture.ReservationRequestBuilder;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.service.ReservationService;
 import com.camping.legacy.utils.ConcurrencyTestHelper;
 import com.camping.legacy.utils.DatabaseCleaner;
-import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -43,12 +42,15 @@ public class ReservationServiceConcurrencyTest {
     void 동일한_사이트와_기간에_대해_중복_예약_시도를_하면_한명만_예약된다() throws InterruptedException {
         // given
         AtomicInteger successCount = new AtomicInteger(0);
+        var request = ReservationRequestBuilder.aReservationRequest()
+                .withStartDate(10)
+                .withEndDate(11);
 
         // when
         ConcurrencyTestHelper.execute(
             () -> {
                 try {
-                    reservationService.createReservation(create(10, 11, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER));
+                    reservationService.createReservation(request.build());
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     // ignore
@@ -56,7 +58,7 @@ public class ReservationServiceConcurrencyTest {
             },
             () -> {
                 try {
-                    reservationService.createReservation(create(10, 11, "홍길동", SITE_A1,"01012345678"));
+                    reservationService.createReservation(request.withCustomerName("홍길동").build());
                     successCount.incrementAndGet();
                 } catch (Exception e) {
                     // ignore
@@ -64,7 +66,7 @@ public class ReservationServiceConcurrencyTest {
             },
                 () -> {
                     try {
-                        reservationService.createReservation(create(10, 11, "이순신", SITE_A1,"01056781234"));
+                        reservationService.createReservation(request.withCustomerName("이순신").build());
                         successCount.incrementAndGet();
                     } catch (Exception e) {
                         // ignore
@@ -74,11 +76,5 @@ public class ReservationServiceConcurrencyTest {
 
         // then
         assertThat(successCount.get()).isEqualTo(1);
-    }
-
-    private static ReservationRequest create(int startDayOffset, int endDayOffset, String customerName, String siteNumber, String phoneNumber) {
-        var startDate = LocalDate.now().plusDays(startDayOffset);
-        var endDate = LocalDate.now().plusDays(endDayOffset);
-        return new ReservationRequest(customerName, startDate, endDate, siteNumber, phoneNumber, 4, "12가3456", "잘 부탁드립니다.");
     }
 }

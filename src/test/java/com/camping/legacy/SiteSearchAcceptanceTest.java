@@ -1,6 +1,7 @@
 package com.camping.legacy;
 
 import static com.camping.legacy.fixture.ReservationFixture.*;
+import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
 import static com.camping.legacy.step.SiteStep.기간_조건으로_사이트를_검색한다;
 import static com.camping.legacy.step.SiteStep.사이트를_검색한다;
@@ -39,7 +40,8 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
         // given : A-1 사이트는 이미 예약된 상태, A-2는 예약이 없는 상태
         신규_사이트를_등록한다(SITE_A2, "Large Site", 5);
 
-        예약을_요청한다(1, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+        var 예약_요청 = aReservationRequest().withStartDate(1).withEndDate(2);
+        예약을_요청한다(예약_요청.build());
 
         // when & then
         var 검색_결과 = 사이트를_검색한다(0, 3, LARGE_SITE_TYPE);

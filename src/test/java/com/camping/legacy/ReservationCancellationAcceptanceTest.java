@@ -1,6 +1,7 @@
 package com.camping.legacy;
 
 import static com.camping.legacy.fixture.ReservationFixture.*;
+import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.*;
 import static com.camping.legacy.step.SiteStep.*;
 
@@ -15,7 +16,9 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
     // given: 사전 예약 생성
     var 시작일_offset = 10;
     var 종료일_offset = 12;
-    var 예약_응답 = 예약을_요청한다(시작일_offset, 종료일_offset, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+
+    var 예약_요청 = aReservationRequest().withStartDate(시작일_offset).withEndDate(종료일_offset);
+    var 예약_응답 = 예약을_요청한다(예약_요청.build());
     var 예약_ID = 예약_응답.jsonPath().getLong("id");
 
     var 예약_상세_정보 = 예약을_조회한다(예약_ID);
@@ -37,7 +40,8 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
   @Test
   void 예약_확인_코드가_일치하지_않으면_취소할_수_없다() {
     // given
-    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 예약_요청 = aReservationRequest().withEndDate(2);
+    var 예약_응답 = 예약을_요청한다(예약_요청.build());
     var 예약_ID = 예약_응답.jsonPath().getLong("id");
 
     var 예약확인_조회_응답 = 예약을_조회한다(예약_ID);
@@ -57,7 +61,8 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
   @Test
   void 당일_예약_취소_시_별도의_상태_코드로_관리된다() {
     // given
-    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 예약_요청 = aReservationRequest().withEndDate(2);
+    var 예약_응답 = 예약을_요청한다(예약_요청.build());
     var 예약_ID = 예약_응답.jsonPath().getLong("id");
 
     var 예약확인_조회_응답 = 예약을_조회한다(예약_ID);

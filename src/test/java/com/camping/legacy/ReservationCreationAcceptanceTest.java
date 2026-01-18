@@ -1,9 +1,13 @@
 package com.camping.legacy;
 
 import static com.camping.legacy.fixture.ReservationFixture.*;
-import static com.camping.legacy.step.ReservationStep.성수기_주말에_예약을_요청한다;
+import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
+import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
+import static java.time.temporal.TemporalAdjusters.nextOrSame;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -13,8 +17,10 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 유효한_정보로_예약요청시_예약이_확정된다() {
     // given
+    var 예약_요청 = aReservationRequest();
+
     // when
-    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약_성공_확인(응답);
@@ -26,8 +32,12 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 최대_예약_가능기간을_꽉_채워_예약_요청한다() {
     // given
+    var 예약_요청 = aReservationRequest()
+            .withStartDate(0)
+            .withEndDate(30);
+
     // when
-    var 응답 = 예약을_요청한다(0, 30, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약_성공_확인(응답);
@@ -37,8 +47,12 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 예약_제한_기간을_초과하여_요청하면_예약이_거부된다() {
     // given
+    var 예약_요청 = aReservationRequest()
+            .withStartDate(0)
+            .withEndDate(31);
+
     // when
-    var 응답 = 예약을_요청한다(0, 31, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약이_거부되었다(응답);
@@ -49,8 +63,11 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 유효하지_않은_고객_이름으로_예약할_경우_예약_거부된다() {
     // given
+    var 예약_요청 = aReservationRequest()
+            .withCustomerName(INVALID_CUSTOMER_NAME);
+
     // when
-    var 응답 = 예약을_요청한다(0, 2, INVALID_CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약이_거부되었다(응답);
@@ -61,8 +78,11 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 유효하지_않은_전화번호로_예약_요청하면_예약_거부된다() {
     // given
+    var 예약_요청 = aReservationRequest()
+            .withPhoneNumber(INVALID_PHONE_NUMBER);
+
     // when
-    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, INVALID_PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약이_거부되었다(응답);
@@ -73,10 +93,26 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @DisplayName("성수기 주말 할증 요금이 자동 계산된다")
   @Test
   void 성수기_주말_할증_요금이_자동_계산된다() {
+    // given
+    var saturday = 성수기_첫_토요일_계산(PEAK_SEASON_START_MONTH);
+    var sunday = saturday.plusDays(1);
+    var 예약_요청 = aReservationRequest().withStartDate(saturday).withEndDate(sunday);
+
     // when
-    var 응답 = 성수기_주말에_예약을_요청한다(PEAK_SEASON_START_MONTH, "성수기 주말 고객", SITE_A1, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(예약_요청.build());
 
     // then
     예약_성공_확인(응답);
+  }
+
+  private static LocalDate 성수기_첫_토요일_계산(int peakMonth) {
+    var today = LocalDate.now();
+    var targetDate = LocalDate.of(today.getYear(), peakMonth, 1);
+
+    if (today.isAfter(targetDate.with(lastDayOfMonth()))) {
+      targetDate = targetDate.plusYears(1);
+    }
+
+    return targetDate.with(nextOrSame(DayOfWeek.SATURDAY));
   }
 }

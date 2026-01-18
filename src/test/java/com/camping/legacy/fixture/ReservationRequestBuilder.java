@@ -12,7 +12,7 @@ public class ReservationRequestBuilder {
     private String siteNumber = SITE_A1;
     private String phoneNumber = PHONE_NUMBER;
     private Integer numberOfPeople = 4;
-    private String carNumber;
+    private String carNumber = "12가3456";
     private String requests = "잘 부탁드립니다";
 
     public static ReservationRequestBuilder aReservationRequest() {
@@ -29,8 +29,18 @@ public class ReservationRequestBuilder {
         return this;
     }
 
+    public ReservationRequestBuilder withStartDate(int startDateOffset) {
+        this.startDate = LocalDate.now().plusDays(startDateOffset);
+        return this;
+    }
+
     public ReservationRequestBuilder withEndDate(LocalDate endDate) {
         this.endDate = endDate;
+        return this;
+    }
+
+    public ReservationRequestBuilder withEndDate(int endDateOffset) {
+        this.endDate = LocalDate.now().plusDays(endDateOffset);
         return this;
     }
 
