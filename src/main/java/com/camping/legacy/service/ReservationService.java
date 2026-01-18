@@ -377,23 +377,21 @@ public class ReservationService {
         }
 
         // 날짜 유효성 검증 (중복 코드 3 - createReservation과 유사)
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            LocalDate startDate = request.getStartDate();
-            LocalDate endDate = request.getEndDate();
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
 
-            if (startDate == null || endDate == null) {
-                throw new RuntimeException("예약 기간을 선택해주세요.");
-            }
+        if (startDate == null || endDate == null) {
+            throw new RuntimeException("예약 기간을 선택해주세요.");
+        }
 
-            if (endDate.isBefore(startDate)) {
-                throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
-            }
+        if (endDate.isBefore(startDate)) {
+            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+        }
 
-            // 과거 날짜 체크
-            LocalDate today = LocalDate.now();
-            if (startDate.isBefore(today)) {
-                throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
-            }
+        // 과거 날짜 체크
+        LocalDate today = LocalDate.now();
+        if (startDate.isBefore(today)) {
+            throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
         }
 
         // 고객 이름 검증 (중복 코드 4)

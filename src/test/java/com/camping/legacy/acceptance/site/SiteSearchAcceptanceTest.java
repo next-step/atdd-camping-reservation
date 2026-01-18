@@ -113,8 +113,6 @@ class SiteSearchAcceptanceTest extends ApiAcceptanceTestBase {
                 });
     }
 
-    // FIXME 에러 문구 처리되도록 수정 필요
-    @Disabled
     @Test
     void 예외_종료일이_시작일보다_이전이면_기간_검색이_실패한다() {
         LocalDate start = LocalDate.now().plusDays(12);

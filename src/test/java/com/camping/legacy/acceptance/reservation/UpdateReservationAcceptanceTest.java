@@ -34,8 +34,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                 confirmationCode,
                 ReservationRequest.builder()
                         .customerName("수정한 이름")
-                        .startDate(null)
-                        .endDate(null)
+                        .startDate(LocalDate.now().plusDays(2))
+                        .endDate(LocalDate.now().plusDays(4))
                         .siteNumber("A-1")
                         .build()
         );
@@ -247,5 +247,59 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    @Test
+    void 예외_예약_기간_변경_시_종료일_없는경우_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
+        JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
+        Long reservationId = reservation.getLong("id");
+        String confirmationCode = reservation.getString("confirmationCode");
+
+        // When: 시작일만 변경 시도
+        ExtractableResponse<Response> responseStartOnly = 예약을_수정한다(
+                reservationId,
+                confirmationCode,
+                ReservationRequest.builder()
+                        .customerName("김철수")
+                        .startDate(LocalDate.now().plusDays(15))
+                        .endDate(null)
+                        .siteNumber("A-1")
+                        .build()
+        );
+
+        // Then: 거부됨
+        assertThatResponse(responseStartOnly)
+                .status(400)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("예약 기간을 선택해주세요."));
+    }
+
+    @Test
+    void 예외_예약_기간_변경_시_시작일_없는경우_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
+        JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
+        Long reservationId = reservation.getLong("id");
+        String confirmationCode = reservation.getString("confirmationCode");
+
+        // When: 종료일만 변경 시도
+        ExtractableResponse<Response> responseEndOnly = 예약을_수정한다(
+                reservationId,
+                confirmationCode,
+                ReservationRequest.builder()
+                        .customerName("김철수")
+                        .startDate(null)
+                        .endDate(LocalDate.now().plusDays(15))
+                        .siteNumber("A-1")
+                        .build()
+        );
+
+        // Then: 거부됨
+        assertThatResponse(responseEndOnly)
+                .status(400)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("예약 기간을 선택해주세요."));
     }
 }
