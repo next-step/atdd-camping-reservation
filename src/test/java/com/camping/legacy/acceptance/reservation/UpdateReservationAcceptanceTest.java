@@ -149,8 +149,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                         .isEqualTo("해당 기간에 이미 예약이 존재합니다."));
     }
 
-    // FIXME 현재 updateReservation에는 '30일 제한' 로직이 없음
-    @Disabled
     @Test
     void 예외_변경된_예약_기간이_30일을_초과하면_수정이_거부된다() {
         사이트를_생성한다("A-1");
@@ -185,7 +183,7 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
         );
 
         assertThatResponse(response)
-                .status(409)
+                .status(400)
                 .response(it -> assertThat(it.getString("message"))
                         .isEqualTo("예약 기간은 최대 30일입니다."));
     }

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -401,6 +402,12 @@ public class ReservationService {
         // 날짜가 변경되거나 사이트가 변경되는 경우 중복 검사
         LocalDate targetStart = request.getStartDate() != null ? request.getStartDate() : reservation.getStartDate();
         LocalDate targetEnd = request.getEndDate() != null ? request.getEndDate() : reservation.getEndDate();
+
+        // 예약 기간 체크 (30일 이내)
+        long days = ChronoUnit.DAYS.between(targetStart, targetEnd);
+        if (days > 30) {
+            throw new RuntimeException("예약 기간은 최대 30일입니다.");
+        }
 
         if (reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndIdNot(
                 targetCampsite, targetEnd, targetStart, reservation.getId())) {
@@ -1087,3 +1094,4 @@ public class ReservationService {
         return true;
     }
 }
+
