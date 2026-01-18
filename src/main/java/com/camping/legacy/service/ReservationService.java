@@ -377,7 +377,7 @@ public class ReservationService {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
-        // 확인 코드 검증 (중복 코드 2 - cancelReservation과 동일)
+        // 확인 코드 검증
         if (confirmationCode == null || confirmationCode.trim().isEmpty()) {
             throw new RuntimeException("확인 코드를 입력해주세요.");
         }
@@ -385,18 +385,11 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
-        LocalDate startDate = null;
-        LocalDate endDate = null;
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
 
-        // 날짜 유효성 검증 (중복 코드 3 - createReservation과 유사)
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            startDate = request.getStartDate();
-            endDate = request.getEndDate();
-
-            if (startDate == null || endDate == null) {
-                throw new RuntimeException("예약 기간을 선택해주세요.");
-            }
-
+        // 날짜 유효성 검증
+        if (startDate != null && endDate != null) {
             if (endDate.isBefore(startDate)) {
                 throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
             }
@@ -406,47 +399,77 @@ public class ReservationService {
             if (startDate.isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
+
+            // 예약 기간 체크 (30일 이내)
+            long days = ChronoUnit.DAYS.between(startDate, endDate);
+            if (days > 30) {
+                throw new RuntimeException("예약 기간은 최대 30일입니다.");
+            }
         }
 
-        // 고객 이름 검증 (중복 코드 4)
+        // 고객 이름 검증
         if (request.getCustomerName() != null) {
             if (request.getCustomerName().trim().isEmpty()) {
                 throw new RuntimeException("예약자 이름을 입력해주세요.");
             }
         }
 
-        Campsite campsite = null;
-
+        Campsite campsite = reservation.getCampsite();
         if (request.getSiteNumber() != null) {
             campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
+        }
+        final Campsite finalCampsite = campsite;
+
+        // 인원수 유효성 검사
+        Integer numberOfPeople = request.getNumberOfPeople();
+        if (numberOfPeople != null) {
+            if (numberOfPeople <= 0) {
+                throw new IllegalArgumentException("예약 인원은 1명 이상이어야 합니다.");
+            }
+            if (numberOfPeople > finalCampsite.getMaxPeople()) {
+                throw new IllegalArgumentException("예약 인원이 사이트 최대 수용 인원(" + finalCampsite.getMaxPeople() + "명)을 초과합니다.");
+            }
         }
 
-        // 중복 예약 확인
-        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, endDate, startDate);
-        if (hasConflict) {
-            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+        // 중복 예약 확인 (자기 자신 제외)
+        if (startDate != null && endDate != null) {
+            List<Reservation> conflictReservations = reservationRepository.findAll().stream()
+                    .filter(r -> !r.getId().equals(id)) // 자기 자신 제외
+                    .filter(r -> r.getCampsite().equals(finalCampsite))
+                    .filter(r -> r.getStartDate() != null && r.getEndDate() != null)
+                    .filter(r -> !(endDate.isBefore(r.getStartDate()) || startDate.isAfter(r.getEndDate())))
+                    .collect(Collectors.toList());
+            
+            if (!conflictReservations.isEmpty()) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
         }
 
+        // 예약 정보 업데이트
         if (request.getStartDate() != null) {
             reservation.setStartDate(request.getStartDate());
         }
         if (request.getEndDate() != null) {
             reservation.setEndDate(request.getEndDate());
         }
-
         if (request.getCustomerName() != null) {
             reservation.setCustomerName(request.getCustomerName());
         }
         if (request.getPhoneNumber() != null) {
             reservation.setPhoneNumber(request.getPhoneNumber());
         }
+        if (request.getSiteNumber() != null) {
+            reservation.setCampsite(finalCampsite);
+        }
 
         Reservation updated = reservationRepository.save(reservation);
 
-        // DTO 변환 로직 중복 - 직접 변환
+        // 가격 및 포인트 계산
+        int totalPrice = calculatePrice(updated);
+        int earnedPoints = calculateReservationPoints(updated);
+
+        // 응답 객체 생성
         ReservationResponse response = new ReservationResponse();
         response.setId(updated.getId());
         response.setCustomerName(updated.getCustomerName());
@@ -456,6 +479,8 @@ public class ReservationService {
         response.setSiteNumber(updated.getCampsite().getSiteNumber());
         response.setConfirmationCode(updated.getConfirmationCode());
         response.setStatus(updated.getStatus());
+        response.setTotalPrice(totalPrice);
+        response.setEarnedPoints(earnedPoints);
 
         return response;
     }
@@ -917,7 +942,7 @@ public class ReservationService {
         LocalDate current = startDate;
 
         // 날짜별로 가격 계산
-        while (!current.isAfter(endDate)) {
+        while (current.isBefore(endDate)) {
             int dailyPrice = basePrice;
 
             // 주말 확인
@@ -969,7 +994,7 @@ public class ReservationService {
         // 주말 예약인지 확인
         boolean hasWeekend = false;
         LocalDate current = startDate;
-        while (!current.isAfter(endDate)) {
+        while (current.isBefore(endDate)) {
             if (DateUtils.isWeekend(current)) {
                 hasWeekend = true;
                 break;
