@@ -26,7 +26,7 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
     void setUpFixture() {
         // Background: 사이트와 예약이 존재한다 (DatabaseCleanup에서 기본 데이터 복원됨)
         ExtractableResponse<Response> response = 예약_생성_요청(
-                "A-1", "2026-08-10", "2026-08-12", "홍길동", 4
+                "A-1", 오늘부터_N일_후(50), 오늘부터_N일_후(52), "홍길동", 4
         );
         reservationId = response.jsonPath().getLong("id");
         confirmationCode = response.jsonPath().getString("confirmationCode");
@@ -40,16 +40,18 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
         @DisplayName("[정상] 확정된(CONFIRMED) 예약은 수정 가능")
         void 확정_예약_수정_성공() {
             // given - 확인 코드가 있는 예약이 존재한다 (CONFIRMED 상태)
+            String newStartDate = 오늘부터_N일_후(55);
+            String newEndDate = 오늘부터_N일_후(57);
 
             // when - 날짜 변경을 요청한다
             ExtractableResponse<Response> response = 예약_수정_요청(
                     reservationId, confirmationCode,
-                    "2026-08-15", "2026-08-17"
+                    newStartDate, newEndDate
             );
 
             // then - 수정이 성공한다
             // and - 변경된 기간에 맞는 새로운 가격이 계산된다
-            예약_수정_성공_검증(response, "2026-08-15", "2026-08-17");
+            예약_수정_성공_검증(response, newStartDate, newEndDate);
         }
     }
 
@@ -66,7 +68,7 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
             // when - 취소된 예약에 날짜 변경을 요청한다
             ExtractableResponse<Response> response = 예약_수정_요청(
                     reservationId, confirmationCode,
-                    "2026-08-20", "2026-08-22"
+                    오늘부터_N일_후(60), 오늘부터_N일_후(62)
             );
 
             // then - 수정이 거부된다
@@ -79,7 +81,7 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
         void 당일취소_예약_수정_시도시_실패() {
             // given - 오늘 시작하는 예약을 생성하고 취소한다 (당일 취소 = CANCELLED_SAME_DAY)
             ExtractableResponse<Response> 오늘_예약 = 예약_생성_요청(
-                    "A-2", "2026-01-18", "2026-01-20", "김철수", 2
+                    "A-2", 오늘(), 오늘부터_N일_후(2), "김철수", 2
             );
             Long 오늘_예약_id = 오늘_예약.jsonPath().getLong("id");
             String 오늘_예약_확인코드 = 오늘_예약.jsonPath().getString("confirmationCode");
@@ -88,7 +90,7 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
             // when - 수정을 요청한다
             ExtractableResponse<Response> response = 예약_수정_요청(
                     오늘_예약_id, 오늘_예약_확인코드,
-                    "2026-08-25", "2026-08-27"
+                    오늘부터_N일_후(65), 오늘부터_N일_후(67)
             );
 
             // then - 수정이 거부된다
@@ -99,12 +101,14 @@ class ReservationModificationAcceptanceTest extends AcceptanceTest {
         @DisplayName("[예외] 수정 시 다른 예약과 충돌하면 거부")
         void 수정시_다른_예약과_충돌_실패() {
             // given - 다른 예약이 존재한다
-            예약_생성_요청("A-1", "2026-08-20", "2026-08-22", "김철수", 3);
+            String conflictStart = 오늘부터_N일_후(70);
+            String conflictEnd = 오늘부터_N일_후(72);
+            예약_생성_요청("A-1", conflictStart, conflictEnd, "김철수", 3);
 
             // when - 충돌하는 날짜로 변경을 요청한다
             ExtractableResponse<Response> response = 예약_수정_요청(
                     reservationId, confirmationCode,
-                    "2026-08-20", "2026-08-22"
+                    conflictStart, conflictEnd
             );
 
             // then - 수정이 거부된다

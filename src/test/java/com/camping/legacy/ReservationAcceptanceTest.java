@@ -26,7 +26,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
 
     @BeforeEach
     void setUpFixture() {
-        // Background: 사이트 "A-1"이 등록되어 있다 (DatabaseCleanup에서 기본 데이터 복원됨)
+      // Background: 사이트 "A-1"이 등록되어 있다 (DatabaseCleanup에서 기본 데이터 복원됨)
     }
 
     @Nested
@@ -40,7 +40,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
 
             // when - "김철수"가 예약을 요청한다
             ExtractableResponse<Response> response = 예약_생성_요청(
-                    "A-1", "2026-01-01", "2026-01-18", "김철수", 4
+                    "A-1", 오늘부터_N일_후(30), 오늘부터_N일_후(32), "김철수", 4
             );
 
             // then - 예약이 성공적으로 생성된다
@@ -52,11 +52,11 @@ class ReservationAcceptanceTest extends AcceptanceTest {
         void 다른_사이트_동일_기간_예약_성공() {
             // given - 사이트 "B-1"이 등록되어 있다 (DatabaseCleanup에서 기본 데이터 복원됨)
             // and - "A-1" 사이트에 "홍길동"의 예약이 있다
-            예약_생성_요청("A-1", "2026-01-01", "2026-01-18", "홍길동", 4);
+            예약_생성_요청("A-1", 오늘부터_N일_후(10), 오늘부터_N일_후(12), "홍길동", 4);
 
             // when - "김철수"가 "B-1" 사이트를 같은 기간에 예약 요청한다
             ExtractableResponse<Response> response = 예약_생성_요청(
-                    "B-1", "2026-01-01", "2026-01-18", "김철수", 4
+                    "B-1", 오늘부터_N일_후(10), 오늘부터_N일_후(12), "김철수", 4
             );
 
             // then - 예약이 성공적으로 생성된다
@@ -72,11 +72,11 @@ class ReservationAcceptanceTest extends AcceptanceTest {
         @DisplayName("[예외] 동일 기간 동일 사이트 중복 예약 거부")
         void 중복_예약_시도시_예외_발생() {
             // given - "A-1" 사이트에 "홍길동"의 예약이 있다
-            예약_생성_요청("A-1", "2026-01-01", "2026-01-18", "홍길동", 4);
+            예약_생성_요청("A-1", 오늘부터_N일_후(15), 오늘부터_N일_후(17), "홍길동", 4);
 
             // when - "김철수"가 같은 기간에 예약 시도한다
             ExtractableResponse<Response> response = 예약_생성_요청(
-                    "A-1", "2026-01-01", "2026-01-18", "김철수", 4
+                    "A-1", 오늘부터_N일_후(15), 오늘부터_N일_후(17), "김철수", 4
             );
 
             // then - 예약이 거부된다
@@ -87,12 +87,12 @@ class ReservationAcceptanceTest extends AcceptanceTest {
         @Test
         @DisplayName("[예외] 일부 기간이 겹치는 예약 거부")
         void 기간_겹침_예약_시도시_예외_발생() {
-            // given - "A-1" 사이트에 예약이 있다 (1/10 ~ 1/15)
-            예약_생성_요청("A-1", "2026-01-10", "2026-01-15", "홍길동", 4);
+            // given - "A-1" 사이트에 예약이 있다 (N+20 ~ N+25)
+            예약_생성_요청("A-1", 오늘부터_N일_후(20), 오늘부터_N일_후(25), "홍길동", 4);
 
-            // when - 겹치는 기간에 예약 시도한다 (1/14 ~ 1/18)
+            // when - 겹치는 기간에 예약 시도한다 (N+24 ~ N+28)
             ExtractableResponse<Response> response = 예약_생성_요청(
-                    "A-1", "2026-01-14", "2026-01-18", "김철수", 4
+                    "A-1", 오늘부터_N일_후(24), 오늘부터_N일_후(28), "김철수", 4
             );
 
             // then - 예약이 거부된다
@@ -108,11 +108,14 @@ class ReservationAcceptanceTest extends AcceptanceTest {
             AtomicInteger successCount = new AtomicInteger(0);
             AtomicInteger failCount = new AtomicInteger(0);
 
+            String startDate = 오늘부터_N일_후(40);
+            String endDate = 오늘부터_N일_후(45);
+
             // when - "김철수"와 "이영희"가 동시에 같은 기간을 예약 요청한다
             Runnable task = () -> {
                 try {
                     ExtractableResponse<Response> response = 예약_생성_요청(
-                            "A-1", "2026-02-01", "2026-02-05", "고객", 4
+                            "A-1", startDate, endDate, "고객", 4
                     );
                     if (response.statusCode() == HttpStatus.CREATED.value()) {
                         successCount.incrementAndGet();

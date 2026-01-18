@@ -5,10 +5,57 @@ import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.http.MediaType;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TestFixture {
+
+    // ==================== 날짜 헬퍼 ====================
+
+    /**
+     * 오늘 날짜 반환
+     */
+    public static String 오늘() {
+        return LocalDate.now().toString();
+    }
+
+    /**
+     * 오늘부터 N일 후 날짜 반환
+     */
+    public static String 오늘부터_N일_후(int days) {
+        return LocalDate.now().plusDays(days).toString();
+    }
+
+    /**
+     * 다음 달의 연도 반환
+     */
+    public static int 다음달_연도() {
+        return YearMonth.now().plusMonths(1).getYear();
+    }
+
+    /**
+     * 다음 달의 월 반환
+     */
+    public static int 다음달_월() {
+        return YearMonth.now().plusMonths(1).getMonthValue();
+    }
+
+    /**
+     * 다음 달의 총 일수 반환
+     */
+    public static int 다음달_일수() {
+        return YearMonth.now().plusMonths(1).lengthOfMonth();
+    }
+
+    /**
+     * 다음 달 특정 일자 반환 (e.g., 다음달_일자(10) -> "2026-02-10")
+     */
+    public static String 다음달_일자(int day) {
+        YearMonth nextMonth = YearMonth.now().plusMonths(1);
+        return LocalDate.of(nextMonth.getYear(), nextMonth.getMonth(), day).toString();
+    }
 
     // ==================== 사이트 관련 ====================
 
