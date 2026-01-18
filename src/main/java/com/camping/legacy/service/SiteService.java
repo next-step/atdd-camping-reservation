@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -91,11 +92,11 @@ public class SiteService {
             } else {
                 siteSize = "일반";
             }
-            if (request.getSize() != null && !siteSize.equals(request.getSize())) {
+            if (StringUtils.hasText(request.getSize()) && !siteSize.equals(request.getSize())) {
                 continue;
             }
 
-            boolean isBooked = reservationRepository.existsByCampsiteAndStatusAndEndDateGreaterThanAndStartDateLessThan(
+            boolean isBooked = reservationRepository.hasConflictingReservation(
                     site, "CONFIRMED", startDate, endDate);
 
             if (!isBooked) {
