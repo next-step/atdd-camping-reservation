@@ -123,4 +123,25 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
             pool.shutdownNow();
         }
     }
+
+    @Test
+    void 정상_예약이_취소되면_취소된_예약의_사이트와_기간에는_정상적으로_예약이_생성된다() {
+        사이트를_생성한다("A-1");
+
+        // 예약 생성
+        ExtractableResponse<Response> firstBooking = 예약을_생성한다(기본_예약_요청);
+        assertThatResponse(firstBooking).status(201);
+
+        Long reservationId = firstBooking.jsonPath().getLong("id");
+        String confirmationCode = firstBooking.jsonPath().getString("confirmationCode");
+
+        // 예약 취소
+        예약을_취소한다(reservationId, confirmationCode);
+
+        // When: 동일 기간, 사이트에 예약 요청
+        ExtractableResponse<Response> secondBooking = 예약을_생성한다(같은_기간_다른_고객(기본_예약_요청, "김철수"));
+
+        // Then: 예약 성공 (201)
+        assertThatResponse(secondBooking).status(201);
+    }
 }
