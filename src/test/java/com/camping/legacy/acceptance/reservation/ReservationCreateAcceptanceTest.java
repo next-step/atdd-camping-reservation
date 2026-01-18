@@ -20,12 +20,12 @@ import static com.camping.legacy.acceptance.reservation.ReservationTestConstants
 import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.SiteApiExtractableResponse.사이트를_조회한다;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("예약 관련 기능")
+@DisplayName("예약 생성 기능")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class ReservationAcceptanceTest extends AcceptanceTestBase {
+public class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
 
     // =====================================================
-    // 1. 예약 생성
+    // 1. 예약 생성 - 기본
     // =====================================================
 
     /**
@@ -244,7 +244,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     }
 
     // =====================================================
-    // 2. 예약 중복/경계 (기간 겹침 규칙)
+    // 2. 예약 생성 - 중복/경계 (기간 겹침 규칙)
     // =====================================================
 
     /**
@@ -428,7 +428,7 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     }
 
     // =====================================================
-    // 3. 동시성
+    // 3. 예약 생성 - 동시성
     // =====================================================
 
     /**
@@ -511,227 +511,365 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
     }
 
     // =====================================================
-    // 4. 예약 수정
+    // 4. 예약 생성 - 요금 계산
     // =====================================================
 
     /**
-     * Given 홍길동이 A-1 사이트를 2026년 2월 1일~3일로 예약을 하고
-     * When 홍길동이 확인 코드를 입력하고 날짜를 2월 5일~7일로 변경하면
-     * Then 예약 날짜가 2월 5일~7일로 수정되고
-     * And 기존 확인 코드는 유지된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 평일 1박으로 예약하면
+     * Then 예약 금액은 80,000원이다.
      */
-    @DisplayName("[예약/수정] 정상적으로 예약을 수정한다.")
+    @DisplayName("[기본요금] A 사이트(대형)의 기본 요금은 80,000원이다.")
     @Test
-    void 정상적으로_예약을_변경() {
-
-        // Given
-        var 홍길동_예약요청 = Reservation()
-                .reserver(홍길동)
-                .period(기존예약_시작일, 기존예약_종료일)
-                .site(사이트번호_A_1)
-                .build();
-
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
+    void A_사이트_대형의_기본_요금은_80000원이다() {
 
         // When
-        var 홍길동_예약변경요청 = Reservation()
+        var 홍길동_예약요청 = Reservation()
                 .reserver(홍길동)
-                .period(변경예약_시작일, 변경예약_종료일)
+                .period(비수기_평일_시작일, 비수기_평일_종료일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
+        var 응답 = 예약을_생성한다(홍길동_예약요청);
 
         // Then
-        예약이_수정되었다(예약수정정보);
-        예약날짜가_변경되었다(예약수정정보, 변경예약_시작일, 변경예약_종료일);
-        확인코드가_유지되었다(예약수정정보, 확인코드);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, A_사이트_기본요금);
     }
 
     /**
-     * Given A-1 사이트가 2026년 2월 1일부터 2월 3일까지 홍길동에게 예약되어 있고
-     * When 틀린 확인 코드를 입력하고 예약 수정을 시도하면
-     * Then 예약이 거부된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 수요일 1박으로 예약하면
+     * Then 예약 금액은 80,000원이다.
      */
-    @DisplayName("[예약/수정] 틀린 확인코드를 입력할 경우 예약이 수정되지 않는다.")
+    @DisplayName("[비수기/평일] 평일에는 할증이 적용되지 않는다.")
     @Test
-    void 틀린_확인코드로_예약_수정_불가() {
-
-        // Given
-        var 홍길동_예약요청 = Reservation()
-                .reserver(홍길동)
-                .period(기존예약_시작일, 기존예약_종료일)
-                .site(사이트번호_A_1)
-                .build();
-
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
+    void 평일에는_할증이_적용되지_않는다() {
 
         // When
-        var 홍길동_예약변경요청 = Reservation()
+        var 요청 = Reservation()
                 .reserver(홍길동)
-                .period(변경예약_시작일, 변경예약_종료일)
+                .period(비수기_수요일_시작일, 비수기_목요일_종료일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 예약수정정보 = 예약을_수정한다(예약ID, 잘못된_확인코드, 홍길동_예약변경요청);
+        var 응답 = 예약을_생성한다(요청);
 
         // Then
-        예약이_수정되지않았다(예약수정정보);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, A_사이트_기본요금);
     }
 
     /**
-     * Given 홍길동이 A-1 사이트를 2월 1일~3일로 예약했고
-     * And 김철수가 A-1 사이트를 2월 5일~7일로 예약했고
-     * When 홍길동이 자신의 예약을 2월 5일~7일로 변경 시도하면
-     * Then 수정이 거부된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 토요일 1박으로 예약하면
+     * Then 예약 금액은 104,000원이다. (80,000 * 1.3)
      */
-    @DisplayName("[예약/수정] 이미 예약된 날짜로는 예약이 수정되지 않는다.")
+    @DisplayName("[비수기/주말] 주말에는 30% 할증이 적용된다.")
     @Test
-    void 이미_예약된_날짜로_예약_수정_불가() {
-
-        // Given
-        var 홍길동_예약요청 = Reservation()
-                .reserver(홍길동)
-                .period(기존예약_시작일, 기존예약_종료일)
-                .site(사이트번호_A_1)
-                .build();
-
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
-
-        var 김철수_예약요청 = Reservation()
-                .reserver(김철수)
-                .period(변경예약_시작일, 변경예약_종료일)
-                .site(사이트번호_A_1)
-                .build();
-        예약을_생성한다(김철수_예약요청);
+    void 주말에는_30퍼센트_할증이_적용된다() {
 
         // When
-        var 홍길동_예약변경요청 = Reservation()
+        var 요청 = Reservation()
                 .reserver(홍길동)
-                .period(변경예약_시작일, 변경예약_종료일)
+                .period(비수기_토요일_시작일, 비수기_토요일_종료일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 예약수정정보 = 예약을_수정한다(예약ID, 확인코드, 홍길동_예약변경요청);
+        var 응답 = 예약을_생성한다(요청);
 
         // Then
-        예약이_수정되지않았다(예약수정정보);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 주말_할증_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 7월 평일 1박으로 예약하면
+     * Then 예약 금액은 120,000원이다. (80,000 * 1.5)
+     */
+    @DisplayName("[성수기/평일] 성수기 평일에는 50% 할증이 적용된다.")
+    @Test
+    void 성수기_평일에는_50퍼센트_할증이_적용된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(성수기_7월_평일_시작일, 성수기_7월_평일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 성수기_평일_할증_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 8월 토요일 1박으로 예약하면
+     * Then 예약 금액은 136,000원이다. (80,000 * 1.7)
+     */
+    @DisplayName("[성수기/주말] 성수기 주말에는 70% 할증이 적용된다.")
+    @Test
+    void 성수기_주말에는_70퍼센트_할증이_적용된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(성수기_8월_토요일_시작일, 성수기_8월_토요일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 성수기_주말_할증_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 월요일부터 수요일까지 2박으로 예약하면
+     * Then 예약 금액은 160,000원이다. (80,000 * 2)
+     */
+    @DisplayName("[복합요금] 평일 2박 예약 시 일별 요금의 합계가 청구된다.")
+    @Test
+    void 평일_2박_예약_시_일별_요금의_합계가_청구된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(비수기_월요일_시작일, 비수기_2박_수요일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 평일_2박_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 금요일부터 일요일까지 2박으로 예약하면
+     * Then 예약 금액은 184,000원이다. (금요일 80,000 + 토요일 104,000)
+     */
+    @DisplayName("[복합요금] 평일과 주말이 혼합된 예약은 각 날짜별 요금이 적용된다.")
+    @Test
+    void 평일과_주말이_혼합된_예약은_각_날짜별_요금이_적용된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(비수기_금요일_시작일, 비수기_일요일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 평일_주말_혼합_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 6월 30일부터 7월 2일까지 2박으로 예약하면
+     * Then 예약 금액은 200,000원이다. (6월 30일 80,000 + 7월 1일 120,000)
+     */
+    @DisplayName("[복합요금] 성수기와 비수기가 혼합된 예약은 각 날짜별 요금이 적용된다.")
+    @Test
+    void 성수기와_비수기가_혼합된_예약은_각_날짜별_요금이_적용된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(비수기_6월30일_시작일, 성수기_7월2일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 비수기_성수기_혼합_요금);
     }
 
     // =====================================================
-    // 5. 예약 취소
+    // 5. 예약 생성 - 성수기 경계값
     // =====================================================
 
     /**
-     * Given 홍길동이 A-1 사이트를 2026년 2월 5일~7일로 예약했고
-     * When 홍길동이 올바른 확인 코드로 예약 취소를 요청하면
-     * Then 예약이 취소되고
-     * And A-1 사이트가 2월 5일~7일에 예약 가능해지고
-     * And 예약 상태가 '사전 취소' 상태로 변경된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 6월 30일(평일) 1박으로 예약하면
+     * Then 예약 금액은 80,000원이다.
      */
-    @DisplayName("[예약/취소] 정상적으로 예약을 취소한다.")
+    @DisplayName("[성수기/경계] 성수기 전날(6월 30일)에는 비수기 요금이 적용된다.")
     @Test
-    void 정상적으로_예약을_취소() {
+    void 성수기_전날_6월_30일에는_비수기_요금이_적용된다() {
 
-        // Given
-        var 홍길동_예약요청 = Reservation()
+        // When
+        var 요청 = Reservation()
                 .reserver(홍길동)
-                .period(변경예약_시작일, 변경예약_종료일)
+                .period(성수기_전날_6월30일, 성수기_전날_7월1일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
-
-        // When
-        var 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
-        var 예약정보 = 예약을_조회한다(예약ID);
+        var 응답 = 예약을_생성한다(요청);
 
         // Then
-        예약이_취소되었다(예약취소정보);
-        사전예약_취소_상태이다(예약정보);
-
-        var 사이트정보 = 사이트를_조회한다(변경예약_시작일, 변경예약_종료일, 사이트_크기_대형);
-        사이트가_존재한다(사이트정보, 사이트번호_A_1);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, A_사이트_기본요금);
     }
 
     /**
-     * Given 홍길동이 A-1 사이트를 2026년 2월 1일~3일로 예약했고
-     * And 오늘 날짜는 2026년 2월 1일이다 (예약 시작일)
-     * When 홍길동이 올바른 확인 코드로 예약 취소를 요청하면
-     * Then 예약이 취소되고
-     * And 예약 상태가 '당일 취소' 상태로 변경된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 7월 1일(평일) 1박으로 예약하면
+     * Then 예약 금액은 120,000원이다.
      */
-    @DisplayName("[예약/취소] 당일에 예약을 취소하면 당일예약취소 상태가 된다.")
+    @DisplayName("[성수기/경계] 성수기 시작일(7월 1일)에는 성수기 요금이 적용된다.")
     @Test
-    void 당일에_예약을_취소하면_당일예약취소_상태로_변경() {
+    void 성수기_시작일_7월_1일에는_성수기_요금이_적용된다() {
 
-        // Given
-        var 당일예약_시작일 = LocalDate.now().toString();
-        var 당일예약_종료일 = LocalDate.now().plusDays(3).toString();
-
-        var 홍길동_예약요청 = Reservation()
+        // When
+        var 요청 = Reservation()
                 .reserver(홍길동)
-                .period(당일예약_시작일, 당일예약_종료일)
+                .period(성수기_시작일_7월1일, 성수기_시작일_7월2일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-        var 확인코드 = 예약정보에서_확인코드_조회(홍길동_예약결과정보);
-
-        // When
-        var 예약취소정보 = 예약을_취소한다(예약ID, 확인코드);
-        var 예약정보 = 예약을_조회한다(예약ID);
+        var 응답 = 예약을_생성한다(요청);
 
         // Then
-        예약이_취소되었다(예약취소정보);
-        당일예약_취소_상태이다(예약정보);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 성수기_평일_할증_요금);
     }
 
     /**
-     * Given 홍길동이 A-1 사이트를 2026년 2월 5일~7일로 예약했고
-     * When 틀린 확인 코드를 입력하고 예약 취소를 시도하면
-     * Then 취소가 거부된다.
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 8월 31일(평일) 1박으로 예약하면
+     * Then 예약 금액은 120,000원이다.
      */
-    @DisplayName("[예약/취소] 틀린 확인코드를 입력할 경우 예약이 취소되지 않는다.")
+    @DisplayName("[성수기/경계] 성수기 종료일(8월 31일)에는 성수기 요금이 적용된다.")
     @Test
-    void 틀린_확인코드로_예약_취소_불가() {
+    void 성수기_종료일_8월_31일에는_성수기_요금이_적용된다() {
 
-        // Given
-        var 홍길동_예약요청 = Reservation()
+        // When
+        var 요청 = Reservation()
                 .reserver(홍길동)
-                .period(변경예약_시작일, 변경예약_종료일)
+                .period(성수기_종료일_8월31일, 성수기_종료일_9월1일)
                 .site(사이트번호_A_1)
                 .build();
 
-        var 홍길동_예약결과정보 = 예약을_생성한다(홍길동_예약요청);
-        var 예약ID = 예약정보에서_예약ID_조회(홍길동_예약결과정보);
-
-        // When
-        var 예약취소정보 = 예약을_취소한다(예약ID, 잘못된_확인코드);
+        var 응답 = 예약을_생성한다(요청);
 
         // Then
-        예약이_취소되지않았다(예약취소정보);
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, 성수기_평일_할증_요금);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 9월 1일(평일) 1박으로 예약하면
+     * Then 예약 금액은 80,000원이다.
+     */
+    @DisplayName("[성수기/경계] 성수기 다음날(9월 1일)에는 비수기 요금이 적용된다.")
+    @Test
+    void 성수기_다음날_9월_1일에는_비수기_요금이_적용된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(성수기_다음날_9월1일, 성수기_다음날_9월2일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        예약_금액이_일치한다(응답, A_사이트_기본요금);
+    }
+
+    // =====================================================
+    // 6. 예약 생성 - 포인트 적립
+    // =====================================================
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 평일 1박으로 예약하면
+     * Then 적립 포인트는 4,000포인트이다. (80,000 * 0.05)
+     */
+    @DisplayName("[포인트] 평일 예약 시 5% 포인트가 적립된다.")
+    @Test
+    void 평일_예약_시_5퍼센트_포인트가_적립된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(비수기_평일_시작일, 비수기_평일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        포인트가_일치한다(응답, 평일_포인트);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 비수기 토요일 1박으로 예약하면
+     * Then 적립 포인트는 10,400포인트이다. (104,000 * 0.10)
+     */
+    @DisplayName("[포인트] 주말 포함 예약 시 10% 포인트가 적립된다.")
+    @Test
+    void 주말_포함_예약_시_10퍼센트_포인트가_적립된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(비수기_토요일_시작일, 비수기_토요일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        포인트가_일치한다(응답, 주말_포인트);
+    }
+
+    /**
+     * Given A-1 사이트가 예약 가능한 상태이고
+     * When 홍길동이 A-1 사이트를 성수기 평일 1박으로 예약하면
+     * Then 적립 포인트는 3,600포인트이다. (120,000 * 0.03)
+     */
+    @DisplayName("[포인트] 성수기 예약 시 3% 포인트가 적립된다.")
+    @Test
+    void 성수기_예약_시_3퍼센트_포인트가_적립된다() {
+
+        // When
+        var 요청 = Reservation()
+                .reserver(홍길동)
+                .period(성수기_7월_평일_시작일, 성수기_7월_평일_종료일)
+                .site(사이트번호_A_1)
+                .build();
+
+        var 응답 = 예약을_생성한다(요청);
+
+        // Then
+        예약이_되었다(응답);
+        포인트가_일치한다(응답, 성수기_포인트);
     }
 
     // =====================================================
     // Helpers
     // =====================================================
-
-    private String 예약정보에서_확인코드_조회(ExtractableResponse<Response> response) {
-        return response.jsonPath().getString("confirmationCode");
-    }
-
-    private Long 예약정보에서_예약ID_조회(ExtractableResponse<Response> response) {
-        return response.jsonPath().getLong("id");
-    }
 
     private void 사이트가_존재한다(ExtractableResponse<Response> response, String expectedSiteNumber) {
         List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
@@ -746,14 +884,6 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         assertThat(response.statusCode()).isEqualTo(409);
     }
 
-    private void 예약이_수정되었다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(200);
-    }
-
-    private void 예약이_수정되지않았다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(400);
-    }
-
     private void 확인코드가_발급되었다(ExtractableResponse<Response> response, int expectedLength) {
         String confirmationCode = response.jsonPath().getString("confirmationCode");
         assertThat(confirmationCode).hasSize(expectedLength);
@@ -764,33 +894,13 @@ public class ReservationAcceptanceTest extends AcceptanceTestBase {
         assertThat(status).isEqualTo(expectedStatus);
     }
 
-    private void 예약날짜가_변경되었다(ExtractableResponse<Response> response, String expectedStartDate, String expectedEndDate) {
-        String startDate = response.jsonPath().getString("startDate");
-        String endDate = response.jsonPath().getString("endDate");
-        assertThat(startDate).isEqualTo(expectedStartDate);
-        assertThat(endDate).isEqualTo(expectedEndDate);
+    private void 예약_금액이_일치한다(ExtractableResponse<Response> response, int expectedPrice) {
+        Integer totalPrice = response.jsonPath().getInt("totalPrice");
+        assertThat(totalPrice).isEqualTo(expectedPrice);
     }
 
-    private void 확인코드가_유지되었다(ExtractableResponse<Response> response, String expectedConfirmationCode) {
-        String confirmationCode = response.jsonPath().getString("confirmationCode");
-        assertThat(confirmationCode).isEqualTo(expectedConfirmationCode);
-    }
-
-    private void 예약이_취소되었다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(200);
-    }
-
-    private void 사전예약_취소_상태이다(ExtractableResponse<Response> response) {
-        String status = response.jsonPath().getString("status");
-        assertThat(status).isEqualTo(예약상태_사전취소);
-    }
-
-    private void 당일예약_취소_상태이다(ExtractableResponse<Response> response) {
-        String status = response.jsonPath().getString("status");
-        assertThat(status).isEqualTo(예약상태_당일취소);
-    }
-
-    private void 예약이_취소되지않았다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(400);
+    private void 포인트가_일치한다(ExtractableResponse<Response> response, int expectedPoints) {
+        Integer earnedPoints = response.jsonPath().getInt("earnedPoints");
+        assertThat(earnedPoints).isEqualTo(expectedPoints);
     }
 }
