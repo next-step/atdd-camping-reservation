@@ -5,16 +5,11 @@ import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 import static com.camping.legacy.acceptance.fixtures.TestFixtures.기본_예약_요청;
 import static com.camping.legacy.acceptance.matcher.AcceptanceAssertions.assertThatResponse;
@@ -189,11 +184,9 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
     }
 
     @Test
-    @Disabled
-    void 예외_동시에_서로_다른_예약을_동일_사이트_기간으로_수정하면_하나만_성공해야_한다() throws ExecutionException, InterruptedException {
+    void 예외_동시에_서로_다른_예약을_동일_사이트_기간으로_수정하면_하나만_성공해야_한다() throws Exception {
         사이트를_생성한다("A-1");
 
-        // Given: 서로 다른 기간의 예약 2개 생성
         JsonPath res1 = 예약을_생성한다(ReservationRequest.builder()
                 .customerName("사용자1")
                 .startDate(LocalDate.now().plusDays(10))
@@ -214,41 +207,43 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
         Long id2 = res2.getLong("id");
         String code2 = res2.getString("confirmationCode");
 
-        // When: 두 예약이 동시에 '제 3의 기간'으로 변경 시도
         LocalDate targetStart = LocalDate.now().plusDays(20);
         LocalDate targetEnd = LocalDate.now().plusDays(22);
 
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
-            Callable<Integer> task1 = () -> 예약을_수정한다(
-                    id1,
-                    code1,
-                    ReservationRequest.builder()
-                            .customerName("사용자1")
-                            .startDate(targetStart)
-                            .endDate(targetEnd)
-                            .siteNumber("A-1")
-                            .build()
-            ).statusCode();
+            Callable<Integer> task1 = () -> {
+                barrier.await(); // 두 스레드 모두 여기 도착해야 동시에 진행
+                return 예약을_수정한다(
+                        id1, code1,
+                        ReservationRequest.builder()
+                                .customerName("사용자1")
+                                .startDate(targetStart)
+                                .endDate(targetEnd)
+                                .siteNumber("A-1")
+                                .build()
+                ).statusCode();
+            };
 
-            Callable<Integer> task2 = () -> 예약을_수정한다(
-                    id2,
-                    code2,
-                    ReservationRequest.builder()
-                            .customerName("사용자2")
-                            .startDate(targetStart)
-                            .endDate(targetEnd)
-                            .siteNumber("A-1")
-                            .build()
-            ).statusCode();
+            Callable<Integer> task2 = () -> {
+                barrier.await();
+                return 예약을_수정한다(
+                        id2, code2,
+                        ReservationRequest.builder()
+                                .customerName("사용자2")
+                                .startDate(targetStart)
+                                .endDate(targetEnd)
+                                .siteNumber("A-1")
+                                .build()
+                ).statusCode();
+            };
 
-            List<Future<Integer>> futures = pool.invokeAll(List.of(task1, task2));
+            Future<Integer> f1 = pool.submit(task1);
+            Future<Integer> f2 = pool.submit(task2);
 
-            int s1 = futures.get(0).get();
-            int s2 = futures.get(1).get();
-
-            // Then: 하나는 성공, 하나는 실패
-            assertThat(List.of(s1, s2)).contains(200, 400);
+            assertThat(List.of(f1.get(), f2.get())).contains(200, 400);
         } finally {
             pool.shutdownNow();
         }
