@@ -4,7 +4,6 @@ import com.camping.legacy.acceptance.ApiAcceptanceTestBase;
 import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -90,9 +89,7 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
                         .isEqualTo("해당 기간에 이미 예약이 존재합니다."));
     }
 
-    // FIXME: 동시성 이슈 해결 필요
     @Test
-    @Disabled
     void 예외_동시에_동일_사이트_기간으로_예약_요청이_여러_건_들어와도_하나만_성공해야_한다() throws ExecutionException, InterruptedException {
         사이트를_생성한다("A-1");
 
