@@ -36,4 +36,15 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     boolean existsActiveReservation(@Param("campsite") Campsite campsite,
                                     @Param("endDate") LocalDate endDate,
                                     @Param("startDate") LocalDate startDate);
+
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END FROM Reservation r " +
+           "WHERE r.campsite = :campsite " +
+           "AND r.id <> :excludeId " +
+           "AND r.startDate <= :endDate " +
+           "AND r.endDate >= :startDate " +
+           "AND (r.status IS NULL OR r.status NOT LIKE 'CANCELLED%')")
+    boolean existsActiveReservationExcluding(@Param("campsite") Campsite campsite,
+                                             @Param("endDate") LocalDate endDate,
+                                             @Param("startDate") LocalDate startDate,
+                                             @Param("excludeId") Long excludeId);
 }
