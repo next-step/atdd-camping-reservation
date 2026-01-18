@@ -132,7 +132,7 @@ class ReservationAcceptanceTest {
     에러메시지가_확인된다(응답, "전화번호 형식이 올바르지 않습니다.");
   }
 
-  @Disabled("성공 2건이 나오는 버그 확인하여 비활성화")
+  @Disabled
   @DisplayName("동일한 사이트와 기간에 대해 중복 예약 시도를 하면 한명만 예약된다 (동시성 제어)")
   @Test
   void 동일한_사이트와_기간에_대해_중복_예약_시도를_하면_한명만_예약된다() throws InterruptedException {
@@ -216,7 +216,6 @@ class ReservationAcceptanceTest {
     검색_결과에는_최대인원과_전기가능여부가_포함되야한다(검색_결과);
   }
 
-  @Disabled("BUG: 현재 검색 로직이 시작/종료일만 체크하여 중간 날짜 점유를 걸러내지 못하여 비활성화")
   @DisplayName("기간 내 중간 날짜가 예약된 사이트는 검색에서 제외된다 (연박 불가)")
   @Test
   void 기간내_중간_날짜가_예약된_사이트는_검색에서_제외된다() {
