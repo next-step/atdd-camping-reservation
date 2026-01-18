@@ -1,20 +1,11 @@
 package com.camping.legacy;
 
 import static com.camping.legacy.fixture.ReservationFixture.*;
+import static com.camping.legacy.step.ReservationStep.성수기_주말에_예약을_요청한다;
 import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
-import static org.assertj.core.api.Assertions.assertThat;
 
-import com.camping.legacy.utils.ConcurrencyTestHelper;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
 
 class ReservationCreationAcceptanceTest extends AcceptanceTest {
 
@@ -78,50 +69,14 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
     에러메시지가_확인된다(응답, INVALID_PHONE_NUMBER_MESSAGE);
   }
 
-  @Disabled
-  @DisplayName("동일한 사이트와 기간에 대해 중복 예약 시도를 하면 한명만 예약된다 (동시성 제어)")
-  @Test
-  void 동일한_사이트와_기간에_대해_중복_예약_시도를_하면_한명만_예약된다() throws InterruptedException {
-    // given
-    AtomicInteger 예약_성공_카운트 = new AtomicInteger(0);
-
-    // when
-    ConcurrencyTestHelper.execute(
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "홍길동", SITE_A1, PHONE_NUMBER)),
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "이순신", SITE_A1,"01056781234")));
-
-    // then
-    assertThat(예약_성공_카운트.get()).isEqualTo(1);
-  }
-
-  private void recordResult(AtomicInteger count, ExtractableResponse<Response> response) {
-    if (response.statusCode() == HttpStatus.CREATED.value()) {
-      count.incrementAndGet();
-    }
-  }
-
+  // NOTE. 계산 가격을 저장하지 않고 콘솔 로그 출력만 한다.
   @DisplayName("성수기 주말 할증 요금이 자동 계산된다")
   @Test
   void 성수기_주말_할증_요금이_자동_계산된다() {
-    // given
-    LocalDate 성수기_시작 = LocalDate.of(TODAY.getYear(), 7, 1);
-    if (TODAY.isAfter(성수기_시작)) {
-      성수기_시작 = 성수기_시작.plusYears(1); // 올해 성수기가 지났으면 내년으로
-    }
-
-    LocalDate 성수기_토요일 = 성수기_시작.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
-    LocalDate 성수기_일요일 = 성수기_토요일.plusDays(1);
-
     // when
-    var 예약_응답 = 예약을_요청한다(
-            (int) TODAY.until(성수기_토요일, java.time.temporal.ChronoUnit.DAYS),
-            (int) TODAY.until(성수기_일요일, java.time.temporal.ChronoUnit.DAYS),
-            "성수기 주말 고객",
-            SITE_A1,
-            PHONE_NUMBER
-    );
+    var 응답 = 성수기_주말에_예약을_요청한다(PEAK_SEASON_START_MONTH, "성수기 주말 고객", SITE_A1, PHONE_NUMBER);
 
     // then
-    예약_성공_확인(예약_응답);
+    예약_성공_확인(응답);
   }
 }

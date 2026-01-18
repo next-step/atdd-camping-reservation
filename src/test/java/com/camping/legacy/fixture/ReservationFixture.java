@@ -1,24 +1,13 @@
 package com.camping.legacy.fixture;
 
-import java.time.LocalDate;
 
 public class ReservationFixture {
-
-    // 날짜 관련 상수
-    public static final LocalDate TODAY = LocalDate.now();
-    public static final LocalDate TOMORROW = TODAY.plusDays(1);
-    public static final LocalDate DAY_AFTER_TOMORROW = TODAY.plusDays(2);
-    public static final LocalDate THREE_DAYS_LATER = TODAY.plusDays(3);
-    public static final LocalDate ONE_MONTH_LATER = TODAY.plusMonths(1);
-    public static final LocalDate ONE_MONTH_LATER_PLUS_TWO_DAYS = ONE_MONTH_LATER.plusDays(2);
-    public static final LocalDate YESTERDAY = TODAY.minusDays(1);
 
     // 예약 정보 관련 상수
     public static final String CUSTOMER_NAME = "홍길동";
     public static final String PHONE_NUMBER = "01012345678";
     public static final String INVALID_CUSTOMER_NAME = "김";
     public static final String INVALID_PHONE_NUMBER = "010-123-456";
-    public static final String CONFIRMATION_CODE = "ABCDEF";
     public static final String WRONG_CONFIRMATION_CODE = "WRONG_CODE";
 
     // 메시지 관련 상수
@@ -37,4 +26,7 @@ public class ReservationFixture {
     public static final String SITE_B1 = "B-1";
     public static final String LARGE_SITE_TYPE = "대형";
 
+    // 성수기 (7 ~ 8월)
+    public static final int PEAK_SEASON_START_MONTH = 7;
+    public static final int PEAK_SEASON_END_MONTH = 8;
 }
