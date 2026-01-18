@@ -34,4 +34,10 @@ public class ReservationStep {
                 .then().log().all()
                 .extract();
     }
+
+    public static ReservationRequest 예약요청_생성(
+        java.time.LocalDate startDate, java.time.LocalDate endDate, String name, String phoneNumber) {
+        return new ReservationRequest(
+            name, startDate, endDate, "A-1", phoneNumber, 4, "12가3456", "잘 부탁드립니다.");
+    }
 }
