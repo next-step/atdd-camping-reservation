@@ -3,6 +3,7 @@ package com.camping.legacy;
 import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
+import static com.camping.legacy.step.ReservationStep.예약을_취소한다;
 import static com.camping.legacy.step.SiteStep.기간_조건으로_사이트를_검색한다;
 import static com.camping.legacy.step.SiteStep.사이트를_검색한다;
 
@@ -59,5 +60,61 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
 
         // then
         검색_요청이_거부되었다(사이트_검색_결과);
+    }
+
+    @DisplayName("경계값: 기존 예약 종료일이 검색 시작일과 같으면 해당 사이트는 검색된다")
+    @Test
+    void 기존_예약_종료일과_검색_시작일이_같으면_검색된다() {
+        // given
+        var 예약_요청 = aReservationRequest()
+            .withStartDate(2)
+            .withEndDate(4)
+            .withSiteNumber(SITE_A1);
+        예약을_요청한다(예약_요청.build());
+
+        // when
+        var 검색_결과 = 사이트를_검색한다(4, 6, LARGE_SITE_TYPE);
+
+        // then
+        검색_결과에_해당_사이트가_포함된다(검색_결과, SITE_A1);
+    }
+
+    @DisplayName("경계값: 기존 예약 시작일이 검색 종료일과 같으면 해당 사이트는 검색된다")
+    @Test
+    void 기존_예약_시작일과_검색_종료일이_같으면_검색된다() {
+        // given
+        var 예약_요청 = aReservationRequest()
+            .withStartDate(2)
+            .withEndDate(4)
+            .withSiteNumber(SITE_A1);
+        예약을_요청한다(예약_요청.build());
+
+        // when
+        var 검색_결과 = 사이트를_검색한다(0, 2, LARGE_SITE_TYPE);
+
+        // then
+        검색_결과에_해당_사이트가_포함된다(검색_결과, SITE_A1);
+    }
+
+    @DisplayName("엣지: 취소된 예약 기간은 다시 검색되었을 때 예약 가능한 상태로 노출된다")
+    @Test
+    void 취소된_예약_기간은_검색_시_예약_가능해야_한다() {
+        // given
+        var 예약_생성_응답 = 예약을_요청한다(
+            aReservationRequest()
+                .withStartDate(3)
+                .withEndDate(5)
+                .withSiteNumber(SITE_A1)
+                .build()
+        );
+        long 예약_ID = 예약_생성_응답.jsonPath().getLong("id");
+        String 확인_코드 = 예약_생성_응답.jsonPath().getString("confirmationCode");
+        예약을_취소한다(예약_ID, 확인_코드);
+
+        // when
+        var 검색_결과 = 사이트를_검색한다(3, 5, LARGE_SITE_TYPE);
+
+        // then
+        검색_결과에_해당_사이트가_포함된다(검색_결과, SITE_A1);
     }
 }

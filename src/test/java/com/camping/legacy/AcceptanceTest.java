@@ -43,12 +43,8 @@ public abstract class AcceptanceTest {
     campsiteRepository.save(new Campsite(siteNumber, description, maxPeople));
   }
 
-  public static void 예약_성공_확인(ExtractableResponse<Response> response) {
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-  }
-
-  public static void 예약이_거부되었다(ExtractableResponse<Response> response) {
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+  public static void 예약_결과_검증(ExtractableResponse<Response> response, HttpStatus expectedStatus) {
+    assertThat(response.statusCode()).isEqualTo(expectedStatus.value());
   }
 
   public static void 예약이_확정된_상태이다(ExtractableResponse<Response> response, String expected) {

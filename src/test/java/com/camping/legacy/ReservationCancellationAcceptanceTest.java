@@ -4,9 +4,12 @@ import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.*;
 import static com.camping.legacy.step.SiteStep.*;
+import static org.springframework.http.HttpStatus.*;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class ReservationCancellationAcceptanceTest extends AcceptanceTest {
 
@@ -75,5 +78,60 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
     // then
     var 조회_응답 = 예약을_조회한다(예약_ID);
     예약_상태_확인(조회_응답, CANCELLED_SAME_DAY_STATUS);
+  }
+
+  @DisplayName("예외 상황 테스트: 존재하지 않는 예약 ID로 취소를 시도하면 실패한다")
+  @Test
+  void 존재하지_않는_예약_ID로_취소하면_실패한다() {
+    // when
+    var 응답 = 예약을_취소한다(99999L, "아무코드");
+
+    // then
+    예약_취소가_거부되었다(응답);
+  }
+
+  @DisplayName("예외 상황 테스트: 이미 취소된 예약을 다시 취소하려고 하면 실패한다")
+  @Test
+  void 이미_취소된_예약을_다시_취소하면_실패한다() {
+    // given
+    var 예약_응답 = 예약을_요청한다(aReservationRequest().withEndDate(2).build());
+    var 예약_ID = 예약_응답.jsonPath().getLong("id");
+    var 예약_상세_정보 = 예약을_조회한다(예약_ID);
+    String 확인_코드 = 예약_상세_정보.jsonPath().get("[0].confirmationCode");
+
+    예약을_취소한다(예약_ID, 확인_코드);
+
+    // when
+    var 두번째_취소_응답 = 예약을_취소한다(예약_ID, 확인_코드);
+
+    // then
+    예약_취소가_거부되었다(두번째_취소_응답);
+  }
+
+  @DisplayName("경계값: 예약 시작일에 따른 취소 상태 변경 테스트")
+  @ParameterizedTest(name = "예약 시작일이 {0}일 후일 때, 취소하면 {1} 상태가 된다")
+  @CsvSource({
+      "0, CANCELLED_SAME_DAY",
+      "1, CANCELLED",
+      "2, CANCELLED"
+  })
+  void 예약_시작일에_따라_취소_상태가_결정된다(int startDayOffset, String expectedStatus) {
+    // given
+    var 예약_응답 = 예약을_요청한다(
+        aReservationRequest()
+            .withStartDate(startDayOffset)
+            .withEndDate(startDayOffset + 2)
+            .build()
+    );
+    var 예약_ID = 예약_응답.jsonPath().getLong("id");
+    var 예약_상세_정보 = 예약을_조회한다(예약_ID);
+    String 확인_코드 = 예약_상세_정보.jsonPath().get("[0].confirmationCode");
+
+    // when
+    예약을_취소한다(예약_ID, 확인_코드);
+
+    // then
+    var 조회_응답 = 예약을_조회한다(예약_ID);
+    예약_상태_확인(조회_응답, expectedStatus);
   }
 }
