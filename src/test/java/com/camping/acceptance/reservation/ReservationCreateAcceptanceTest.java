@@ -252,8 +252,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
     @DisplayName("이미 예약된 사이트는 같은 기간에 다시 예약할 수 없다")
     void 이미_예약된_기간에는_예약할_수_없다() {
         // given
-        reservationFixture.예약_생성(대형사이트, 다른_고객명, 다른_연락처,
-                시작일, 종료일, "ABC123");
+        reservationFixture.예약_생성(대형사이트, 다른_고객명, 시작일, 종료일);
 
         // when
         ExtractableResponse<Response> response = 예약_생성_요청(
@@ -268,8 +267,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
     @DisplayName("기존 예약과 일부 날짜가 겹치면 예약할 수 없다")
     void 기존_예약과_일부_날짜가_겹치면_예약할_수_없다() {
         // given
-        reservationFixture.예약_생성(대형사이트, 다른_고객명, 다른_연락처,
-                시작일, 종료일, "ABC123");
+        reservationFixture.예약_생성(대형사이트, 다른_고객명, 시작일, 종료일);
         LocalDate 겹치는_시작일 = 시작일.plusDays(1);
         LocalDate 겹치는_종료일 = 종료일.plusDays(2);
 
@@ -286,8 +284,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
     @DisplayName("취소된 예약이 있는 날짜는 다시 예약할 수 있다")
     void 취소된_예약이_있는_날짜는_다시_예약할_수_있다() {
         // given
-        reservationFixture.취소된_예약_생성(대형사이트, 다른_고객명, 다른_연락처,
-                시작일, 종료일);
+        reservationFixture.취소된_예약_생성(대형사이트, 시작일, 종료일);
 
         // when
         ExtractableResponse<Response> response = 예약_생성_요청(
@@ -387,8 +384,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         // given - 기존 예약: 3일~5일
         LocalDate 기존_시작 = LocalDate.now().plusDays(3);
         LocalDate 기존_종료 = LocalDate.now().plusDays(5);
-        reservationFixture.예약_생성(대형사이트, 다른_고객명, 다른_연락처,
-                기존_시작, 기존_종료, "ABC123");
+        reservationFixture.예약_생성(대형사이트, 다른_고객명, 기존_시작, 기존_종료);
 
         // when - 새 예약: 1일~7일 (기존 예약을 완전히 포함)
         LocalDate 새_시작 = LocalDate.now().plusDays(1);
@@ -406,8 +402,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         // given - 기존 예약: 1일~7일
         LocalDate 기존_시작 = LocalDate.now().plusDays(1);
         LocalDate 기존_종료 = LocalDate.now().plusDays(7);
-        reservationFixture.예약_생성(대형사이트, 다른_고객명, 다른_연락처,
-                기존_시작, 기존_종료, "ABC123");
+        reservationFixture.예약_생성(대형사이트, 다른_고객명, 기존_시작, 기존_종료);
 
         // when - 새 예약: 3일~5일 (기존 예약에 완전히 포함됨)
         LocalDate 새_시작 = LocalDate.now().plusDays(3);

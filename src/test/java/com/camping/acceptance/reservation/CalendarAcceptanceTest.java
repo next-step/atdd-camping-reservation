@@ -33,7 +33,6 @@ class CalendarAcceptanceTest extends AcceptanceTest {
     private LocalDate 종료일;
 
     private static final String 기본_고객명 = "홍길동";
-    private static final String 기본_연락처 = "010-1234-5678";
 
     @BeforeEach
     void setUpFixture() {
@@ -46,7 +45,7 @@ class CalendarAcceptanceTest extends AcceptanceTest {
     @DisplayName("취소된 예약은 캘린더에 예약으로 표시되지 않는다")
     void 취소된_예약은_캘린더에_예약으로_표시되지_않는다() {
         // given
-        reservationFixture.취소된_예약_생성(사이트, 기본_고객명, 기본_연락처, 시작일, 종료일);
+        reservationFixture.취소된_예약_생성(사이트, 시작일, 종료일);
 
         // when
         ExtractableResponse<Response> response = 캘린더_조회_요청(
@@ -69,7 +68,7 @@ class CalendarAcceptanceTest extends AcceptanceTest {
     @DisplayName("활성 예약이 있는 날짜는 캘린더에 예약으로 표시된다")
     void 활성_예약이_있는_날짜는_캘린더에_예약으로_표시된다() {
         // given
-        reservationFixture.예약_생성(사이트, 기본_고객명, 기본_연락처, 시작일, 종료일, "ABC123");
+        reservationFixture.예약_생성(사이트, 기본_고객명, 시작일, 종료일);
 
         // when
         ExtractableResponse<Response> response = 캘린더_조회_요청(
