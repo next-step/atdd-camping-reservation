@@ -119,7 +119,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     void createReservation_WithPastDate_ShouldFail() {
         var request = 예약_요청_생성(SITE_A1_NUMBER, LocalDate.now().minusDays(1), LocalDate.now().plusDays(1), CUSTOMER_KIM, "010-0000-0000");
         var response = 예약을_생성한다(request);
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
     }
 
     @Test
@@ -127,7 +127,7 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     void createReservation_WithEndDateBeforeStartDate_ShouldFail() {
         var request = 예약_요청_생성(SITE_A1_NUMBER, START_DATE, START_DATE.minusDays(1), CUSTOMER_KIM, "010-0000-0000");
         var response = 예약을_생성한다(request);
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
     }
     
     @Test
@@ -148,10 +148,6 @@ public class ReservationAcceptanceTest extends AcceptanceTest {
     }
 
     // --- Private Helper Methods ---
-
-    private LocalDate 날짜_생성(int 년도, int 월, int 날짜) {
-        return LocalDate.of(년도, 월, 날짜);
-    }
     
     private ReservationResponse 예약을_미리_만든다(String siteNumber, LocalDate startDate, LocalDate endDate, String name, String phone) {
         var request = 예약_요청_생성(siteNumber, startDate, endDate, name, phone);
