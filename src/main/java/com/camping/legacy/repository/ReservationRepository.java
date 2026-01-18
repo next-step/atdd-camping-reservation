@@ -3,6 +3,8 @@ package com.camping.legacy.repository;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -26,6 +28,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     
     boolean existsByCampsiteAndReservationDate(Campsite campsite, LocalDate date);
 
-    boolean existsByCampsiteAndStatusAndEndDateGreaterThanAndStartDateLessThan(
-            Campsite campsite, String status, LocalDate startDate, LocalDate endDate);
+    @Query("SELECT CASE WHEN COUNT(r) > 0 THEN TRUE ELSE FALSE END " +
+           "FROM Reservation r " +
+           "WHERE r.campsite = :campsite " +
+           "AND r.status = :status " +
+           "AND r.startDate < :endDate " +
+           "AND r.endDate > :startDate")
+    boolean hasConflictingReservation(@Param("campsite") Campsite campsite,
+                                      @Param("status") String status,
+                                      @Param("startDate") LocalDate startDate,
+                                      @Param("endDate") LocalDate endDate);
 }
