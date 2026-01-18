@@ -261,4 +261,66 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
         assertThat(response.jsonPath().getString("message")).contains("존재");
     }
+
+    @Test
+    @DisplayName("취소된 예약이 있는 사이트로 변경할 수 있다")
+    void 취소된_예약이_있는_사이트로_변경할_수_있다() {
+        // given - A-2에 취소된 예약이 있음
+        reservationFixture.취소된_예약_생성(사이트A2, "김철수", "010-9999-9999",
+                시작일, 종료일);
+        Map<String, Object> request = Map.of("siteNumber", "A-2");
+
+        // when
+        ExtractableResponse<Response> response = 예약_수정_요청(
+                기존예약.getId(), "ABC123", request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-2");
+    }
+
+    @Test
+    @DisplayName("기존 예약과 일부 날짜가 겹치면 변경할 수 없다")
+    void 기존_예약과_일부_날짜가_겹치면_변경할_수_없다() {
+        // given - A-1에 10일~12일 예약 존재
+        LocalDate 기존_시작 = LocalDate.now().plusDays(10);
+        LocalDate 기존_종료 = LocalDate.now().plusDays(12);
+        reservationFixture.예약_생성(사이트A1, "김철수", "010-9999-9999",
+                기존_시작, 기존_종료, "XYZ789");
+
+        // when - 9일~11일로 변경 시도 (일부 겹침)
+        LocalDate 새_시작 = LocalDate.now().plusDays(9);
+        LocalDate 새_종료 = LocalDate.now().plusDays(11);
+        Map<String, Object> request = Map.of(
+                "startDate", 새_시작.toString(),
+                "endDate", 새_종료.toString()
+        );
+        ExtractableResponse<Response> response = 예약_수정_요청(
+                기존예약.getId(), "ABC123", request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    @DisplayName("사이트와 날짜를 동시에 변경할 수 있다")
+    void 사이트와_날짜를_동시에_변경할_수_있다() {
+        // given
+        LocalDate 새시작일 = LocalDate.now().plusDays(10);
+        LocalDate 새종료일 = LocalDate.now().plusDays(12);
+        Map<String, Object> request = Map.of(
+                "siteNumber", "A-2",
+                "startDate", 새시작일.toString(),
+                "endDate", 새종료일.toString()
+        );
+
+        // when
+        ExtractableResponse<Response> response = 예약_수정_요청(
+                기존예약.getId(), "ABC123", request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+        assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-2");
+        assertThat(response.jsonPath().getString("startDate")).isEqualTo(새시작일.toString());
+    }
 }
