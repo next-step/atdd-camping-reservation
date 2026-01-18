@@ -34,13 +34,18 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     private LocalDate 시작일;
     private LocalDate 종료일;
 
+    private static final String 기본_고객명 = "홍길동";
+    private static final String 기본_연락처 = "010-1234-5678";
+    private static final String 다른_고객명 = "김철수";
+    private static final String 다른_연락처 = "010-9999-9999";
+
     @BeforeEach
     void setUpFixture() {
         사이트A1 = siteFixture.대형_사이트_생성("A-1");
         사이트A2 = siteFixture.대형_사이트_생성("A-2");
         시작일 = LocalDate.now().plusDays(1);
         종료일 = LocalDate.now().plusDays(3);
-        기존예약 = reservationFixture.예약_생성(사이트A1, "홍길동", "010-1234-5678",
+        기존예약 = reservationFixture.예약_생성(사이트A1, 기본_고객명, 기본_연락처,
                 시작일, 종료일, "ABC123");
     }
 
@@ -48,7 +53,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     @DisplayName("확인 코드 없이는 수정할 수 없다")
     void 확인_코드_없이는_수정할_수_없다() {
         // given
-        Map<String, Object> request = Map.of("customerName", "김철수");
+        Map<String, Object> request = Map.of("customerName", 다른_고객명);
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -63,7 +68,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     @DisplayName("잘못된 확인 코드로는 수정할 수 없다")
     void 잘못된_확인_코드로는_수정할_수_없다() {
         // given
-        Map<String, Object> request = Map.of("customerName", "김철수");
+        Map<String, Object> request = Map.of("customerName", 다른_고객명);
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -100,7 +105,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // given
         LocalDate 충돌시작일 = LocalDate.now().plusDays(10);
         LocalDate 충돌종료일 = LocalDate.now().plusDays(12);
-        reservationFixture.예약_생성(사이트A1, "김철수", "010-9999-9999",
+        reservationFixture.예약_생성(사이트A1, 다른_고객명, 다른_연락처,
                 충돌시작일, 충돌종료일, "XYZ789");
 
         Map<String, Object> request = Map.of(
@@ -135,7 +140,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     @DisplayName("예약자명을 변경할 수 있다")
     void 예약자명을_변경할_수_있다() {
         // given
-        Map<String, Object> request = Map.of("customerName", "김철수");
+        Map<String, Object> request = Map.of("customerName", 다른_고객명);
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -143,14 +148,14 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.jsonPath().getString("customerName")).isEqualTo("김철수");
+        assertThat(response.jsonPath().getString("customerName")).isEqualTo(다른_고객명);
     }
 
     @Test
     @DisplayName("연락처를 변경할 수 있다")
     void 연락처를_변경할_수_있다() {
         // given
-        Map<String, Object> request = Map.of("phoneNumber", "010-9876-5432");
+        Map<String, Object> request = Map.of("phoneNumber", 다른_연락처);
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -158,7 +163,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.jsonPath().getString("phoneNumber")).isEqualTo("010-9876-5432");
+        assertThat(response.jsonPath().getString("phoneNumber")).isEqualTo(다른_연락처);
     }
 
     @Test
@@ -180,9 +185,9 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     @DisplayName("취소된 예약은 수정할 수 없다")
     void 취소된_예약은_수정할_수_없다() {
         // given
-        Reservation 취소된예약 = reservationFixture.취소된_예약_생성(사이트A2, "박영희", "010-5555-5555",
+        Reservation 취소된예약 = reservationFixture.취소된_예약_생성(사이트A2, 기본_고객명, 기본_연락처,
                 시작일, 종료일);
-        Map<String, Object> request = Map.of("customerName", "김철수");
+        Map<String, Object> request = Map.of("customerName", 다른_고객명);
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -235,9 +240,9 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
     @DisplayName("해당 기간에 예약된 사이트로는 변경할 수 없다 (같은 날짜로 사이트만 변경하는 경우)")
     void 해당_기간에_예약된_사이트로는_변경할_수_없다() {
         // given
-        reservationFixture.예약_생성(사이트A2, "김철수", "010-9999-9999",
+        reservationFixture.예약_생성(사이트A2, 다른_고객명, 다른_연락처,
                 시작일, 종료일, "XYZ789");
-        Map<String, Object> request = Map.of("siteNumber", "A-2");
+        Map<String, Object> request = Map.of("siteNumber", 사이트A2.getSiteNumber());
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -268,7 +273,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // given - A-2에 취소된 예약이 있음
         reservationFixture.취소된_예약_생성(사이트A2, "김철수", "010-9999-9999",
                 시작일, 종료일);
-        Map<String, Object> request = Map.of("siteNumber", "A-2");
+        Map<String, Object> request = Map.of("siteNumber", 사이트A2.getSiteNumber());
 
         // when
         ExtractableResponse<Response> response = 예약_수정_요청(
@@ -285,7 +290,7 @@ class ReservationUpdateAcceptanceTest extends AcceptanceTest {
         // given - A-1에 10일~12일 예약 존재
         LocalDate 기존_시작 = LocalDate.now().plusDays(10);
         LocalDate 기존_종료 = LocalDate.now().plusDays(12);
-        reservationFixture.예약_생성(사이트A1, "김철수", "010-9999-9999",
+        reservationFixture.예약_생성(사이트A1, 다른_고객명, 다른_연락처,
                 기존_시작, 기존_종료, "XYZ789");
 
         // when - 9일~11일로 변경 시도 (일부 겹침)

@@ -33,6 +33,9 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
     private LocalDate 시작일;
     private LocalDate 종료일;
 
+    private static final String 기본_고객명 = "홍길동";
+    private static final String 기본_연락처 = "010-1234-5678";
+
     @BeforeEach
     void setUpFixture() {
         대형사이트A1 = siteFixture.대형_사이트_생성("A-1");
@@ -46,7 +49,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
     @DisplayName("비어있는 사이트만 검색 결과에 표시된다")
     void 비어있는_사이트만_검색_결과에_표시된다() {
         // given
-        reservationFixture.예약_생성(대형사이트A1, "홍길동", "010-1234-5678",
+        reservationFixture.예약_생성(대형사이트A1, 기본_고객명, 기본_연락처,
                 시작일, 종료일, "ABC123");
 
         // when
@@ -146,7 +149,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
     @DisplayName("취소된 예약이 있는 사이트는 검색 결과에 표시된다")
     void 취소된_예약이_있는_사이트는_검색_결과에_표시된다() {
         // given
-        reservationFixture.취소된_예약_생성(대형사이트A1, "홍길동", "010-1234-5678",
+        reservationFixture.취소된_예약_생성(대형사이트A1, 기본_고객명, 기본_연락처,
                 시작일, 종료일);
 
         // when
@@ -167,7 +170,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
         LocalDate 예약_시작 = LocalDate.now().plusDays(5);
         LocalDate 예약_종료 = LocalDate.now().plusDays(7);
 
-        reservationFixture.예약_생성(대형사이트A1, "홍길동", "010-1234-5678",
+        reservationFixture.예약_생성(대형사이트A1, 기본_고객명, 기본_연락처,
                 예약_시작, 예약_종료, "ABC123");
 
         // when
