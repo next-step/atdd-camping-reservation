@@ -1,23 +1,13 @@
 package com.camping.acceptance;
 
-import com.camping.legacy.CampingApplication;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.dto.ReservationResponse;
-import com.camping.legacy.repository.CampsiteRepository;
-import com.camping.legacy.repository.ReservationRepository;
-import com.camping.support.DatabaseCleaner;
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,35 +21,18 @@ import static com.camping.acceptance.ReservationSteps.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-@SuppressWarnings("NonAsciiCharacters")
-@ActiveProfiles("test")
-@SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(DatabaseCleaner.class)
 @DisplayName("캠핑장 예약 인수 테스트")
-public class ReservationAcceptanceTest {
+public class ReservationAcceptanceTest extends AcceptanceTest {
 
     public static final String 예약시작일 = "2027-09-10";
     public static final String WRONG_CODE = "WRONG456";
     public static final String 김캘린더 = "김캘린더";
-
-    @LocalServerPort
-    private int port;
 
     private static final String SITE_A1_NUMBER = "A-01";
     private static final String SITE_B2_NUMBER = "B-02";
     private static final String SITE_C3_NUMBER = "C-03";
     private static final String SITE_D4_NUMBER = "D-04";
     private static final String SITE_E5_NUMBER = "E-05";
-
-
-    @Autowired
-    CampsiteRepository campsiteRepository;
-    
-    @Autowired
-    ReservationRepository reservationRepository;
-
-    @Autowired
-    DatabaseCleaner databaseCleaner;
 
     private Campsite siteA1;
     private Campsite siteB2;
@@ -69,9 +42,7 @@ public class ReservationAcceptanceTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.execute();
-
+        super.setUp(); // 명시적으로 상위 클래스의 setUp 호출
         siteA1 = campsiteRepository.save(create(SITE_A1_NUMBER));
         siteB2 = campsiteRepository.save(create(SITE_B2_NUMBER));
         siteC3 = campsiteRepository.save(create(SITE_C3_NUMBER));
@@ -288,3 +259,4 @@ public class ReservationAcceptanceTest {
         return responses.stream().filter(r -> r.statusCode() == HttpStatus.CREATED.value()).count();
     }
 }
+
