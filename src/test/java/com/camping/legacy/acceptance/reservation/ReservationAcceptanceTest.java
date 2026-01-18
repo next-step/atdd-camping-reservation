@@ -6,7 +6,6 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.jdbc.Sql;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,7 +21,6 @@ import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.S
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("예약 관련 기능")
-@Sql({"/truncate.sql", "/data.sql"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ReservationAcceptanceTest extends AcceptanceTestBase {
 

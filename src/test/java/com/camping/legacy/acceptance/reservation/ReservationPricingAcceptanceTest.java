@@ -6,7 +6,6 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.jdbc.Sql;
 
 import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.ReservationApiExtractableResponse.예약을_생성한다;
 import static com.camping.legacy.acceptance.reservation.builder.ReservationRequestBuilder.Reservation;
@@ -14,7 +13,6 @@ import static com.camping.legacy.acceptance.reservation.ReservationTestConstants
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("예약 금액 관련 기능")
-@Sql({"/truncate.sql", "/data.sql"})
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ReservationPricingAcceptanceTest extends AcceptanceTestBase {
 
