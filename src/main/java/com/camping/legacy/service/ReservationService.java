@@ -385,6 +385,17 @@ public class ReservationService {
             if (startDate.isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
+
+            // 중복 예약 체크 추가
+            Campsite campsite = reservation.getCampsite();
+            if (request.getSiteNumber() != null) {
+                campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+                        .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+            }
+
+            if (reservationRepository.existsOverlappingReservation(campsite, startDate, endDate, id)) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
         }
 
         // 고객 이름 검증 (중복 코드 4)
