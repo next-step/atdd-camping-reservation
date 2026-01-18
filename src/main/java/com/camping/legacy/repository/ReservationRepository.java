@@ -47,4 +47,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
                                              @Param("endDate") LocalDate endDate,
                                              @Param("startDate") LocalDate startDate,
                                              @Param("excludeId") Long excludeId);
+
+    @Query("SELECT r FROM Reservation r WHERE r.status IS NULL OR r.status NOT LIKE 'CANCELLED%'")
+    List<Reservation> findActiveReservations();
 }

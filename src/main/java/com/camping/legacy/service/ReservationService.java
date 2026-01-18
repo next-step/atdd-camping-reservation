@@ -692,7 +692,7 @@ public class ReservationService {
         LocalDate endDate = yearMonth.atEndOfMonth();
 
         // 모든 예약 조회 (성능 이슈 가능)
-        List<Reservation> allReservations = reservationRepository.findAll();
+        List<Reservation> allReservations = reservationRepository.findActiveReservations();
         Map<LocalDate, Reservation> reservationMap = new HashMap<>();
 
         // 예약 기간 내의 모든 날짜에 대해 예약 정보 추가
