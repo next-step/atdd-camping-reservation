@@ -1,11 +1,10 @@
 package com.camping.legacy.step;
 
+import static io.restassured.RestAssured.given;
+
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-
 import java.time.LocalDate;
-
-import static io.restassured.RestAssured.given;
 
 public class SiteStep {
     private static final String SITE_ENDPOINT = "/api/sites";
