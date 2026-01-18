@@ -8,13 +8,6 @@ import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
-import com.camping.legacy.util.StringUtils;
-import com.camping.legacy.util.ValidationUtils;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -23,6 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 예약 서비스 (통합 관리 서비스)
@@ -75,7 +72,7 @@ public class ReservationService {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         } else {
             // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+            Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 
             // 날짜 검증 (중첩 레벨 2)
