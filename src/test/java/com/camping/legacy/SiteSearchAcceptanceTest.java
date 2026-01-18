@@ -49,7 +49,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
     @Test
     void 기간내_중간_날짜가_예약된_사이트는_검색에서_제외된다() {
         // given : A-1 사이트는 이미 예약된 상태, A-2는 예약이 없는 상태
-        campsiteRepository.save(new Campsite("A-2", "Large Site", 5));
+        신규_사이트를_등록한다("A-2", "Large Site", 5);
 
         LocalDate 오늘 = LocalDate.now();
         LocalDate 시작일 = 오늘.plusDays(1);

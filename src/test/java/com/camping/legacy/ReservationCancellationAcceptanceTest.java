@@ -15,12 +15,13 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
   @Test
   void 올바른_예약_확인코드로_취소시_재고가_즉시_복구된다() {
     // given: 예약 생성
-    var 사이트 = campsiteRepository.save(new Campsite("A-2", "대형", 5));
+    신규_사이트를_등록한다("A-2", "대형", 5);
+
+    var 사이트 = campsiteRepository.findBySiteNumber("A-2").get();
     var 시작일 = LocalDate.now().plusMonths(1);
     var 확인코드 = "SAFE12";
 
     var 저장된_예약 = reservationRepository.save(예약_데이터_준비(사이트, 시작일, 확인코드));
-
     long reservationId = 저장된_예약.getId();
     String confirmationCode = 저장된_예약.getConfirmationCode();
 
