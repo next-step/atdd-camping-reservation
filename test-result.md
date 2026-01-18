@@ -9,7 +9,7 @@
 
 ### 예약 생성 (ReservationCreateAcceptanceTest)
 
-- [ ] **연락처 없이 예약할 수 없다**
+- [x] **연락처 없이 예약할 수 없다**
   - 예상: `409 CONFLICT`
   - 실제: `201 CREATED`
   - 원인: 프로덕션 코드에서 연락처(phoneNumber) 필수 검증 미구현
