@@ -9,6 +9,9 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.annotation.DirtiesContext;
@@ -21,6 +24,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import static com.camping.acceptance.reservation.ReservationSteps.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,6 +64,19 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
     }
 
     @Test
+    @DisplayName("존재하지 않는 사이트는 예약할 수 없다")
+    void 존재하지_않는_사이트는_예약할_수_없다() {
+        // when
+        ExtractableResponse<Response> response = 예약_생성_요청(
+                "Z-99", "홍길동", "010-1234-5678", 시작일, 종료일);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).contains("존재");
+    }
+
+
+    @Test
     @DisplayName("예약자 이름 없이 예약할 수 없다")
     void 예약자_이름_없이_예약할_수_없다() {
         // given
@@ -78,6 +95,35 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         assertThat(response.jsonPath().getString("message")).contains("예약자");
     }
 
+    @DisplayName("예약자 이름이 유효하지 않으면 예약할 수 없다")
+    @ParameterizedTest(name = "[{index}] 예약자명=\"{0}\"이면 예약 불가")
+    @MethodSource("invalidNames")
+    void 예약자_이름이_유효하지_않으면_예약할_수_없다(String invalidName) {
+        // given
+        Map<String, Object> request = Map.of(
+                "siteNumber", "A-1",
+                "name", invalidName,
+                "phoneNumber", "010-1234-5678",
+                "startDate", 시작일.toString(),
+                "endDate", 종료일.toString()
+        );
+
+        // when
+        ExtractableResponse<Response> response = 예약_생성_요청(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).contains("예약자");
+    }
+
+    private static Stream<Arguments> invalidNames() {
+        return Stream.of(
+                Arguments.of(" "),         // 공백
+                Arguments.of("가"),        // 1자
+                Arguments.of("가".repeat(21))   // 21자
+        );
+    }
+
     @Test
     @DisplayName("연락처 없이 예약할 수 없다")
     void 연락처_없이_예약할_수_없다() {
@@ -94,7 +140,37 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+        assertThat(response.jsonPath().getString("message")).contains("연락처");
+    }
+
+    @DisplayName("연락처가 유효하지 않으면 예약할 수 없다")
+    @ParameterizedTest(name = "[{index}] 연락처=\"{0}\"이면 예약 불가")
+    @MethodSource("invalidPhoneNumbers")
+    void 연락처가_유효하지_않으면_예약할_수_없다(String invalidPhoneNumbers) {
+        // given
+        Map<String, Object> request = Map.of(
+                "customerName", "홍길동",
+                "siteNumber", "A-1",
+                "phoneNumber", invalidPhoneNumbers, // 9자리
+                "startDate", 시작일.toString(),
+                "endDate", 종료일.toString()
+        );
+
+        // when
+        ExtractableResponse<Response> response = 예약_생성_요청(request);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).contains("전화번호");
+    }
+
+    private static Stream<Arguments> invalidPhoneNumbers() {
+        return Stream.of(
+                Arguments.of("010123456"),        // 9자리
+                Arguments.of("010123456789"),     // 12자리
+                Arguments.of("010-1234-ABCD"),    // 문자 포함
+                Arguments.of("01012A4567")        // 문자 포함
+        );
     }
 
     @Test
@@ -178,18 +254,6 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
         assertThat(response.jsonPath().getString("message")).contains("종료일");
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 사이트는 예약할 수 없다")
-    void 존재하지_않는_사이트는_예약할_수_없다() {
-        // when
-        ExtractableResponse<Response> response = 예약_생성_요청(
-                "Z-99", "홍길동", "010-1234-5678", 시작일, 종료일);
-
-        // then
-        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
-        assertThat(response.jsonPath().getString("message")).contains("존재");
     }
 
     @Test
@@ -294,4 +358,73 @@ class ReservationCreateAcceptanceTest extends AcceptanceTest {
         assertThat(성공_횟수).isEqualTo(1);
         assertThat(실패_횟수).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("정확히 30일 예약은 가능하다")
+    void 정확히_30일_예약은_가능하다() {
+        // given
+        LocalDate 시작 = LocalDate.now().plusDays(1);
+        LocalDate 종료 = 시작.plusDays(30);
+
+        // when
+        ExtractableResponse<Response> response = 예약_생성_요청(
+                대형사이트_번호, "홍길동", "010-1234-5678", 시작, 종료);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+    }
+
+    @Test
+    @DisplayName("오늘 입실 예약이 가능하다")
+    void 오늘_입실_예약이_가능하다() {
+        // given
+        LocalDate 오늘 = LocalDate.now();
+        LocalDate 내일 = 오늘.plusDays(1);
+
+        // when
+        ExtractableResponse<Response> response = 예약_생성_요청(
+                대형사이트_번호, "홍길동", "010-1234-5678", 오늘, 내일);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+    }
+
+    @Test
+    @DisplayName("새 예약이 기존 예약을 완전히 포함하면 예약할 수 없다")
+    void 새_예약이_기존_예약을_완전히_포함하면_예약할_수_없다() {
+        // given - 기존 예약: 3일~5일
+        LocalDate 기존_시작 = LocalDate.now().plusDays(3);
+        LocalDate 기존_종료 = LocalDate.now().plusDays(5);
+        reservationFixture.예약_생성(대형사이트, "김철수", "010-9999-9999",
+                기존_시작, 기존_종료, "ABC123");
+
+        // when - 새 예약: 1일~7일 (기존 예약을 완전히 포함)
+        LocalDate 새_시작 = LocalDate.now().plusDays(1);
+        LocalDate 새_종료 = LocalDate.now().plusDays(7);
+        ExtractableResponse<Response> response = 예약_생성_요청(
+                대형사이트_번호, "홍길동", "010-1234-5678", 새_시작, 새_종료);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+    }
+
+    @Test
+    @DisplayName("기존 예약이 새 예약을 완전히 포함하면 예약할 수 없다")
+    void 기존_예약이_새_예약을_완전히_포함하면_예약할_수_없다() {
+        // given - 기존 예약: 1일~7일
+        LocalDate 기존_시작 = LocalDate.now().plusDays(1);
+        LocalDate 기존_종료 = LocalDate.now().plusDays(7);
+        reservationFixture.예약_생성(대형사이트, "김철수", "010-9999-9999",
+                기존_시작, 기존_종료, "ABC123");
+
+        // when - 새 예약: 3일~5일 (기존 예약에 완전히 포함됨)
+        LocalDate 새_시작 = LocalDate.now().plusDays(3);
+        LocalDate 새_종료 = LocalDate.now().plusDays(5);
+        ExtractableResponse<Response> response = 예약_생성_요청(
+                대형사이트_번호, "홍길동", "010-1234-5678", 새_시작, 새_종료);
+
+        // then
+        assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
+    }
+
 }
