@@ -5,6 +5,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Table;
 import jakarta.persistence.metamodel.EntityType;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +26,6 @@ public class DatabaseCleanup implements InitializingBean {
         tableNames = entityManager.getMetamodel().getEntities().stream()
                 .filter(e -> e.getJavaType().getAnnotation(Entity.class) != null)
                 .map(this::getTableName)
-                .filter(tableName -> !tableName.equalsIgnoreCase("campsites"))
                 .collect(Collectors.toList());
     }
 
@@ -41,7 +41,7 @@ public class DatabaseCleanup implements InitializingBean {
         StringBuilder result = new StringBuilder();
         for (char c : name.toCharArray()) {
             if (Character.isUpperCase(c)) {
-                if (result.length() > 0) {
+                if (!StringUtils.isEmpty(result)) {
                     result.append("_");
                 }
                 result.append(Character.toLowerCase(c));

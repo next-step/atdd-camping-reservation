@@ -1,5 +1,7 @@
 package com.camping.legacy.acceptance;
 
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.repository.CampsiteRepository;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +26,17 @@ public abstract class AcceptanceTestBase {
     @Autowired
     private DatabaseCleanup databaseCleanup;
 
+    @Autowired
+    private CampsiteRepository campsiteRepository;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         databaseCleanup.execute();
+    }
+
+    protected void 사이트를_생성한다(String siteNumber) {
+        campsiteRepository.save(new Campsite(siteNumber, "테스트용 사이트", 4));
     }
 }

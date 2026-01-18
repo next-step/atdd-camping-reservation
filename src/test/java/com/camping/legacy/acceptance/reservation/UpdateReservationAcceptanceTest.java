@@ -20,11 +20,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("NonAsciiCharacters")
 class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
-    /**
-     * FIXME: 기간은 필수값인데 현재 버그니 수정바람
-     */
     @Test
     void 올바른_확인코드면_예약자_이름을_수정할_수_있다() {
+        사이트를_생성한다("A-1");
+
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -47,6 +46,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 확인코드가_일치하지_않으면_예약_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -69,6 +70,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 변경된_날짜가_과거라면_예약_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");

@@ -24,6 +24,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예약_생성() {
+        사이트를_생성한다("A-1");
+
         ExtractableResponse<Response> response = 예약을_생성한다(기본_예약_요청);
 
         assertThatResponse(response)
@@ -39,6 +41,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_종료일이_시작일보다_이전이면_예약이_거부된다() {
+        사이트를_생성한다("A-1");
+
         ExtractableResponse<Response> response = 예약을_생성한다(종료일이_시작일_보다_빠른_예약);
 
         assertThatResponse(response)
@@ -49,6 +53,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_과거_날짜로_예약을_시도하면_거부된다() {
+        사이트를_생성한다("A-1");
+
         ExtractableResponse<Response> response = 예약을_생성한다(과거_시간의_예약);
 
         assertThatResponse(response)
@@ -59,6 +65,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_허용된_기간_30일을_초과하면_예약이_거부된다() {
+        사이트를_생성한다("A-1");
+
         ExtractableResponse<Response> response = 예약을_생성한다(기간이_30일_초과된_예약);
 
         assertThatResponse(response)
@@ -69,6 +77,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_동일_사이트의_기간이_겹치면_중복_예약이_거부된다() {
+        사이트를_생성한다("A-1");
+
         예약을_생성한다(기본_예약_요청);
 
         ExtractableResponse<Response> response = 예약을_생성한다(같은_기간_다른_고객(기본_예약_요청, "김철수"));
@@ -84,6 +94,8 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
     @Test
     @Disabled
     void 예외_동시에_동일_사이트_기간으로_예약_요청이_여러_건_들어와도_하나만_성공해야_한다() throws ExecutionException, InterruptedException {
+        사이트를_생성한다("A-1");
+
         LocalDate startDate = LocalDate.now().plusDays(10);
         LocalDate endDate = LocalDate.now().plusDays(12);
 

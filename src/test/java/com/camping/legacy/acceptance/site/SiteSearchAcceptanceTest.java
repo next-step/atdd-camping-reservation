@@ -20,6 +20,8 @@ class SiteSearchAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예약_가능_여부_조회에서_예약_기간에_포함되면_available_false() {
+        사이트를_생성한다("A-1");
+
         // Given
         LocalDate start = LocalDate.now().plusDays(10);
         LocalDate end = LocalDate.now().plusDays(12);
@@ -47,6 +49,9 @@ class SiteSearchAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 특정_날짜에_예약_가능한_사이트_목록을_반환한다() {
+        사이트를_생성한다("A-1");
+        사이트를_생성한다("B-1");
+
         // Given
         LocalDate start = LocalDate.now().plusDays(10);
         LocalDate end = LocalDate.now().plusDays(12);
@@ -71,6 +76,9 @@ class SiteSearchAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 검색_결과에는_기간_내_모든_날짜가_예약_가능한_사이트만_포함된다() {
+        사이트를_생성한다("A-1");
+        사이트를_생성한다("B-1");
+
         // Given
         LocalDate start = LocalDate.now().plusDays(10);
         LocalDate end = LocalDate.now().plusDays(12);
