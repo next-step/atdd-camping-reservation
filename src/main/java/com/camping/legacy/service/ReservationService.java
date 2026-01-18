@@ -417,7 +417,7 @@ public class ReservationService {
             throw new RuntimeException("예약 기간은 최대 30일입니다.");
         }
 
-        if (targetCampsite.getMaxPeople() > request.getNumberOfPeople()) {
+        if (targetCampsite.getMaxPeople() < request.getNumberOfPeople()) {
             throw new RuntimeException("해당 사이트의 최대 인원 수를 초과했습니다.");
         }
 
