@@ -1,55 +1,30 @@
 package com.camping.acceptance;
 
-import com.camping.legacy.CampingApplication;
 import com.camping.legacy.domain.Campsite;
-import com.camping.legacy.repository.CampsiteRepository;
-import com.camping.support.DatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ActiveProfiles;
-
 import java.time.LocalDate;
 import java.util.List;
-
 import static com.camping.acceptance.ReservationSteps.예약_요청_생성;
 import static com.camping.acceptance.ReservationSteps.예약을_생성한다;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SuppressWarnings("NonAsciiCharacters")
-@ActiveProfiles("test")
-@SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(DatabaseCleaner.class)
 @DisplayName("캠핑 사이트 인수 테스트")
-public class SiteAcceptanceTest {
+public class SiteAcceptanceTest extends AcceptanceTest {
 
     public static final String API_SITES_SEARCH = "/api/sites/search";
     public static final String API_SITES = "/api/sites";
-
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private DatabaseCleaner databaseCleaner;
-
-    @Autowired
-    private CampsiteRepository campsiteRepository;
 
     private Campsite siteA01, siteA02, siteB01;
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
-        databaseCleaner.execute();
-
+        super.setUp(); // 명시적으로 상위 클래스의 setUp 호출
         siteA01 = campsiteRepository.save(Campsite.builder().siteNumber("A-01").maxPeople(4).description("A-01").build());
         siteA02 = campsiteRepository.save(Campsite.builder().siteNumber("A-02").maxPeople(4).description("A-02").build());
         siteB01 = campsiteRepository.save(Campsite.builder().siteNumber("B-01").maxPeople(2).description("B-01").build());
