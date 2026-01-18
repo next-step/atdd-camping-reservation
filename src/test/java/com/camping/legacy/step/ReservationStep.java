@@ -1,16 +1,18 @@
 package com.camping.legacy.step;
 
+import static io.restassured.RestAssured.given;
+
 import com.camping.legacy.dto.ReservationRequest;
+import com.camping.legacy.fixture.ReservationFixture;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 
-import static io.restassured.RestAssured.given;
-
 public class ReservationStep {
     private static final String RESERVATION_ENDPOINT = "/api/reservations";
 
-    public static ExtractableResponse<Response> 예약을_요청한다(ReservationRequest request) {
+    public static ExtractableResponse<Response> 예약을_요청한다(int startDayOffset, int endDayOffset, String name, String phoneNumber) {
+        var request = 예약요청_생성(startDayOffset, endDayOffset, name, phoneNumber);
         return given().log().all()
                 .contentType(ContentType.JSON)
                 .body(request)
@@ -35,9 +37,9 @@ public class ReservationStep {
                 .extract();
     }
 
-    public static ReservationRequest 예약요청_생성(
-        java.time.LocalDate startDate, java.time.LocalDate endDate, String name, String phoneNumber) {
-        return new ReservationRequest(
-            name, startDate, endDate, "A-1", phoneNumber, 4, "12가3456", "잘 부탁드립니다.");
+    private static ReservationRequest 예약요청_생성(int startDayOffset, int endDayOffset, String name, String phoneNumber) {
+        var startDate = java.time.LocalDate.now().plusDays(startDayOffset);
+        var endDate = java.time.LocalDate.now().plusDays(endDayOffset);
+        return new ReservationRequest(name, startDate, endDate, ReservationFixture.SITE_A1, phoneNumber, 4, "12가3456", "잘 부탁드립니다.");
     }
 }

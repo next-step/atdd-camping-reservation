@@ -1,6 +1,6 @@
 package com.camping.legacy;
 
-import static com.camping.legacy.step.ReservationStep.예약요청_생성;
+import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,16 +22,12 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 유효한_정보로_예약요청시_예약이_확정된다() {
     // given
-    var 시작일 = LocalDate.now();
-    var 종료일 = 시작일.plusDays(2);
-    var 예약요청 = 예약요청_생성(시작일, 종료일, "홍길동", "01012345678");
-
     // when
-    var 응답 = 예약을_요청한다(예약요청);
+    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, PHONE_NUMBER);
 
     // then
     예약_성공_확인(응답);
-    예약이_확정된_상태이다(응답, "CONFIRMED");
+    예약이_확정된_상태이다(응답, CONFIRMED_STATUS);
     예약_확인코드가_발급되었다(응답);
   }
 
@@ -39,12 +35,8 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 최대_예약_가능기간을_꽉_채워_예약_요청한다() {
     // given
-    var 시작일 = LocalDate.now();
-    var 종료일 = 시작일.plusDays(30); // 30박
-    var 예약요청 = 예약요청_생성(시작일, 종료일, "홍길동", "01012345678");
-
     // when
-    var 응답 = 예약을_요청한다(예약요청);
+    var 응답 = 예약을_요청한다(0, 30, CUSTOMER_NAME, PHONE_NUMBER);
 
     // then
     예약_성공_확인(응답);
@@ -54,48 +46,36 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 예약_제한_기간을_초과하여_요청하면_예약이_거부된다() {
     // given
-    var 시작일 = LocalDate.now();
-    var 종료일 = 시작일.plusDays(31);
-    var 예약요청 = 예약요청_생성(시작일, 종료일, "홍길동", "01012345678");
-
     // when
-    var 응답 = 예약을_요청한다(예약요청);
+    var 응답 = 예약을_요청한다(0, 31, CUSTOMER_NAME, PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
-    에러메시지가_확인된다(응답, "예약 기간은 최대 30일입니다.");
+    에러메시지가_확인된다(응답, MAX_PERIOD_EXCEEDED_MESSAGE);
   }
 
   @DisplayName("유효하지 않은 고객 이름으로 예약할 경우 예약 거부된다")
   @Test
   void 유효하지_않은_고객_이름으로_예약할_경우_예약_거부된다() {
     // given
-    var 시작일 = LocalDate.now();
-    var 종료일 = 시작일.plusDays(2);
-    var 예약요청 = 예약요청_생성(시작일, 종료일, "김", "01012345678");
-
     // when
-    var 응답 = 예약을_요청한다(예약요청);
+    var 응답 = 예약을_요청한다(0, 2, INVALID_CUSTOMER_NAME, PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
-    에러메시지가_확인된다(응답, "예약자 이름은 최소 2자 이상이어야 합니다.");
+    에러메시지가_확인된다(응답, INVALID_CUSTOMER_NAME_MESSAGE);
   }
 
   @DisplayName("유효하지 않은 전화번호로 예약 요청하면 예약 거부된다")
   @Test
   void 유효하지_않은_전화번호로_예약_요청하면_예약_거부된다() {
     // given
-    var 시작일 = LocalDate.now();
-    var 종료일 = 시작일.plusDays(2);
-    var 예약요청 = 예약요청_생성(시작일, 종료일, "홍길동", "010-123-456");
-
     // when
-    var 응답 = 예약을_요청한다(예약요청);
+    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, INVALID_PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
-    에러메시지가_확인된다(응답, "전화번호 형식이 올바르지 않습니다.");
+    에러메시지가_확인된다(응답, INVALID_PHONE_NUMBER_MESSAGE);
   }
 
   @Disabled
@@ -103,18 +83,12 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 동일한_사이트와_기간에_대해_중복_예약_시도를_하면_한명만_예약된다() throws InterruptedException {
     // given
-    LocalDate 시작일 = LocalDate.now().plusDays(10);
-    LocalDate 종료일 = 시작일.plusDays(1);
-
-    var 홍길동_예약요청 = 예약요청_생성(시작일, 종료일, "홍길동", "01012345678");
-    var 이순신_예약요청 = 예약요청_생성(시작일, 종료일, "이순신", "01056781234");
-
     AtomicInteger 예약_성공_카운트 = new AtomicInteger(0);
 
     // when
     ConcurrencyTestHelper.execute(
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(홍길동_예약요청)),
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(이순신_예약요청)));
+        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "홍길동", PHONE_NUMBER)),
+        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "이순신", "01056781234")));
 
     // then
     assertThat(예약_성공_카운트.get()).isEqualTo(1);
@@ -130,19 +104,23 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   @Test
   void 성수기_주말_할증_요금이_자동_계산된다() {
     // given
-    LocalDate 오늘 = LocalDate.now();
-    LocalDate 성수기_시작 = LocalDate.of(오늘.getYear(), 7, 1);
-    if (오늘.isAfter(성수기_시작)) {
+    LocalDate 성수기_시작 = LocalDate.of(TODAY.getYear(), 7, 1);
+    if (TODAY.isAfter(성수기_시작)) {
       성수기_시작 = 성수기_시작.plusYears(1); // 올해 성수기가 지났으면 내년으로
     }
 
     LocalDate 성수기_토요일 = 성수기_시작.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY));
     LocalDate 성수기_일요일 = 성수기_토요일.plusDays(1);
 
-    var 예약요청 = 예약요청_생성(성수기_토요일, 성수기_일요일, "성수기 주말 고객", "01012345678");
+    // when
+    var 예약_응답 = 예약을_요청한다(
+            (int) TODAY.until(성수기_토요일, java.time.temporal.ChronoUnit.DAYS),
+            (int) TODAY.until(성수기_일요일, java.time.temporal.ChronoUnit.DAYS),
+            "성수기 주말 고객",
+            PHONE_NUMBER
+    );
 
-    // when & then
-    var 예약_응답 = 예약을_요청한다(예약요청);
+    // then
     예약_성공_확인(예약_응답);
   }
 }
