@@ -14,7 +14,7 @@ import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.R
 import static com.camping.legacy.acceptance.reservation.builder.ReservationRequestBuilder.Reservation;
 import static com.camping.legacy.acceptance.reservation.ReservationTestConstants.*;
 import static com.camping.legacy.acceptance.reservation.apiExtractableresponse.SiteApiExtractableResponse.사이트를_조회한다;
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.camping.legacy.acceptance.reservation.ReservationTestHelpers.*;
 
 @DisplayName("예약 취소 기능")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -27,7 +27,7 @@ public class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
      * And A-1 사이트가 2월 5일~7일에 예약 가능해지고
      * And 예약 상태가 '사전 취소' 상태로 변경된다.
      */
-    @DisplayName("[예약/취소] 정상적으로 예약을 취소한다.")
+    @DisplayName("정상적으로 예약을 취소한다")
     @Test
     void 정상적으로_예약을_취소() {
 
@@ -61,7 +61,7 @@ public class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
      * Then 예약이 취소되고
      * And 예약 상태가 '당일 취소' 상태로 변경된다.
      */
-    @DisplayName("[예약/취소] 당일에 예약을 취소하면 당일예약취소 상태가 된다.")
+    @DisplayName("당일에 예약을 취소하면 당일예약취소 상태가 된다")
     @Test
     void 당일에_예약을_취소하면_당일예약취소_상태로_변경() {
 
@@ -93,7 +93,7 @@ public class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
      * When 틀린 확인 코드를 입력하고 예약 취소를 시도하면
      * Then 취소가 거부된다.
      */
-    @DisplayName("[예약/취소] 틀린 확인코드를 입력할 경우 예약이 취소되지 않는다.")
+    @DisplayName("틀린 확인코드를 입력할 경우 예약이 취소되지 않는다")
     @Test
     void 틀린_확인코드로_예약_취소_불가() {
 
@@ -112,40 +112,5 @@ public class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
 
         // Then
         예약이_취소되지않았다(예약취소정보);
-    }
-
-    // =====================================================
-    // Helpers
-    // =====================================================
-
-    private String 예약정보에서_확인코드_조회(ExtractableResponse<Response> response) {
-        return response.jsonPath().getString("confirmationCode");
-    }
-
-    private Long 예약정보에서_예약ID_조회(ExtractableResponse<Response> response) {
-        return response.jsonPath().getLong("id");
-    }
-
-    private void 사이트가_존재한다(ExtractableResponse<Response> response, String expectedSiteNumber) {
-        List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
-        assertThat(siteNumbers).contains(expectedSiteNumber);
-    }
-
-    private void 예약이_취소되었다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(200);
-    }
-
-    private void 사전예약_취소_상태이다(ExtractableResponse<Response> response) {
-        String status = response.jsonPath().getString("status");
-        assertThat(status).isEqualTo(예약상태_사전취소);
-    }
-
-    private void 당일예약_취소_상태이다(ExtractableResponse<Response> response) {
-        String status = response.jsonPath().getString("status");
-        assertThat(status).isEqualTo(예약상태_당일취소);
-    }
-
-    private void 예약이_취소되지않았다(ExtractableResponse<Response> response) {
-        assertThat(response.statusCode()).isEqualTo(400);
     }
 }
