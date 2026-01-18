@@ -40,7 +40,7 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
   @Test
   void 예약_확인_코드가_일치하지_않으면_취소할_수_없다() {
     // given
-    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, PHONE_NUMBER);
+    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
     long 예약_ID = 예약_응답.jsonPath().getLong("id");
 
     var 예약확인_조회_응답 = 예약을_조회한다(예약_ID);
@@ -60,19 +60,18 @@ class ReservationCancellationAcceptanceTest extends AcceptanceTest {
   @Test
   void 당일_예약_취소_시_별도의_상태_코드로_관리된다() {
     // given
-    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, PHONE_NUMBER);
+    var 예약_응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
     long 예약_ID = 예약_응답.jsonPath().getLong("id");
 
     var 예약확인_조회_응답 = 예약을_조회한다(예약_ID);
-    long reservationId = 예약확인_조회_응답.jsonPath().getLong("[0].id");
-    String confirmationCode = 예약확인_조회_응답.jsonPath().get("[0].confirmationCode");
+    String 확인_코드 = 예약확인_조회_응답.jsonPath().get("[0].confirmationCode");
 
     // when
-    var 취소_응답 = 예약을_취소한다(reservationId, confirmationCode);
+    var 취소_응답 = 예약을_취소한다(예약_ID, 확인_코드);
     예약_취소가_성공했다(취소_응답);
 
     // then
-    var 조회_응답 = 예약을_조회한다(reservationId);
+    var 조회_응답 = 예약을_조회한다(예약_ID);
     예약_상태_확인(조회_응답, CANCELLED_SAME_DAY_STATUS);
   }
 }

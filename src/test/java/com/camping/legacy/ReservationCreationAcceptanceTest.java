@@ -23,7 +23,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   void 유효한_정보로_예약요청시_예약이_확정된다() {
     // given
     // when
-    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
 
     // then
     예약_성공_확인(응답);
@@ -36,7 +36,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   void 최대_예약_가능기간을_꽉_채워_예약_요청한다() {
     // given
     // when
-    var 응답 = 예약을_요청한다(0, 30, CUSTOMER_NAME, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(0, 30, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
 
     // then
     예약_성공_확인(응답);
@@ -47,7 +47,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   void 예약_제한_기간을_초과하여_요청하면_예약이_거부된다() {
     // given
     // when
-    var 응답 = 예약을_요청한다(0, 31, CUSTOMER_NAME, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(0, 31, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
@@ -59,7 +59,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   void 유효하지_않은_고객_이름으로_예약할_경우_예약_거부된다() {
     // given
     // when
-    var 응답 = 예약을_요청한다(0, 2, INVALID_CUSTOMER_NAME, PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(0, 2, INVALID_CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
@@ -71,7 +71,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
   void 유효하지_않은_전화번호로_예약_요청하면_예약_거부된다() {
     // given
     // when
-    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, INVALID_PHONE_NUMBER);
+    var 응답 = 예약을_요청한다(0, 2, CUSTOMER_NAME, SITE_A1, INVALID_PHONE_NUMBER);
 
     // then
     예약이_거부되었다(응답);
@@ -87,8 +87,8 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
 
     // when
     ConcurrencyTestHelper.execute(
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "홍길동", PHONE_NUMBER)),
-        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "이순신", "01056781234")));
+        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "홍길동", SITE_A1, PHONE_NUMBER)),
+        () -> recordResult(예약_성공_카운트, 예약을_요청한다(10, 11, "이순신", SITE_A1,"01056781234")));
 
     // then
     assertThat(예약_성공_카운트.get()).isEqualTo(1);
@@ -117,6 +117,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
             (int) TODAY.until(성수기_토요일, java.time.temporal.ChronoUnit.DAYS),
             (int) TODAY.until(성수기_일요일, java.time.temporal.ChronoUnit.DAYS),
             "성수기 주말 고객",
+            SITE_A1,
             PHONE_NUMBER
     );
 

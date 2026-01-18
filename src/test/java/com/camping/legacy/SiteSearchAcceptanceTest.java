@@ -13,8 +13,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
   @DisplayName("예약이 없는 기간으로 검색 시 가능한 예약 가능한 사이트 목록이 반환된다")
   @Test
   void 예약이_없는_기간으로_검색_시_예약_가능한_사이트_목록이_반환된다() {
-    // given
-    // A-1, B-1 모두 예약 없는 상태
+    // given : "A-1(대형)", "B-1(소형)" 모두 예약 없는 상태
     var 사이트_검색_결과 = 기간_조건으로_사이트를_검색한다(ONE_MONTH_LATER, ONE_MONTH_LATER_PLUS_TWO_DAYS);
 
     // then
@@ -38,7 +37,7 @@ class SiteSearchAcceptanceTest extends AcceptanceTest {
   void 기간내_중간_날짜가_예약된_사이트는_검색에서_제외된다() {
     // given : A-1 사이트는 이미 예약된 상태, A-2는 예약이 없는 상태
     신규_사이트를_등록한다(SITE_A2, "Large Site", 5);
-    예약을_요청한다(1, 3, CUSTOMER_NAME, PHONE_NUMBER);
+    예약을_요청한다(1, 3, CUSTOMER_NAME, SITE_A1, PHONE_NUMBER);
 
     // when & then
     var 검색_결과 = 사이트를_검색한다(TODAY, THREE_DAYS_LATER, LARGE_SITE_TYPE);
