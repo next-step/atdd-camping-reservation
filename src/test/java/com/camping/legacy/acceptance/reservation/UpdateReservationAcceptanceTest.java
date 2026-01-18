@@ -101,10 +101,10 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                 .response(it -> assertThat(it.getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다."));
     }
 
-    // FIXME 현재 updateReservation에는 '중복 예약 방지' 로직이 없음
-    @Disabled
     @Test
     void 변경된_예약이_다른_예약과_기간이_겹치면_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
         LocalDate conflictStart = LocalDate.now().plusDays(20);
         LocalDate conflictEnd = LocalDate.now().plusDays(22);
 
@@ -153,6 +153,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
     @Disabled
     @Test
     void 예외_변경된_예약_기간이_30일을_초과하면_수정이_거부된다() {
+        사이트를_생성한다("A-1");
+
         LocalDate start = LocalDate.now().plusDays(10);
         LocalDate end = LocalDate.now().plusDays(12);
 
@@ -183,7 +185,7 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
         );
 
         assertThatResponse(response)
-                .status(400)
+                .status(409)
                 .response(it -> assertThat(it.getString("message"))
                         .isEqualTo("예약 기간은 최대 30일입니다."));
     }

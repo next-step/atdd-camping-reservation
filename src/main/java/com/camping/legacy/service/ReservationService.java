@@ -394,10 +394,21 @@ public class ReservationService {
             }
         }
 
+        String targetSiteNumber = request.getSiteNumber() != null ? request.getSiteNumber() : reservation.getCampsite().getSiteNumber();
+        Campsite targetCampsite = campsiteRepository.findBySiteNumberWithLock(targetSiteNumber)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+        // 날짜가 변경되거나 사이트가 변경되는 경우 중복 검사
+        LocalDate targetStart = request.getStartDate() != null ? request.getStartDate() : reservation.getStartDate();
+        LocalDate targetEnd = request.getEndDate() != null ? request.getEndDate() : reservation.getEndDate();
+
+        if (reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndIdNot(
+                targetCampsite, targetEnd, targetStart, reservation.getId())) {
+             throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+        }
+
         if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
-                    .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
+            reservation.setCampsite(targetCampsite);
         }
 
         if (request.getStartDate() != null) {
