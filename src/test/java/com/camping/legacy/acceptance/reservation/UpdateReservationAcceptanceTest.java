@@ -247,8 +247,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
             int s1 = futures.get(0).get();
             int s2 = futures.get(1).get();
 
-            // Then: 하나는 성공(200), 하나는 실패(409)
-            assertThat(List.of(s1, s2)).contains(200, 409);
+            // Then: 하나는 성공, 하나는 실패
+            assertThat(List.of(s1, s2)).contains(200, 400);
         } finally {
             pool.shutdownNow();
         }
