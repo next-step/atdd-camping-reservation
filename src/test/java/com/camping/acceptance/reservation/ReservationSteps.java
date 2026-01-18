@@ -67,4 +67,15 @@ public class ReservationSteps {
                 .then().log().all()
                 .extract();
     }
+
+    public static ExtractableResponse<Response> 캘린더_조회_요청(Integer year, Integer month, Long siteId) {
+        return RestAssured
+                .given().log().all()
+                .queryParam("year", year)
+                .queryParam("month", month)
+                .queryParam("siteId", siteId)
+                .when().get("/api/reservations/calendar")
+                .then().log().all()
+                .extract();
+    }
 }
