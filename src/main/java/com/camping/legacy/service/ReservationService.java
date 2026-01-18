@@ -299,6 +299,10 @@ public class ReservationService {
     public void cancelReservation(Long id, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
+
+        if (reservation.getStatus().equals("CANCELLED") || reservation.getStatus().equals("CANCELLED_SAME_DAY")) {
+            throw new IllegalStateException("이미 취소된 예약입니다.");
+        }
         
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
