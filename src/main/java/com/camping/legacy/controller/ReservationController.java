@@ -6,6 +6,7 @@ import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.service.CalendarService;
 import com.camping.legacy.service.ReservationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
@@ -27,13 +29,14 @@ public class ReservationController {
     // 실제로는 ReservationService의 캘린더 메서드를 사용함
     // @Deprecated
     // private final CalendarService calendarService;
-    
+
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
         try {
             ReservationResponse response = reservationService.createReservation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
+            log.error("### 예약 생성 중 예외 발생: {}", e.getClass().getName(), e);
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);

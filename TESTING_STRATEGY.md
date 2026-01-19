@@ -43,16 +43,23 @@
 ```java
 package com.camping.acceptance;
 
+import com.camping.legacy.CampingApplication;
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.repository.CampsiteRepository;
+import com.camping.support.DatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -64,17 +71,37 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 인수 테스트 표준 샘플 클래스
  * 기능: 캠핑장 예약
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SuppressWarnings("NonAsciiCharacters")
+@ActiveProfiles("test")
+@SpringBootTest(classes = CampingApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Import(DatabaseCleaner.class)
 @DisplayName("캠핑장 예약 인수 테스트")
 public class ReservationAcceptanceTest {
+
+    public static final String API_RESERVATIONS = "/api/reservations";
 
     @LocalServerPort
     private int port;
 
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
+
+    @Autowired
+    private CampsiteRepository campsiteRepository;
+
+    private Campsite testSite;
+
     @BeforeEach
     void setUp() {
-        // 모든 요청은 로컬 호스트의 랜덤 포트를 사용하도록 설정
         RestAssured.port = port;
+        databaseCleaner.execute();
+
+        // 테스트용 사이트 데이터 미리 저장
+        testSite = campsiteRepository.save(Campsite.builder()
+                .siteNumber("A-01")
+                .description("테스트 사이트")
+                .maxPeople(4)
+                .build());
     }
 
     /**
@@ -84,29 +111,46 @@ public class ReservationAcceptanceTest {
      * then: 예약이 성공적으로 생성되고, 생성된 예약의 위치(Location)와 함께 상태 코드 201(Created)을 반환한다.
      */
     @Test
-    @DisplayName("사용자가 원하는 날짜에 캠핑장을 예약하면 예약에 성공한다")
-    void createReservation_Success() {
+    @DisplayName("예약_가능한_날짜에_캠핑장을_예약하면_예약에_성공한다")
+    void 예약_성공() {
         // given - 예약 요청에 필요한 데이터를 생성합니다.
-        Map<String, Object> reservationRequest = new HashMap<>();
-        reservationRequest.put("campsiteId", 1L);
-        reservationRequest.put("startDate", LocalDate.now().plusDays(10).toString());
-        reservationRequest.put("endDate", LocalDate.now().plusDays(12).toString());
-        reservationRequest.put("name", "홍길동");
-        reservationRequest.put("email", "gildong.hong@example.com");
+        var request = 예약_요청_생성(
+                testSite.getSiteNumber(),
+                LocalDate.now().plusDays(10),
+                LocalDate.now().plusDays(12),
+                "홍길동",
+                "010-1234-5678"
+        );
 
         // when - 캠핑장 예약을 요청하는 API를 호출합니다.
-        ExtractableResponse<Response> response = RestAssured
-                .given().log().all()
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .body(reservationRequest)
-                .when()
-                    .post("/reservations")
-                .then().log().all()
-                    .extract();
+        var response = 예약을_요청한다(request);
 
         // then - 예약이 성공적으로 생성되었는지 검증합니다.
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-        assertThat(response.header("Location")).matches("^/reservations/\\d+$");
+        assertThat(response.header("Location")).matches("^/api/reservations/\\d+$");
+    }
+
+    // --- Helper Methods ---
+
+    private ExtractableResponse<Response> 예약을_요청한다(Map<String, Object> request) {
+        return RestAssured
+                .given().log().all()
+                    .contentType(MediaType.APPLICATION_JSON_VALUE)
+                    .body(request)
+                .when()
+                    .post(API_RESERVATIONS)
+                .then().log().all()
+                    .extract();
+    }
+
+    private Map<String, Object> 예약_요청_생성(String siteNumber, LocalDate startDate, LocalDate endDate, String customerName, String phoneNumber) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("siteNumber", siteNumber);
+        request.put("startDate", startDate.toString());
+        request.put("endDate", endDate.toString());
+        request.put("customerName", customerName);
+        request.put("phoneNumber", phoneNumber);
+        return request;
     }
 }
 ```

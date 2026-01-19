@@ -10,6 +10,7 @@ import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
 import com.camping.legacy.util.StringUtils;
 import com.camping.legacy.util.ValidationUtils;
+import com.camping.legacy.util.aop.RetryOnOptimisticLock;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ public class ReservationService {
      * - 깊은 중첩
      * - 모든 로직을 한 곳에
      */
+    @RetryOnOptimisticLock
     public ReservationResponse createReservation(ReservationRequest request) {
         // ============================================================
         // STEP 1: 입력 데이터 추출
@@ -74,8 +76,8 @@ public class ReservationService {
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         } else {
-            // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+            // 사이트 존재 여부 확인 및 비관적 락 대신 버전을 강제로 증가시키는 낙관적 락 사용
+            Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 
             // 날짜 검증 (중첩 레벨 2)
@@ -134,10 +136,10 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository.hasConflictingReservation(
+                    campsite, "CONFIRMED", startDate, endDate);
             if (hasConflict) {
-                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+                throw new IllegalStateException("해당 기간에 이미 예약이 존재합니다.");
             }
 
             // ============================================================
@@ -223,6 +225,10 @@ public class ReservationService {
             reservation.setReservationDate(startDate);
             reservation.setCampsite(campsite);
             reservation.setPhoneNumber(phoneNumber);
+
+            // 양방향 관계의 일관성을 맞추기 위해 Campsite의 예약 목록에도 Reservation을 추가합니다.
+            // 이 코드가 있어야 JPA가 Campsite 엔티티의 변경을 감지하고 버전을 업데이트합니다.
+            campsite.getReservations().add(reservation);
 
             // 확인 코드 생성
             String confirmationCode = "";
