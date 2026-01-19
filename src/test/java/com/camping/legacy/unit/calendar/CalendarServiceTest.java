@@ -21,9 +21,6 @@ import static org.mockito.BDDMockito.given;
 class CalendarServiceTest {
 
     @Mock
-    private ReservationRepository reservationRepository;
-
-    @Mock
     private CampsiteRepository campsiteRepository;
 
     @InjectMocks
