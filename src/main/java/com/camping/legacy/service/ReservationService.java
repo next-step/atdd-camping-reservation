@@ -371,7 +371,9 @@ public class ReservationService {
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        if(reservation.getStatus() == "CANCELLED") throw new RuntimeException("취소된 예약은 수정할 수 없습니다.");
+        if (reservation.getStatus() != null && reservation.getStatus().startsWith("CANCELLED")) {
+            throw new RuntimeException("취소된 예약은 수정할 수 없습니다.");
+        }
         // 확인 코드 검증 (중복 코드 2 - cancelReservation과 동일)
         if (confirmationCode == null || confirmationCode.trim().isEmpty()) {
             throw new RuntimeException("확인 코드를 입력해주세요.");
@@ -710,8 +712,7 @@ public class ReservationService {
             if (reservation.getCampsite().getId().equals(siteId) &&
                 reservation.getStartDate() != null && reservation.getEndDate() != null) {
                 LocalDate current = reservation.getStartDate();
-                // 날짜를 하나씩 증가시키면서 맵에 추가
-                while (!current.isAfter(reservation.getEndDate()) && !current.isAfter(endDate)) {
+                while (current.isBefore(reservation.getEndDate()) && !current.isAfter(endDate)) {
                     if (!current.isBefore(startDate)) {
                         reservationMap.put(current, reservation);
                     }
