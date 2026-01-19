@@ -5,6 +5,7 @@ import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -21,10 +22,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("NonAsciiCharacters")
 class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
+    @BeforeEach
+    void 배경_데이터_설정() {
+        사이트를_생성한다("A-1");
+    }
+
     @Test
     void 올바른_확인코드면_예약자_이름을_수정할_수_있다() {
-        사이트를_생성한다("A-1");
-
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -47,8 +51,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 확인코드가_일치하지_않으면_예약_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -71,8 +73,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 변경된_날짜가_과거라면_예약_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -98,8 +98,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 변경된_예약이_다른_예약과_기간이_겹치면_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         LocalDate conflictStart = LocalDate.now().plusDays(20);
         LocalDate conflictEnd = LocalDate.now().plusDays(22);
 
@@ -146,8 +144,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_변경된_예약_기간이_30일을_초과하면_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         LocalDate start = LocalDate.now().plusDays(10);
         LocalDate end = LocalDate.now().plusDays(12);
 
@@ -185,8 +181,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_동시에_서로_다른_예약을_동일_사이트_기간으로_수정하면_하나만_성공해야_한다() throws Exception {
-        사이트를_생성한다("A-1");
-
         JsonPath res1 = 예약을_생성한다(ReservationRequest.builder()
                 .customerName("사용자1")
                 .startDate(LocalDate.now().plusDays(10))
@@ -251,8 +245,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_예약_기간_변경_시_종료일_없는경우_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
@@ -278,8 +270,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
     @Test
     void 예외_예약_기간_변경_시_시작일_없는경우_수정이_거부된다() {
-        사이트를_생성한다("A-1");
-
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
         Long reservationId = reservation.getLong("id");
         String confirmationCode = reservation.getString("confirmationCode");
