@@ -1,4 +1,4 @@
-package com.camping.legacy.acceptance.reservation;
+package com.camping.legacy.acceptance.reservation.apiExtractableresponse;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;

@@ -24,6 +24,8 @@ public class ReservationResponse {
     private String status;
     private String confirmationCode;
     private LocalDateTime createdAt;
+    private Integer totalPrice;
+    private Integer earnedPoints;
 
     public static ReservationResponse from(Reservation reservation) {
         ReservationResponse response = new ReservationResponse();
@@ -36,6 +38,12 @@ public class ReservationResponse {
         response.setStatus(reservation.getStatus());
         response.setConfirmationCode(reservation.getConfirmationCode());
         response.setCreatedAt(reservation.getCreatedAt());
+        return response;
+    }
+
+    public static ReservationResponse from(Reservation reservation, Integer totalPrice) {
+        ReservationResponse response = from(reservation);
+        response.setTotalPrice(totalPrice);
         return response;
     }
 }
