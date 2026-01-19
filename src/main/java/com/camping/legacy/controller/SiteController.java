@@ -54,12 +54,18 @@ public class SiteController {
     }
     
     @GetMapping("/search")
-    public ResponseEntity<List<SiteAvailabilityResponse>> searchSites(
+    public ResponseEntity<?> searchSites(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) String size) {
         
-        SiteSearchRequest request = new SiteSearchRequest(startDate, endDate, size);
-        return ResponseEntity.ok(siteService.searchAvailableSites(request));
+        try {
+            SiteSearchRequest request = new SiteSearchRequest(startDate, endDate, size);
+            return ResponseEntity.ok(siteService.searchAvailableSites(request));
+        } catch (RuntimeException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
     }
 }

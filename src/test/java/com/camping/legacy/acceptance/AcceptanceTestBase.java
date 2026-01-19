@@ -1,13 +1,15 @@
 package com.camping.legacy.acceptance;
 
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.repository.CampsiteRepository;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @SuppressWarnings("NonAsciiCharacters")
@@ -21,9 +23,20 @@ public abstract class AcceptanceTestBase {
     @LocalServerPort
     int port;
 
+    @Autowired
+    private DatabaseCleanup databaseCleanup;
+
+    @Autowired
+    private CampsiteRepository campsiteRepository;
+
     @BeforeEach
     void setUpRestAssured() {
         RestAssured.port = port;
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        databaseCleanup.execute();
+    }
+
+    protected void 사이트를_생성한다(String siteNumber) {
+        campsiteRepository.save(new Campsite(siteNumber, "테스트용 사이트", 4));
     }
 }

@@ -4,7 +4,7 @@ import com.camping.legacy.acceptance.ApiAcceptanceTestBase;
 import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -21,6 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SuppressWarnings("NonAsciiCharacters")
 class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
+
+    @BeforeEach
+    void 배경_데이터_설정() {
+        사이트를_생성한다("A-1");
+    }
 
     @Test
     void 예약_생성() {
@@ -80,9 +85,7 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
                         .isEqualTo("해당 기간에 이미 예약이 존재합니다."));
     }
 
-    // FIXME: 동시성 이슈 해결 필요
     @Test
-    @Disabled
     void 예외_동시에_동일_사이트_기간으로_예약_요청이_여러_건_들어와도_하나만_성공해야_한다() throws ExecutionException, InterruptedException {
         LocalDate startDate = LocalDate.now().plusDays(10);
         LocalDate endDate = LocalDate.now().plusDays(12);
@@ -113,5 +116,60 @@ class ReservationAcceptanceTest extends ApiAcceptanceTestBase {
         } finally {
             pool.shutdownNow();
         }
+    }
+
+    @Test
+    void 정상_예약이_취소되면_취소된_예약의_사이트와_기간에는_정상적으로_예약이_생성된다() {
+        // Given: 홍길동 예약 생성
+        ExtractableResponse<Response> firstBooking = 예약을_생성한다(기본_예약_요청);
+        assertThatResponse(firstBooking).status(201);
+
+        Long reservationId = firstBooking.jsonPath().getLong("id");
+        String confirmationCode = firstBooking.jsonPath().getString("confirmationCode");
+
+        // And: 홍길동 예약 취소
+        예약을_취소한다(reservationId, confirmationCode);
+
+        // When: 동일 기간, 사이트에 김철수 예약 요청
+        ExtractableResponse<Response> secondBooking = 예약을_생성한다(같은_기간_다른_고객(기본_예약_요청, "김철수"));
+
+        // Then: 예약 성공 (201)
+        assertThatResponse(secondBooking).status(201);
+    }
+
+    @Test
+    void 예외_사이트_최대_수용_인원을_초과하면_예약이_거부된다() {
+        ReservationRequest request = ReservationRequest.builder()
+                .customerName("김철수")
+                .startDate(LocalDate.now().plusDays(10))
+                .endDate(LocalDate.now().plusDays(12))
+                .siteNumber("A-1")
+                .numberOfPeople(5) // max+1
+                .build();
+
+        ExtractableResponse<Response> response = 예약을_생성한다(request);
+
+        assertThatResponse(response)
+                .status(409)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("해당 사이트의 최대 인원 수를 초과했습니다."));
+    }
+
+    @Test
+    void 예외_예약_인원_수는_최소_1명_이상이어야_한다() {
+        ReservationRequest request = ReservationRequest.builder()
+                .customerName("김철수")
+                .startDate(LocalDate.now().plusDays(10))
+                .endDate(LocalDate.now().plusDays(12))
+                .siteNumber("A-1")
+                .numberOfPeople(0) // Invalid
+                .build();
+
+        ExtractableResponse<Response> response = 예약을_생성한다(request);
+
+        assertThatResponse(response)
+                .status(409)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("최소 1명 이상의 인원이 필요합니다."));
     }
 }

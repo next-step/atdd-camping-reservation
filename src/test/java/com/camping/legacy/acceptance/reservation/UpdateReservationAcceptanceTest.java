@@ -5,10 +5,12 @@ import com.camping.legacy.acceptance.fixtures.ReservationRequest;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.concurrent.*;
 
 import static com.camping.legacy.acceptance.fixtures.TestFixtures.기본_예약_요청;
 import static com.camping.legacy.acceptance.matcher.AcceptanceAssertions.assertThatResponse;
@@ -20,9 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SuppressWarnings("NonAsciiCharacters")
 class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
 
-    /**
-     * FIXME: 기간은 필수값인데 현재 버그니 수정바람
-     */
+    @BeforeEach
+    void 배경_데이터_설정() {
+        사이트를_생성한다("A-1");
+    }
+
     @Test
     void 올바른_확인코드면_예약자_이름을_수정할_수_있다() {
         JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
@@ -34,8 +38,8 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                 confirmationCode,
                 ReservationRequest.builder()
                         .customerName("수정한 이름")
-                        .startDate(null)
-                        .endDate(null)
+                        .startDate(LocalDate.now().plusDays(2))
+                        .endDate(LocalDate.now().plusDays(4))
                         .siteNumber("A-1")
                         .build()
         );
@@ -92,8 +96,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                 .response(it -> assertThat(it.getString("message")).isEqualTo("과거 날짜로 예약할 수 없습니다."));
     }
 
-    // FIXME 현재 updateReservation에는 '중복 예약 방지' 로직이 없음
-    @Disabled
     @Test
     void 변경된_예약이_다른_예약과_기간이_겹치면_수정이_거부된다() {
         LocalDate conflictStart = LocalDate.now().plusDays(20);
@@ -140,8 +142,6 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                         .isEqualTo("해당 기간에 이미 예약이 존재합니다."));
     }
 
-    // FIXME 현재 updateReservation에는 '30일 제한' 로직이 없음
-    @Disabled
     @Test
     void 예외_변경된_예약_기간이_30일을_초과하면_수정이_거부된다() {
         LocalDate start = LocalDate.now().plusDays(10);
@@ -177,5 +177,119 @@ class UpdateReservationAcceptanceTest extends ApiAcceptanceTestBase {
                 .status(400)
                 .response(it -> assertThat(it.getString("message"))
                         .isEqualTo("예약 기간은 최대 30일입니다."));
+    }
+
+    @Test
+    void 예외_동시에_서로_다른_예약을_동일_사이트_기간으로_수정하면_하나만_성공해야_한다() throws Exception {
+        JsonPath res1 = 예약을_생성한다(ReservationRequest.builder()
+                .customerName("사용자1")
+                .startDate(LocalDate.now().plusDays(10))
+                .endDate(LocalDate.now().plusDays(12))
+                .siteNumber("A-1")
+                .build()).jsonPath();
+
+        JsonPath res2 = 예약을_생성한다(ReservationRequest.builder()
+                .customerName("사용자2")
+                .startDate(LocalDate.now().plusDays(14))
+                .endDate(LocalDate.now().plusDays(16))
+                .siteNumber("A-1")
+                .build()).jsonPath();
+
+        Long id1 = res1.getLong("id");
+        String code1 = res1.getString("confirmationCode");
+
+        Long id2 = res2.getLong("id");
+        String code2 = res2.getString("confirmationCode");
+
+        LocalDate targetStart = LocalDate.now().plusDays(20);
+        LocalDate targetEnd = LocalDate.now().plusDays(22);
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Callable<Integer> task1 = () -> {
+                barrier.await(); // 두 스레드 모두 여기 도착해야 동시에 진행
+                return 예약을_수정한다(
+                        id1, code1,
+                        ReservationRequest.builder()
+                                .customerName("사용자1")
+                                .startDate(targetStart)
+                                .endDate(targetEnd)
+                                .siteNumber("A-1")
+                                .build()
+                ).statusCode();
+            };
+
+            Callable<Integer> task2 = () -> {
+                barrier.await();
+                return 예약을_수정한다(
+                        id2, code2,
+                        ReservationRequest.builder()
+                                .customerName("사용자2")
+                                .startDate(targetStart)
+                                .endDate(targetEnd)
+                                .siteNumber("A-1")
+                                .build()
+                ).statusCode();
+            };
+
+            Future<Integer> f1 = pool.submit(task1);
+            Future<Integer> f2 = pool.submit(task2);
+
+            assertThat(List.of(f1.get(), f2.get())).contains(200, 400);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void 예외_예약_기간_변경_시_종료일_없는경우_수정이_거부된다() {
+        JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
+        Long reservationId = reservation.getLong("id");
+        String confirmationCode = reservation.getString("confirmationCode");
+
+        // When: 시작일만 변경 시도
+        ExtractableResponse<Response> responseStartOnly = 예약을_수정한다(
+                reservationId,
+                confirmationCode,
+                ReservationRequest.builder()
+                        .customerName("김철수")
+                        .startDate(LocalDate.now().plusDays(15))
+                        .endDate(null)
+                        .siteNumber("A-1")
+                        .build()
+        );
+
+        // Then: 거부됨
+        assertThatResponse(responseStartOnly)
+                .status(400)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("예약 기간을 선택해주세요."));
+    }
+
+    @Test
+    void 예외_예약_기간_변경_시_시작일_없는경우_수정이_거부된다() {
+        JsonPath reservation = 예약을_생성한다(기본_예약_요청).jsonPath();
+        Long reservationId = reservation.getLong("id");
+        String confirmationCode = reservation.getString("confirmationCode");
+
+        // When: 종료일만 변경 시도
+        ExtractableResponse<Response> responseEndOnly = 예약을_수정한다(
+                reservationId,
+                confirmationCode,
+                ReservationRequest.builder()
+                        .customerName("김철수")
+                        .startDate(null)
+                        .endDate(LocalDate.now().plusDays(15))
+                        .siteNumber("A-1")
+                        .build()
+        );
+
+        // Then: 거부됨
+        assertThatResponse(responseEndOnly)
+                .status(400)
+                .response(it -> assertThat(it.getString("message"))
+                        .isEqualTo("예약 기간을 선택해주세요."));
     }
 }

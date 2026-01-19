@@ -69,4 +69,14 @@ public abstract class ApiAcceptanceTestBase extends AcceptanceTestBase {
                 .then()
                 .extract();
     }
+
+    public ExtractableResponse<Response> 예약을_취소한다(Long reservationId, String confirmationCode) {
+        return given()
+                .contentType(ContentType.JSON)
+                .queryParam("confirmationCode", confirmationCode)
+                .when()
+                .delete(예약_API + "/" + reservationId)
+                .then()
+                .extract();
+    }
 }
