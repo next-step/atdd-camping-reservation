@@ -74,8 +74,8 @@ public class ReservationService {
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         } else {
-            // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+          // 사이트 존재 여부 확인 (중첩 레벨 2)
+            Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 
             // 날짜 검증 (중첩 레벨 2)
@@ -101,7 +101,20 @@ public class ReservationService {
             }
 
             // ============================================================
-            // STEP 3: 고객 정보 검증
+            // STEP 3: 인원수 검증
+            // ============================================================
+            Integer numberOfPeople = request.getNumberOfPeople();
+            if (numberOfPeople != null) {
+                if (numberOfPeople <= 0) {
+                    throw new RuntimeException("인원수는 1명 이상이어야 합니다.");
+                }
+                if (campsite.getMaxPeople() != null && numberOfPeople > campsite.getMaxPeople()) {
+                    throw new RuntimeException("최대 인원을 초과했습니다. (최대: " + campsite.getMaxPeople() + "명)");
+                }
+            }
+
+            // ============================================================
+            // STEP 4: 고객 정보 검증
             // ============================================================
             if (customerName == null || customerName.trim().isEmpty()) {
                 throw new RuntimeException("예약자 이름을 입력해주세요.");
@@ -358,7 +371,7 @@ public class ReservationService {
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-
+        if(reservation.getStatus() == "CANCELLED") throw new RuntimeException("취소된 예약은 수정할 수 없습니다.");
         // 확인 코드 검증 (중복 코드 2 - cancelReservation과 동일)
         if (confirmationCode == null || confirmationCode.trim().isEmpty()) {
             throw new RuntimeException("확인 코드를 입력해주세요.");
@@ -394,12 +407,30 @@ public class ReservationService {
             }
         }
 
+        // 변경될 값 결정 (동시성 제어를 위해 락 사용)
+        Campsite targetCampsite;
         if (request.getSiteNumber() != null) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
+            targetCampsite = campsiteRepository.findBySiteNumberWithLock(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
-            reservation.setCampsite(campsite);
+        } else {
+            // 사이트 변경 없이 날짜만 변경하는 경우에도 락 필요
+            targetCampsite = campsiteRepository.findBySiteNumberWithLock(reservation.getCampsite().getSiteNumber())
+                    .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+        }
+        LocalDate targetStartDate = request.getStartDate() != null ? request.getStartDate() : reservation.getStartDate();
+        LocalDate targetEndDate = request.getEndDate() != null ? request.getEndDate() : reservation.getEndDate();
+
+        // 예약 충돌 체크 (자기 자신 제외)
+        boolean hasConflict = reservationRepository.existsByCampsiteAndDateRangeExcludingId(
+                targetCampsite, targetEndDate, targetStartDate, id);
+        if (hasConflict) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
 
+        // 값 설정
+        if (request.getSiteNumber() != null) {
+            reservation.setCampsite(targetCampsite);
+        }
         if (request.getStartDate() != null) {
             reservation.setStartDate(request.getStartDate());
         }
@@ -671,8 +702,7 @@ public class ReservationService {
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
 
-        // 모든 예약 조회 (성능 이슈 가능)
-        List<Reservation> allReservations = reservationRepository.findAll();
+        List<Reservation> allReservations = reservationRepository.findAllActive();
         Map<LocalDate, Reservation> reservationMap = new HashMap<>();
 
         // 예약 기간 내의 모든 날짜에 대해 예약 정보 추가
