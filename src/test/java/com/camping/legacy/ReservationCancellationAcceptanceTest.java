@@ -1,5 +1,7 @@
 package com.camping.legacy;
 
+import static com.camping.legacy.client.ReservationClient.*;
+import static com.camping.legacy.client.SiteClient.*;
 import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
 import static com.camping.legacy.step.ReservationStep.*;

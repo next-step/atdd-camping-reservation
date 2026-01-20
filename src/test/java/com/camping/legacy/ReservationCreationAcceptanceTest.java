@@ -1,7 +1,7 @@
 package com.camping.legacy;
+import static com.camping.legacy.client.ReservationClient.*;
 import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
-import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
 import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.nextOrSame;
 

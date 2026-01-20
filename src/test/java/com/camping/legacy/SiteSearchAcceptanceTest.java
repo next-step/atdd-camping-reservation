@@ -1,11 +1,9 @@
 package com.camping.legacy;
 
+import static com.camping.legacy.client.ReservationClient.*;
+import static com.camping.legacy.client.SiteClient.*;
 import static com.camping.legacy.fixture.ReservationFixture.*;
 import static com.camping.legacy.fixture.ReservationRequestBuilder.*;
-import static com.camping.legacy.step.ReservationStep.예약을_요청한다;
-import static com.camping.legacy.step.ReservationStep.예약을_취소한다;
-import static com.camping.legacy.step.SiteStep.기간_조건으로_사이트를_검색한다;
-import static com.camping.legacy.step.SiteStep.사이트를_검색한다;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
