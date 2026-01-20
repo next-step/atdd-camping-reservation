@@ -9,7 +9,6 @@ import static java.time.temporal.TemporalAdjusters.nextOrSame;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,7 +90,6 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
     메시지가_확인된다(응답, INVALID_PHONE_NUMBER_MESSAGE);
   }
 
-  @Disabled("비용이 콘솔에만 출력이 되고 응답에 포함되지 않는다")
   @DisplayName("성수기 주말 할증 요금이 자동 계산된다")
   @Test
   void 성수기_주말_할증_요금이_자동_계산된다() {
@@ -106,7 +104,7 @@ class ReservationCreationAcceptanceTest extends AcceptanceTest {
             .build());
 
     // then
-    예약이_성공적으로_생성되었다(응답);
+    예약_비용을_확인한다(응답, 272000);
   }
 
   private static LocalDate 성수기_첫_토요일_계산(int peakMonth) {

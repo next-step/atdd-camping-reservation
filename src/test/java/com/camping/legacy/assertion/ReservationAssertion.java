@@ -48,4 +48,8 @@ public class ReservationAssertion {
     public static void 예약이_확정된_상태이다(ExtractableResponse<Response> response) {
         assertThat(response.jsonPath().getString("status")).isEqualTo(CONFIRMED_STATUS);
     }
+
+    public static void 예약_비용을_확인한다(ExtractableResponse<Response> response, int expected) {
+        assertThat(response.jsonPath().getInt("totalPrice")).isEqualTo(expected);
+    }
 }

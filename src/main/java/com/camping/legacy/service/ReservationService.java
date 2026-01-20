@@ -265,6 +265,7 @@ public class ReservationService {
             response.setSiteNumber(saved.getCampsite().getSiteNumber());
             response.setConfirmationCode(saved.getConfirmationCode());
             response.setStatus(saved.getStatus());
+            response.setTotalPrice(totalPrice);
 
             return response;
         }
