@@ -24,6 +24,7 @@ public class ReservationClient {
                 .queryParam("id", reservationId)
                 .when().get(RESERVATION_ENDPOINT)
                 .then().log().all()
+                .statusCode(200)
                 .extract();
     }
 

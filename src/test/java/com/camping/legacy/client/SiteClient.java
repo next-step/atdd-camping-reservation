@@ -29,6 +29,7 @@ public class SiteClient {
                 .queryParam("size", size)
                 .when().get(SITE_ENDPOINT + "/search")
                 .then().log().all()
+                .statusCode(200)
                 .extract();
     }
 }

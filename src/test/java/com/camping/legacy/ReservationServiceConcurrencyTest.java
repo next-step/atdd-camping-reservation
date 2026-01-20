@@ -64,14 +64,14 @@ public class ReservationServiceConcurrencyTest {
                     // ignore
                 }
             },
-                () -> {
-                    try {
-                        reservationService.createReservation(request.withCustomerName("이순신").build());
-                        successCount.incrementAndGet();
-                    } catch (Exception e) {
-                        // ignore
-                    }
+            () -> {
+                try {
+                    reservationService.createReservation(request.withCustomerName("이순신").build());
+                    successCount.incrementAndGet();
+                } catch (Exception e) {
+                    // ignore
                 }
+            }
         );
 
         // then

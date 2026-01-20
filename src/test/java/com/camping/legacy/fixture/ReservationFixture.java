@@ -15,6 +15,10 @@ public class ReservationFixture {
     public static final String INVALID_CUSTOMER_NAME_MESSAGE = "예약자 이름은 최소 2자 이상이어야 합니다.";
     public static final String INVALID_PHONE_NUMBER_MESSAGE = "전화번호 형식이 올바르지 않습니다.";
 
+    public static final String SUCCESS_RESERVATION_CANCEL_MESSAGE = "예약이 취소되었습니다.";
+    public static final String ALREADY_CANCELED_RESERVATION_MESSAGE = "이미 취소된 예약입니다.";
+    public static final String NONE_EXIST_RESERVATION_MESSAGE = "예약을 찾을 수 없습니다.";
+
     // 상태 코드 관련 상수
     public static final String CONFIRMED_STATUS = "CONFIRMED";
     public static final String CANCELLED_STATUS = "CANCELLED";
