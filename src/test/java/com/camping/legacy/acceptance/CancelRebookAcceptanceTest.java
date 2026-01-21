@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import static com.camping.legacy.acceptance.fixture.TestFixture.*;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_취소;
 import static com.camping.legacy.acceptance.steps.SiteSteps.가용_사이트_조회;
@@ -32,11 +33,11 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
         // Given - 예약 생성 후 취소
         LocalDate startDate = BASE_DATE;
         LocalDate endDate = BASE_DATE.plusDays(1);
-        String siteNumber = "A-3";
+        String siteNumber = 사이트_A3;
 
         // 1. 홍길동이 예약 생성
         ExtractableResponse<Response> createResponse = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", startDate, endDate);
+                siteNumber, 홍길동, 홍길동_전화번호, startDate, endDate);
         assertThat(createResponse.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         Long reservationId = createResponse.jsonPath().getLong("id");
@@ -48,7 +49,7 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
 
         // When - 최지원이 같은 기간에 새로운 예약 시도
         ExtractableResponse<Response> newReservation = 예약_요청(
-                siteNumber, "최지원", "010-9999-8888", startDate, endDate);
+                siteNumber, 최지원, 최지원_전화번호, startDate, endDate);
 
         // Then - 새 예약이 성공해야 함
         assertThat(newReservation.statusCode())
@@ -69,11 +70,11 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
         // Given - 오늘 날짜로 예약 생성 후 당일 취소
         LocalDate startDate = LocalDate.now();
         LocalDate endDate = LocalDate.now().plusDays(1);
-        String siteNumber = "A-3";
+        String siteNumber = 사이트_A3;
 
         // 1. 홍길동이 오늘~내일 예약 생성
         ExtractableResponse<Response> createResponse = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", startDate, endDate);
+                siteNumber, 홍길동, 홍길동_전화번호, startDate, endDate);
         assertThat(createResponse.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         Long reservationId = createResponse.jsonPath().getLong("id");
@@ -85,7 +86,7 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
 
         // When - 최지원이 같은 기간에 새로운 예약 시도
         ExtractableResponse<Response> newReservation = 예약_요청(
-                siteNumber, "최지원", "010-9999-8888", startDate, endDate);
+                siteNumber, 최지원, 최지원_전화번호, startDate, endDate);
 
         // Then - 새 예약이 성공해야 함
         assertThat(newReservation.statusCode())
@@ -99,15 +100,15 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
         // Given - CONFIRMED 상태 예약 존재
         LocalDate startDate = BASE_DATE.plusDays(10);
         LocalDate endDate = BASE_DATE.plusDays(11);
-        String siteNumber = "A-3";
+        String siteNumber = 사이트_A3;
 
         ExtractableResponse<Response> existingReservation = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", startDate, endDate);
+                siteNumber, 홍길동, 홍길동_전화번호, startDate, endDate);
         assertThat(existingReservation.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         // When - 같은 기간에 새로운 예약 시도
         ExtractableResponse<Response> newReservation = 예약_요청(
-                siteNumber, "최지원", "010-9999-8888", startDate, endDate);
+                siteNumber, 최지원, 최지원_전화번호, startDate, endDate);
 
         // Then - 예약 실패해야 함
         assertThat(newReservation.statusCode())
@@ -121,11 +122,11 @@ class CancelRebookAcceptanceTest extends AcceptanceTest {
         // Given - 예약 생성 후 취소
         LocalDate startDate = BASE_DATE.plusDays(20);
         LocalDate endDate = BASE_DATE.plusDays(21);
-        String siteNumber = "A-3";
+        String siteNumber = 사이트_A3;
 
         // 1. 예약 생성
         ExtractableResponse<Response> createResponse = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", startDate, endDate);
+                siteNumber, 홍길동, 홍길동_전화번호, startDate, endDate);
         assertThat(createResponse.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         Long reservationId = createResponse.jsonPath().getLong("id");

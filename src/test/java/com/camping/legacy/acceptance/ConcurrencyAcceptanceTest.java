@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static com.camping.legacy.acceptance.fixture.TestFixture.*;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_목록_조회;
 
@@ -36,7 +37,7 @@ class ConcurrencyAcceptanceTest extends AcceptanceTest {
         // Given
         LocalDate startDate = BASE_DATE;
         LocalDate endDate = BASE_DATE.plusDays(1);
-        String siteNumber = "A-1";
+        String siteNumber = 사이트_A1;
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch readyLatch = new CountDownLatch(2);
@@ -46,13 +47,13 @@ class ConcurrencyAcceptanceTest extends AcceptanceTest {
         Future<ExtractableResponse<Response>> future1 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청(siteNumber, "김철수", "010-1111-1111", startDate, endDate);
+            return 예약_요청(siteNumber, 김철수, 김철수_전화번호, startDate, endDate);
         });
 
         Future<ExtractableResponse<Response>> future2 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청(siteNumber, "이영희", "010-2222-2222", startDate, endDate);
+            return 예약_요청(siteNumber, 이영희, 이영희_전화번호, startDate, endDate);
         });
 
         readyLatch.await();
@@ -90,7 +91,7 @@ class ConcurrencyAcceptanceTest extends AcceptanceTest {
         // Given
         LocalDate startDate = BASE_DATE.plusDays(5);
         LocalDate endDate = startDate.plusDays(1);
-        String siteNumber = "A-1";
+        String siteNumber = 사이트_A1;
         int numberOfCustomers = 5;
 
         ExecutorService executor = Executors.newFixedThreadPool(numberOfCustomers);
@@ -157,13 +158,13 @@ class ConcurrencyAcceptanceTest extends AcceptanceTest {
         Future<ExtractableResponse<Response>> future1 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청("A-1", "김철수", "010-1111-1111", startDate, endDate);
+            return 예약_요청(사이트_A1, 김철수, 김철수_전화번호, startDate, endDate);
         });
 
         Future<ExtractableResponse<Response>> future2 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청("A-2", "이영희", "010-2222-2222", startDate, endDate);
+            return 예약_요청(사이트_A2, 이영희, 이영희_전화번호, startDate, endDate);
         });
 
         readyLatch.await();
