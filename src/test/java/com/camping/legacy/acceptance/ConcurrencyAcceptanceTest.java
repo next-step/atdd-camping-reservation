@@ -1,13 +1,9 @@
 package com.camping.legacy.acceptance;
 
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -20,7 +16,6 @@ import java.util.concurrent.Future;
 
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_목록_조회;
-import com.camping.legacy.CampingApplication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,18 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * "두 고객이 동시에 같은 사이트를 예약하면 정확히 1건만 성공해야 한다"
  */
 @DisplayName("동시 예약 처리 인수 테스트")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = CampingApplication.class)
-class ConcurrencyAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
+class ConcurrencyAcceptanceTest extends AcceptanceTest {
 
     private static final LocalDate BASE_DATE = LocalDate.now().plusDays(30);
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     @Test
     @DisplayName("두 고객이 동시에 같은 사이트를 예약하면 한 건만 성공한다")

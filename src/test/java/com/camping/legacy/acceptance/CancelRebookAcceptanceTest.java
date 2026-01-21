@@ -1,13 +1,9 @@
 package com.camping.legacy.acceptance;
 
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -18,7 +14,6 @@ import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_취소;
 import static com.camping.legacy.acceptance.steps.SiteSteps.가용_사이트_조회;
 import static org.assertj.core.api.Assertions.assertThat;
-import com.camping.legacy.CampingApplication;
 
 /**
  * 취소 후 재예약 인수 테스트
@@ -27,18 +22,9 @@ import com.camping.legacy.CampingApplication;
  * "취소된 예약이 있는 기간은 새 예약이 가능해야 한다"
  */
 @DisplayName("취소 후 재예약 인수 테스트")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = CampingApplication.class)
-class CancelRebookAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
+class CancelRebookAcceptanceTest extends AcceptanceTest {
 
     private static final LocalDate BASE_DATE = LocalDate.now().plusDays(70);
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     @Test
     @DisplayName("취소된 예약이 있는 날짜에 새로운 예약이 가능하다")

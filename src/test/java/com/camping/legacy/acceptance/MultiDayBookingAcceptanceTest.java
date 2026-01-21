@@ -1,13 +1,9 @@
 package com.camping.legacy.acceptance;
 
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -17,7 +13,6 @@ import java.util.Map;
 import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
 import static com.camping.legacy.acceptance.steps.SiteSteps.가용_사이트_검색;
 import static org.assertj.core.api.Assertions.assertThat;
-import com.camping.legacy.CampingApplication;
 
 /**
  * 연박 예약 검증 인수 테스트
@@ -26,18 +21,9 @@ import com.camping.legacy.CampingApplication;
  * "연박 예약 시 중간 날짜에 기존 예약이 있으면 예약 불가 처리해야 한다"
  */
 @DisplayName("연박 예약 검증 인수 테스트")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = CampingApplication.class)
-class MultiDayBookingAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
+class MultiDayBookingAcceptanceTest extends AcceptanceTest {
 
     private static final LocalDate BASE_DATE = LocalDate.now().plusDays(50);
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     @Test
     @DisplayName("중간 날짜에 예약이 있으면 연박 예약이 실패한다")
