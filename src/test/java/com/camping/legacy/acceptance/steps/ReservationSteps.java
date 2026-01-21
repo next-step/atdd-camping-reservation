@@ -1,11 +1,11 @@
 package com.camping.legacy.acceptance.steps;
 
+import com.camping.legacy.acceptance.fixture.ReservationRequestBuilder;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,13 +18,12 @@ public class ReservationSteps {
 
     public static ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
             String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
+        Map<String, Object> request = ReservationRequestBuilder.aReservation()
+                .withSiteNumber(siteNumber)
+                .withCustomerName(customerName)
+                .withPhoneNumber(phoneNumber)
+                .withDates(startDate, endDate)
+                .build();
 
         return given()
                     .contentType(JSON)
@@ -52,5 +51,32 @@ public class ReservationSteps {
                     .extract()
                     .jsonPath()
                     .getList("$");
+    }
+
+    public static ExtractableResponse<Response> 예약_단건_조회(Long reservationId) {
+        return given()
+                .when()
+                    .get(API_RESERVATIONS + "/" + reservationId)
+                .then()
+                    .extract();
+    }
+
+    public static ExtractableResponse<Response> 예약_수정(Long reservationId, String confirmationCode,
+            String siteNumber, String customerName, String phoneNumber,
+            LocalDate startDate, LocalDate endDate) {
+        Map<String, Object> request = ReservationRequestBuilder.aReservation()
+                .withSiteNumber(siteNumber)
+                .withCustomerName(customerName)
+                .withPhoneNumber(phoneNumber)
+                .withDates(startDate, endDate)
+                .build();
+
+        return given()
+                    .contentType(JSON)
+                    .body(request)
+                .when()
+                    .put(API_RESERVATIONS + "/" + reservationId + "?confirmationCode=" + confirmationCode)
+                .then()
+                    .extract();
     }
 }
