@@ -1,37 +1,26 @@
 package com.camping.legacy.step;
 
-import com.camping.legacy.dto.ReservationRequest;
-import io.restassured.http.ContentType;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
+import static com.camping.legacy.client.ReservationClient.예약을_취소한다;
 
-import static io.restassured.RestAssured.given;
+import com.camping.legacy.client.ReservationClient;
+import com.camping.legacy.dto.ReservationInfo;
+import com.camping.legacy.fixture.ReservationRequestBuilder;
 
 public class ReservationStep {
-    private static final String RESERVATION_ENDPOINT = "/api/reservations";
+    public static ReservationInfo 예약을_완료한다(ReservationRequestBuilder builder) {
+        var response = ReservationClient.예약을_요청한다(builder.build());
 
-    public static ExtractableResponse<Response> 예약을_요청한다(ReservationRequest request) {
-        return given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when().post(RESERVATION_ENDPOINT)
-                .then().log().all()
-                .extract();
+        return new ReservationInfo(
+                response.jsonPath().getLong("id"),
+                response.jsonPath().getString("confirmationCode")
+        );
     }
 
-    public static ExtractableResponse<Response> 예약을_조회한다(long reservationId) {
-        return  given().log().all()
-                .queryParam("id", reservationId)
-                .when().get(RESERVATION_ENDPOINT)
-                .then().log().all()
-                .extract();
-    }
+    public static ReservationInfo 사전_예약을_취소한다(ReservationRequestBuilder builder) {
+        var 예약_정보 = ReservationStep.예약을_완료한다(builder);
 
-    public static ExtractableResponse<Response> 예약을_취소한다(long reservationId, String confirmationCode) {
-        return given().log().all()
-                .queryParam("confirmationCode", confirmationCode)
-                .when().delete(RESERVATION_ENDPOINT + "/" + reservationId)
-                .then().log().all()
-                .extract();
+        예약을_취소한다(예약_정보.id(), 예약_정보.confirmationCode());
+
+        return 예약_정보;
     }
 }

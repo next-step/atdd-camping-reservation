@@ -1,13 +1,12 @@
 package com.camping.legacy.dto;
 
 import com.camping.legacy.domain.Reservation;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -24,6 +23,7 @@ public class ReservationResponse {
     private String status;
     private String confirmationCode;
     private LocalDateTime createdAt;
+    private int totalPrice;
     
     public static ReservationResponse from(Reservation reservation) {
         ReservationResponse response = new ReservationResponse();
