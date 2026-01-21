@@ -38,10 +38,11 @@ public class SiteService {
     public List<SiteAvailabilityResponse> getAvailableSites(LocalDate date) {
         List<Campsite> allSites = campsiteRepository.findAll();
         List<SiteAvailabilityResponse> responses = new ArrayList<>();
-        
+
         for (Campsite site : allSites) {
-            boolean isAvailable = !reservationRepository.existsByCampsiteAndReservationDate(site, date);
-            
+            // 취소되지 않은 활성 예약이 있는지 확인 (날짜 범위와 상태 모두 체크)
+            boolean isAvailable = !reservationRepository.existsActiveReservation(site, date, date);
+
             responses.add(SiteAvailabilityResponse.builder()
                     .siteId(site.getId())
                     .siteNumber(site.getSiteNumber())
@@ -53,7 +54,7 @@ public class SiteService {
                     .description(site.getDescription())
                     .build());
         }
-        
+
         return responses.stream()
                 .filter(SiteAvailabilityResponse::getAvailable)
                 .collect(Collectors.toList());
@@ -98,12 +99,11 @@ public class SiteService {
                 }
             }
 
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            // 전체 기간에 대해 취소되지 않은 활성 예약이 있는지 확인
+            boolean isAvailable = !reservationRepository.existsActiveReservation(
+                    site, request.getStartDate(), request.getEndDate());
 
-            if (startAvailable && endAvailable) {
+            if (isAvailable) {
                 // 사이트 크기 결정 (중복된 로직)
                 String size = "";
                 if (site.getSiteNumber().startsWith("A")) {

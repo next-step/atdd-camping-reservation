@@ -1,24 +1,19 @@
-package com.camping.acceptance;
+package com.camping.legacy.acceptance;
 
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
+import static com.camping.legacy.acceptance.fixture.TestFixture.*;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.legacy.acceptance.steps.SiteSteps.가용_사이트_검색;
 import static org.assertj.core.api.Assertions.assertThat;
-import com.camping.legacy.CampingApplication;
 
 /**
  * 연박 예약 검증 인수 테스트
@@ -27,18 +22,9 @@ import com.camping.legacy.CampingApplication;
  * "연박 예약 시 중간 날짜에 기존 예약이 있으면 예약 불가 처리해야 한다"
  */
 @DisplayName("연박 예약 검증 인수 테스트")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = CampingApplication.class)
-class MultiDayBookingAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
+class MultiDayBookingAcceptanceTest extends AcceptanceTest {
 
     private static final LocalDate BASE_DATE = LocalDate.now().plusDays(50);
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     @Test
     @DisplayName("중간 날짜에 예약이 있으면 연박 예약이 실패한다")
@@ -46,10 +32,10 @@ class MultiDayBookingAcceptanceTest {
         // Given - B-5에 1/25~26 예약 존재
         LocalDate existingStart = BASE_DATE.plusDays(1);  // 25일
         LocalDate existingEnd = BASE_DATE.plusDays(2);    // 26일
-        String siteNumber = "B-5";
+        String siteNumber = 사이트_B5;
 
         ExtractableResponse<Response> existingReservation = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", existingStart, existingEnd);
+                siteNumber, 홍길동, 홍길동_전화번호, existingStart, existingEnd);
         assertThat(existingReservation.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         // When - 1/24~27 연박 예약 시도 (중간에 기존 예약 포함)
@@ -57,7 +43,7 @@ class MultiDayBookingAcceptanceTest {
         LocalDate newEnd = BASE_DATE.plusDays(3);         // 27일
 
         ExtractableResponse<Response> response = 예약_요청(
-                siteNumber, "박민수", "010-9999-8888", newStart, newEnd);
+                siteNumber, 박민수, 박민수_전화번호, newStart, newEnd);
 
         // Then - 예약 실패해야 함
         assertThat(response.statusCode())
@@ -71,10 +57,10 @@ class MultiDayBookingAcceptanceTest {
         // Given - B-5에 예약 존재
         LocalDate existingStart = BASE_DATE.plusDays(10);
         LocalDate existingEnd = BASE_DATE.plusDays(11);
-        String siteNumber = "B-5";
+        String siteNumber = 사이트_B5;
 
         ExtractableResponse<Response> existingReservation = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", existingStart, existingEnd);
+                siteNumber, 홍길동, 홍길동_전화번호, existingStart, existingEnd);
         assertThat(existingReservation.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         // When - 기존 예약 종료일 다음날부터 예약
@@ -82,7 +68,7 @@ class MultiDayBookingAcceptanceTest {
         LocalDate newEnd = existingEnd.plusDays(1);
 
         ExtractableResponse<Response> response = 예약_요청(
-                siteNumber, "박민수", "010-9999-8888", newStart, newEnd);
+                siteNumber, 박민수, 박민수_전화번호, newStart, newEnd);
 
         // Then - 예약 성공
         assertThat(response.statusCode())
@@ -96,10 +82,10 @@ class MultiDayBookingAcceptanceTest {
         // Given - B-5에 예약 존재
         LocalDate existingStart = BASE_DATE.plusDays(20);
         LocalDate existingEnd = BASE_DATE.plusDays(21);
-        String siteNumber = "B-5";
+        String siteNumber = 사이트_B5;
 
         ExtractableResponse<Response> existingReservation = 예약_요청(
-                siteNumber, "홍길동", "010-1234-5678", existingStart, existingEnd);
+                siteNumber, 홍길동, 홍길동_전화번호, existingStart, existingEnd);
         assertThat(existingReservation.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         // When - 기존 예약 시작일 전날까지 예약
@@ -107,7 +93,7 @@ class MultiDayBookingAcceptanceTest {
         LocalDate newEnd = existingStart;                 // 시작일 전날까지
 
         ExtractableResponse<Response> response = 예약_요청(
-                siteNumber, "박민수", "010-9999-8888", newStart, newEnd);
+                siteNumber, 박민수, 박민수_전화번호, newStart, newEnd);
 
         // Then - 예약 성공
         assertThat(response.statusCode())
@@ -123,7 +109,7 @@ class MultiDayBookingAcceptanceTest {
         LocalDate existingEnd = BASE_DATE.plusDays(32);
 
         ExtractableResponse<Response> existingReservation = 예약_요청(
-                "B-6", "홍길동", "010-1234-5678", existingStart, existingEnd);
+                사이트_B6, 홍길동, 홍길동_전화번호, existingStart, existingEnd);
         assertThat(existingReservation.statusCode()).isEqualTo(HttpStatus.CREATED.value());
 
         // When - 기존 예약을 포함하는 기간으로 검색
@@ -134,45 +120,10 @@ class MultiDayBookingAcceptanceTest {
 
         // Then - B-6은 검색 결과에서 제외되어야 함
         boolean containsB6 = searchResults.stream()
-                .anyMatch(site -> "B-6".equals(site.get("siteNumber")));
+                .anyMatch(site -> 사이트_B6.equals(site.get("siteNumber")));
 
         assertThat(containsB6)
                 .as("중간 날짜에 예약이 있는 B-6 사이트는 검색 결과에서 제외되어야 한다")
                 .isFalse();
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 헬퍼 메서드
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    private ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
-            String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
-
-        return given()
-                    .contentType(JSON)
-                    .body(request)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> 가용_사이트_검색(LocalDate startDate, LocalDate endDate) {
-        return given()
-                .when()
-                    .get("/api/sites/search?startDate=" + startDate + "&endDate=" + endDate)
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .extract()
-                    .jsonPath()
-                    .getList("$");
     }
 }

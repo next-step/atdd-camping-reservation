@@ -1,28 +1,22 @@
-package com.camping.acceptance;
+package com.camping.legacy.acceptance;
 
-import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static io.restassured.RestAssured.given;
-import static io.restassured.http.ContentType.JSON;
-import com.camping.legacy.CampingApplication;
+import static com.camping.legacy.acceptance.fixture.TestFixture.*;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_요청;
+import static com.camping.legacy.acceptance.steps.ReservationSteps.예약_목록_조회;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,18 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * "두 고객이 동시에 같은 사이트를 예약하면 정확히 1건만 성공해야 한다"
  */
 @DisplayName("동시 예약 처리 인수 테스트")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = CampingApplication.class)
-class ConcurrencyAcceptanceTest {
-
-    @LocalServerPort
-    private int port;
+class ConcurrencyAcceptanceTest extends AcceptanceTest {
 
     private static final LocalDate BASE_DATE = LocalDate.now().plusDays(30);
-
-    @BeforeEach
-    void setUp() {
-        RestAssured.port = port;
-    }
 
     @Test
     @DisplayName("두 고객이 동시에 같은 사이트를 예약하면 한 건만 성공한다")
@@ -52,7 +37,7 @@ class ConcurrencyAcceptanceTest {
         // Given
         LocalDate startDate = BASE_DATE;
         LocalDate endDate = BASE_DATE.plusDays(1);
-        String siteNumber = "A-1";
+        String siteNumber = 사이트_A1;
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch readyLatch = new CountDownLatch(2);
@@ -62,13 +47,13 @@ class ConcurrencyAcceptanceTest {
         Future<ExtractableResponse<Response>> future1 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청(siteNumber, "김철수", "010-1111-1111", startDate, endDate);
+            return 예약_요청(siteNumber, 김철수, 김철수_전화번호, startDate, endDate);
         });
 
         Future<ExtractableResponse<Response>> future2 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청(siteNumber, "이영희", "010-2222-2222", startDate, endDate);
+            return 예약_요청(siteNumber, 이영희, 이영희_전화번호, startDate, endDate);
         });
 
         readyLatch.await();
@@ -106,7 +91,7 @@ class ConcurrencyAcceptanceTest {
         // Given
         LocalDate startDate = BASE_DATE.plusDays(5);
         LocalDate endDate = startDate.plusDays(1);
-        String siteNumber = "A-1";
+        String siteNumber = 사이트_A1;
         int numberOfCustomers = 5;
 
         ExecutorService executor = Executors.newFixedThreadPool(numberOfCustomers);
@@ -173,13 +158,13 @@ class ConcurrencyAcceptanceTest {
         Future<ExtractableResponse<Response>> future1 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청("A-1", "김철수", "010-1111-1111", startDate, endDate);
+            return 예약_요청(사이트_A1, 김철수, 김철수_전화번호, startDate, endDate);
         });
 
         Future<ExtractableResponse<Response>> future2 = executor.submit(() -> {
             readyLatch.countDown();
             startLatch.await();
-            return 예약_요청("A-2", "이영희", "010-2222-2222", startDate, endDate);
+            return 예약_요청(사이트_A2, 이영희, 이영희_전화번호, startDate, endDate);
         });
 
         readyLatch.await();
@@ -201,38 +186,8 @@ class ConcurrencyAcceptanceTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 헬퍼 메서드
+    // 동시성 테스트 전용 유틸리티 메서드
     // ═══════════════════════════════════════════════════════════════════════════
-
-    private ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
-            String phoneNumber, LocalDate startDate, LocalDate endDate) {
-        Map<String, Object> request = new HashMap<>();
-        request.put("siteNumber", siteNumber);
-        request.put("customerName", customerName);
-        request.put("phoneNumber", phoneNumber);
-        request.put("startDate", startDate.toString());
-        request.put("endDate", endDate.toString());
-        request.put("numberOfPeople", 4);
-
-        return given()
-                    .contentType(JSON)
-                    .body(request)
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .extract();
-    }
-
-    private List<?> 예약_목록_조회(LocalDate date) {
-        return given()
-                .when()
-                    .get("/api/reservations?date=" + date.toString())
-                .then()
-                    .statusCode(HttpStatus.OK.value())
-                    .extract()
-                    .jsonPath()
-                    .getList("$");
-    }
 
     private ExtractableResponse<Response> getResponse(Future<ExtractableResponse<Response>> future) {
         try {

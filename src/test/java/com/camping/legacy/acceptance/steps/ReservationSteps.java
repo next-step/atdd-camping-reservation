@@ -1,0 +1,82 @@
+package com.camping.legacy.acceptance.steps;
+
+import com.camping.legacy.acceptance.fixture.ReservationRequestBuilder;
+import io.restassured.response.ExtractableResponse;
+import io.restassured.response.Response;
+import org.springframework.http.HttpStatus;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+import static io.restassured.RestAssured.given;
+import static io.restassured.http.ContentType.JSON;
+
+public class ReservationSteps {
+
+    private static final String API_RESERVATIONS = "/api/reservations";
+
+    public static ExtractableResponse<Response> 예약_요청(String siteNumber, String customerName,
+            String phoneNumber, LocalDate startDate, LocalDate endDate) {
+        Map<String, Object> request = ReservationRequestBuilder.aReservation()
+                .withSiteNumber(siteNumber)
+                .withCustomerName(customerName)
+                .withPhoneNumber(phoneNumber)
+                .withDates(startDate, endDate)
+                .build();
+
+        return given()
+                    .contentType(JSON)
+                    .body(request)
+                .when()
+                    .post(API_RESERVATIONS)
+                .then()
+                    .extract();
+    }
+
+    public static ExtractableResponse<Response> 예약_취소(Long reservationId, String confirmationCode) {
+        return given()
+                .when()
+                    .delete(API_RESERVATIONS + "/" + reservationId + "?confirmationCode=" + confirmationCode)
+                .then()
+                    .extract();
+    }
+
+    public static List<?> 예약_목록_조회(LocalDate date) {
+        return given()
+                .when()
+                    .get(API_RESERVATIONS + "?date=" + date.toString())
+                .then()
+                    .statusCode(HttpStatus.OK.value())
+                    .extract()
+                    .jsonPath()
+                    .getList("$");
+    }
+
+    public static ExtractableResponse<Response> 예약_단건_조회(Long reservationId) {
+        return given()
+                .when()
+                    .get(API_RESERVATIONS + "/" + reservationId)
+                .then()
+                    .extract();
+    }
+
+    public static ExtractableResponse<Response> 예약_수정(Long reservationId, String confirmationCode,
+            String siteNumber, String customerName, String phoneNumber,
+            LocalDate startDate, LocalDate endDate) {
+        Map<String, Object> request = ReservationRequestBuilder.aReservation()
+                .withSiteNumber(siteNumber)
+                .withCustomerName(customerName)
+                .withPhoneNumber(phoneNumber)
+                .withDates(startDate, endDate)
+                .build();
+
+        return given()
+                    .contentType(JSON)
+                    .body(request)
+                .when()
+                    .put(API_RESERVATIONS + "/" + reservationId + "?confirmationCode=" + confirmationCode)
+                .then()
+                    .extract();
+    }
+}
