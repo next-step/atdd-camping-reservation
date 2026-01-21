@@ -74,8 +74,8 @@ public class ReservationService {
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         } else {
-            // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+            // 사이트 존재 여부 확인 (중첩 레벨 2) - 비관적 락 적용
+            Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 
             // 날짜 검증 (중첩 레벨 2)
@@ -115,7 +115,9 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("연락처를 입력해주세요.");
+            } else {
                 String cleaned = phoneNumber.replaceAll("-", "");
                 if (cleaned.length() < 10) {
                     throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
@@ -134,7 +136,7 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            boolean hasConflict = reservationRepository.existsActiveReservation(
                     campsite, endDate, startDate);
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
@@ -385,6 +387,17 @@ public class ReservationService {
             if (startDate.isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
+
+            // 변경할 사이트 결정 (요청에 없으면 기존 예약의 사이트 사용)
+            Campsite campsite = request.getSiteNumber() != null
+                    ? campsiteRepository.findBySiteNumberWithLock(request.getSiteNumber())
+                        .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."))
+                    : reservation.getCampsite();
+
+            // 자기 자신을 제외하고 중복 예약 체크
+            if (reservationRepository.existsActiveReservationExcluding(campsite, endDate, startDate, id)) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
         }
 
         // 고객 이름 검증 (중복 코드 4)
@@ -397,6 +410,13 @@ public class ReservationService {
         if (request.getSiteNumber() != null) {
             Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+
+            LocalDate startDate = reservation.getStartDate();
+            LocalDate endDate = reservation.getEndDate();
+            if (reservationRepository.existsActiveReservation(campsite, endDate, startDate)) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
+
             reservation.setCampsite(campsite);
         }
 
@@ -672,7 +692,7 @@ public class ReservationService {
         LocalDate endDate = yearMonth.atEndOfMonth();
 
         // 모든 예약 조회 (성능 이슈 가능)
-        List<Reservation> allReservations = reservationRepository.findAll();
+        List<Reservation> allReservations = reservationRepository.findActiveReservations();
         Map<LocalDate, Reservation> reservationMap = new HashMap<>();
 
         // 예약 기간 내의 모든 날짜에 대해 예약 정보 추가

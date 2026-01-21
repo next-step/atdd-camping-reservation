@@ -15,7 +15,7 @@ public class ReservationFixture {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    private static final String DEFAULT_CUSTOMER_NAME = "테스트고객";
+    private static final String DEFAULT_CUSTOMER_NAME = "홍길동";
     private static final String DEFAULT_PHONE = "010-1234-5678";
 
     public Reservation 예약_생성(Campsite campsite, String customerName, String phone,
