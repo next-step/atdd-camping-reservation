@@ -394,6 +394,25 @@ public class ReservationService {
             }
         }
 
+        // 기간 중복 체크 (자신의 예약 제외)
+        if (request.getStartDate() != null && request.getEndDate() != null) {
+            Campsite targetCampsite = request.getSiteNumber() != null
+                    ? campsiteRepository.findBySiteNumber(request.getSiteNumber())
+                        .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."))
+                    : reservation.getCampsite();
+
+            List<Reservation> conflictingReservations = reservationRepository
+                    .findConflictingReservationsWithLock(targetCampsite, request.getStartDate(), request.getEndDate());
+
+            // 자신의 예약은 제외
+            boolean hasConflict = conflictingReservations.stream()
+                    .anyMatch(r -> !r.getId().equals(id));
+
+            if (hasConflict) {
+                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
+            }
+        }
+
         if (request.getSiteNumber() != null) {
             Campsite campsite = campsiteRepository.findBySiteNumber(request.getSiteNumber())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
