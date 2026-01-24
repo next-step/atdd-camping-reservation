@@ -1,4 +1,4 @@
-package com.camping.legacy.fixture;
+package com.camping.legacy.client;
 
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
@@ -6,9 +6,9 @@ import io.restassured.response.Response;
 
 import java.time.LocalDate;
 
-public class SiteFixture {
+public class SiteClient {
 
-    public static ExtractableResponse<Response> getAllSites() {
+    public static ExtractableResponse<Response> 전체_사이트_조회_API() {
         return RestAssured.given()
                 .when()
                 .get("/api/sites")
@@ -16,7 +16,7 @@ public class SiteFixture {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> getSiteById(Long siteId) {
+    public static ExtractableResponse<Response> 사이트_상세_조회_API(Long siteId) {
         return RestAssured.given()
                 .when()
                 .get("/api/sites/{siteId}", siteId)
@@ -24,7 +24,7 @@ public class SiteFixture {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> getAvailableSites(LocalDate date) {
+    public static ExtractableResponse<Response> 가용_사이트_조회_API(LocalDate date) {
         return RestAssured.given()
                 .param("date", date.toString())
                 .when()
@@ -33,7 +33,7 @@ public class SiteFixture {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> searchAvailableSites(LocalDate startDate, LocalDate endDate) {
+    public static ExtractableResponse<Response> 기간별_가용_사이트_검색_API(LocalDate startDate, LocalDate endDate) {
         return RestAssured.given()
                 .param("startDate", startDate.toString())
                 .param("endDate", endDate.toString())
@@ -43,7 +43,7 @@ public class SiteFixture {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> searchAvailableSitesWithSize(LocalDate startDate, LocalDate endDate, String size) {
+    public static ExtractableResponse<Response> 사이즈별_가용_사이트_검색_API(LocalDate startDate, LocalDate endDate, String size) {
         return RestAssured.given()
                 .param("startDate", startDate.toString())
                 .param("endDate", endDate.toString())
@@ -54,7 +54,7 @@ public class SiteFixture {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> checkSiteAvailability(String siteNumber, LocalDate date) {
+    public static ExtractableResponse<Response> 사이트_가용성_확인_API(String siteNumber, LocalDate date) {
         return RestAssured.given()
                 .param("date", date.toString())
                 .when()

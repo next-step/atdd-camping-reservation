@@ -1,7 +1,7 @@
 package com.camping.legacy.service;
 
 import com.camping.legacy.fixture.CampsiteFixture;
-import com.camping.legacy.fixture.ReservationFixture;
+import com.camping.legacy.builder.ReservationRequestBuilder;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.camping.legacy.builder.ReservationRequestBuilder.aReservation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
@@ -35,104 +36,112 @@ class ReservationServiceConcurrencyTest {
     private ReservationRepository reservationRepository;
 
     @BeforeEach
-    void setUp() {
+    void 사전_데이터_준비() {
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
-        CampsiteFixture.createDefaultSites(campsiteRepository);
+        CampsiteFixture.기본_사이트_생성(campsiteRepository);
     }
 
     @AfterEach
-    void tearDown() {
+    void 데이터_정리() {
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
     }
 
     @Nested
     @DisplayName("동시 예약 요청")
-    class ConcurrentReservationRequests {
+    class 동시_예약_요청 {
 
         @Test
         @DisplayName("동일 사이트에 동시 예약 요청 시 하나만 성공한다")
-        void shouldAllowOnlyOneReservationForSameSite() throws InterruptedException {
+        void 동일_사이트에_동시_예약_요청시_하나만_성공한다() throws InterruptedException {
             // given
-            var targetDate = LocalDate.now().plusDays(7);
-            var numberOfConcurrentRequests = 10;
-            var executorService = Executors.newFixedThreadPool(numberOfConcurrentRequests);
-            var startLatch = new CountDownLatch(1);
-            var doneLatch = new CountDownLatch(numberOfConcurrentRequests);
+            var 예약날짜 = LocalDate.now().plusDays(7);
+            var 동시요청수 = 10;
+            var executorService = Executors.newFixedThreadPool(동시요청수);
+            var 시작신호 = new CountDownLatch(1);
+            var 완료신호 = new CountDownLatch(동시요청수);
 
-            var successCount = new AtomicInteger(0);
-            var failCount = new AtomicInteger(0);
+            var 성공횟수 = new AtomicInteger(0);
+            var 실패횟수 = new AtomicInteger(0);
 
             // when
-            for (var i = 0; i < numberOfConcurrentRequests; i++) {
-                final var index = i;
+            for (var i = 0; i < 동시요청수; i++) {
+                final var 인덱스 = i;
                 executorService.submit(() -> {
                     try {
-                        startLatch.await();
-                        var request = ReservationFixture.createConcurrencyRequest(index, "A-1", targetDate, targetDate.plusDays(2));
-                        reservationService.createReservation(request);
-                        successCount.incrementAndGet();
+                        시작신호.await();
+                        var 요청 = aReservation()
+                                .siteNumber("A-1")
+                                .period(예약날짜, 예약날짜.plusDays(2))
+                                .forConcurrencyTest(인덱스)
+                                .build();
+                        reservationService.createReservation(요청);
+                        성공횟수.incrementAndGet();
                     } catch (RuntimeException e) {
-                        failCount.incrementAndGet();
+                        실패횟수.incrementAndGet();
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     } finally {
-                        doneLatch.countDown();
+                        완료신호.countDown();
                     }
                 });
             }
 
-            startLatch.countDown();
-            doneLatch.await(30, TimeUnit.SECONDS);
-            shutdownExecutor(executorService);
+            시작신호.countDown();
+            완료신호.await(30, TimeUnit.SECONDS);
+            executor_종료(executorService);
 
             // then
-            assertThat(successCount.get()).isEqualTo(1);
-            assertThat(failCount.get()).isEqualTo(numberOfConcurrentRequests - 1);
+            assertThat(성공횟수.get()).isEqualTo(1);
+            assertThat(실패횟수.get()).isEqualTo(동시요청수 - 1);
         }
 
         @Test
         @DisplayName("서로 다른 사이트에 동시 예약 요청 시 모두 성공한다")
-        void shouldAllowAllReservationsForDifferentSites() throws InterruptedException {
+        void 서로_다른_사이트에_동시_예약_요청시_모두_성공한다() throws InterruptedException {
             // given
-            var targetDate = LocalDate.now().plusDays(7);
+            var 예약날짜 = LocalDate.now().plusDays(7);
             var executorService = Executors.newFixedThreadPool(2);
-            var startLatch = new CountDownLatch(1);
-            var doneLatch = new CountDownLatch(2);
+            var 시작신호 = new CountDownLatch(1);
+            var 완료신호 = new CountDownLatch(2);
 
-            var successCount = new AtomicInteger(0);
-            var sites = new String[]{"A-1", "A-2"};
+            var 성공횟수 = new AtomicInteger(0);
+            var 사이트목록 = new String[]{"A-1", "A-2"};
 
             // when
             for (var i = 0; i < 2; i++) {
-                final var index = i;
+                final var 인덱스 = i;
                 executorService.submit(() -> {
                     try {
-                        startLatch.await();
-                        var request = ReservationFixture.createConcurrencyRequest(index, sites[index], targetDate, targetDate.plusDays(2));
-                        reservationService.createReservation(request);
-                        successCount.incrementAndGet();
+                        시작신호.await();
+                        var 요청 = aReservation()
+                                .siteNumber(사이트목록[인덱스])
+                                .period(예약날짜, 예약날짜.plusDays(2))
+                                .forConcurrencyTest(인덱스)
+                                .build();
+                        reservationService.createReservation(요청);
+                        성공횟수.incrementAndGet();
                     } catch (RuntimeException e) {
                         // 실패
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     } finally {
-                        doneLatch.countDown();
+                        완료신호.countDown();
                     }
                 });
             }
 
-            startLatch.countDown();
-            doneLatch.await(30, TimeUnit.SECONDS);
-            shutdownExecutor(executorService);
+            시작신호.countDown();
+            완료신호.await(30, TimeUnit.SECONDS);
+            executor_종료(executorService);
 
             // then
-            assertThat(successCount.get()).isEqualTo(2);
+            assertThat(성공횟수.get()).isEqualTo(2);
         }
     }
 
-    private void shutdownExecutor(ExecutorService executorService) {
+    private void executor_종료(ExecutorService executorService) {
         executorService.shutdown();
         try {
             if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
