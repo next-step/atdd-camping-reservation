@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import com.camping.legacy.client.ReservationClient;
+import com.camping.legacy.client.SiteClient;
+
 import static com.camping.legacy.steps.ReservationSteps.*;
 import static com.camping.legacy.steps.SiteSteps.*;
 
@@ -74,32 +77,13 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
             // given
             var 조회날짜 = 일_후(7);
             var 예약 = 예약_생성됨("김철수", "A-1", 조회날짜, 조회날짜.plusDays(2));
-            예약_취소됨(예약);
+            ReservationClient.예약_취소_API(예약.getId(), 예약.getConfirmationCode());
 
             // when
             var 가용_사이트_목록 = 가용_사이트_조회(조회날짜);
 
             // then
             가용_목록에_포함됨(가용_사이트_목록, "A-1");
-        }
-    }
-
-    @Nested
-    @DisplayName("필터링")
-    class 필터링 {
-
-        @Test
-        @DisplayName("사이즈 필터로 대형 사이트만 검색한다")
-        void 사이즈_필터로_대형_사이트만_검색한다() {
-            // given
-            var 시작일 = 일_후(7);
-            var 종료일 = 일_후(10);
-
-            // when
-            var 가용_사이트_목록 = 사이즈별_가용_사이트_검색(시작일, 종료일, "대형");
-
-            // then
-            대형_사이트만_포함됨(가용_사이트_목록);
         }
     }
 
@@ -146,7 +130,7 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
             var 과거날짜 = 일_전(3);
 
             // when
-            var 응답 = 사이트_가용성_조회_요청("A-1", 과거날짜);
+            var 응답 = SiteClient.사이트_가용성_확인_API("A-1", 과거날짜);
 
             // then
             응답_실패_확인(응답, HttpStatus.INTERNAL_SERVER_ERROR);

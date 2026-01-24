@@ -8,6 +8,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.camping.legacy.client.SiteClient;
+
 import static com.camping.legacy.steps.SiteSteps.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +28,7 @@ class SiteAcceptanceTest extends AcceptanceTestBase {
     @DisplayName("전체 캠핑 사이트 목록을 조회한다")
     void 전체_캠핑_사이트_목록을_조회한다() {
         // when
-        var 응답 = 전체_사이트_조회_요청();
+        var 응답 = SiteClient.전체_사이트_조회_API();
 
         // then
         응답_성공_확인(응답);
@@ -38,7 +40,7 @@ class SiteAcceptanceTest extends AcceptanceTestBase {
     @DisplayName("특정 캠핑 사이트 상세 정보를 조회한다")
     void 특정_캠핑_사이트_상세_정보를_조회한다() {
         // when
-        var 응답 = 사이트_상세_조회_요청(1L);
+        var 응답 = SiteClient.사이트_상세_조회_API(1L);
 
         // then
         응답_성공_확인(응답);

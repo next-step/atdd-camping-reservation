@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import com.camping.legacy.client.ReservationClient;
+import com.camping.legacy.dto.ReservationResponse;
+
 import static com.camping.legacy.builder.ReservationRequestBuilder.aReservation;
 import static com.camping.legacy.steps.ReservationSteps.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +41,7 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
             var 예약 = 예약_생성됨("홍길동", "A-1", 시작일, 종료일);
 
             // when
-            var 응답 = 예약_취소_요청(예약.getId(), 예약.getConfirmationCode());
+            var 응답 = ReservationClient.예약_취소_API(예약.getId(), 예약.getConfirmationCode());
 
             // then
             예약_취소_성공(응답);
@@ -56,7 +59,7 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
             var 예약 = 예약_생성됨(예약요청);
 
             // when
-            var 응답 = 예약_취소_요청(예약.getId(), 예약.getConfirmationCode());
+            var 응답 = ReservationClient.예약_취소_API(예약.getId(), 예약.getConfirmationCode());
 
             // then
             예약_취소_성공(응답);
@@ -75,7 +78,7 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
             var 예약 = 예약_생성됨("홍길동", "A-1", 일_후(7), 일_후(9));
 
             // when
-            var 응답 = 예약_취소_요청(예약.getId(), "WRONG1");
+            var 응답 = ReservationClient.예약_취소_API(예약.getId(), "WRONG1");
 
             // then
             에러_응답_확인(응답, HttpStatus.BAD_REQUEST, "확인 코드가 일치하지 않습니다.");
@@ -85,7 +88,7 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("존재하지 않는 예약 취소 시도 시 실패한다")
         void 존재하지_않는_예약_취소시_실패한다() {
             // when
-            var 응답 = 예약_취소_요청(9999L, "WRONG1");
+            var 응답 = ReservationClient.예약_취소_API(9999L, "WRONG1");
 
             // then
             에러_응답_확인(응답, HttpStatus.BAD_REQUEST, "예약을 찾을 수 없습니다.");
@@ -103,7 +106,7 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
             var 시작일 = 일_후(7);
             var 종료일 = 일_후(9);
             var 첫번째_예약 = 예약_생성됨("홍길동", "A-1", 시작일, 종료일);
-            예약_취소됨(첫번째_예약);
+            ReservationClient.예약_취소_API(첫번째_예약.getId(), 첫번째_예약.getConfirmationCode());
 
             // when
             var 재예약요청 = aReservation()
@@ -111,11 +114,11 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
                     .siteNumber("A-1")
                     .period(시작일, 종료일)
                     .build();
-            var 응답 = 예약_생성_요청(재예약요청);
+            var 응답 = ReservationClient.예약_생성_API(재예약요청);
 
             // then
             예약_생성_성공(응답);
-            var 새예약 = 예약_응답_추출(응답);
+            var 새예약 = 응답.as(ReservationResponse.class);
             assertThat(새예약.getCustomerName()).isEqualTo("김철수");
         }
     }

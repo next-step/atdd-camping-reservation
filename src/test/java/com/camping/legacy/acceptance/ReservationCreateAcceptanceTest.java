@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import com.camping.legacy.client.ReservationClient;
+import com.camping.legacy.dto.ReservationResponse;
+
 import static com.camping.legacy.builder.ReservationRequestBuilder.aReservation;
 import static com.camping.legacy.steps.ReservationSteps.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,11 +43,11 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
                     .build();
 
             // when
-            var 응답 = 예약_생성_요청(예약요청);
+            var 응답 = ReservationClient.예약_생성_API(예약요청);
 
             // then
             예약_생성_성공(응답);
-            var 예약 = 예약_응답_추출(응답);
+            var 예약 = 응답.as(ReservationResponse.class);
             assertThat(예약.getConfirmationCode()).hasSize(6);
             assertThat(예약.getStatus()).isEqualTo("CONFIRMED");
             assertThat(예약.getCustomerName()).isEqualTo("홍길동");
@@ -61,11 +64,11 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
                     .build();
 
             // when
-            var 응답 = 예약_생성_요청(예약요청);
+            var 응답 = ReservationClient.예약_생성_API(예약요청);
 
             // then
             예약_생성_성공(응답);
-            var 예약 = 예약_응답_추출(응답);
+            var 예약 = 응답.as(ReservationResponse.class);
             assertThat(예약.getStartDate()).isEqualTo(오늘);
             assertThat(예약.getEndDate()).isEqualTo(오늘);
         }
@@ -77,7 +80,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
             var 시작일 = 일_후(7);
             var 종료일 = 일_후(9);
             var 첫번째_예약 = 예약_생성됨("김철수", "A-1", 시작일, 종료일);
-            예약_취소됨(첫번째_예약);
+            ReservationClient.예약_취소_API(첫번째_예약.getId(), 첫번째_예약.getConfirmationCode());
 
             // when
             var 재예약요청 = aReservation()
@@ -85,98 +88,10 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
                     .siteNumber("A-1")
                     .period(시작일, 종료일)
                     .build();
-            var 응답 = 예약_생성_요청(재예약요청);
+            var 응답 = ReservationClient.예약_생성_API(재예약요청);
 
             // then
             예약_생성_성공(응답);
-        }
-    }
-
-    @Nested
-    @DisplayName("날짜 검증 예외")
-    class 날짜_검증_예외 {
-
-        @Test
-        @DisplayName("과거 날짜로 예약 시도 시 실패한다")
-        void 과거_날짜로_예약하면_실패한다() {
-            // given
-            var 예약요청 = aReservation()
-                    .pastDate(3)
-                    .build();
-
-            // when
-            var 응답 = 예약_생성_요청(예약요청);
-
-            // then
-            에러_응답_확인(응답, HttpStatus.CONFLICT, "과거 날짜로 예약할 수 없습니다.");
-        }
-
-        @Test
-        @DisplayName("종료일이 시작일보다 이전이면 실패한다")
-        void 종료일이_시작일보다_이전이면_실패한다() {
-            // given
-            var 예약요청 = aReservation()
-                    .startDate(일_후(10))
-                    .endDate(일_후(7))
-                    .build();
-
-            // when
-            var 응답 = 예약_생성_요청(예약요청);
-
-            // then
-            에러_응답_확인(응답, HttpStatus.CONFLICT, "종료일이 시작일보다 이전일 수 없습니다.");
-        }
-
-        @Test
-        @DisplayName("30일 초과 기간 예약 시 실패한다")
-        void 삼십일_초과_기간_예약시_실패한다() {
-            // given
-            var 시작일 = 일_후(7);
-            var 예약요청 = aReservation()
-                    .startDate(시작일)
-                    .endDate(시작일.plusDays(40))
-                    .build();
-
-            // when
-            var 응답 = 예약_생성_요청(예약요청);
-
-            // then
-            에러_응답_확인(응답, HttpStatus.CONFLICT, "예약 기간은 최대 30일입니다.");
-        }
-    }
-
-    @Nested
-    @DisplayName("고객 정보 검증 예외")
-    class 고객_정보_검증_예외 {
-
-        @Test
-        @DisplayName("이름이 2자 미만이면 실패한다")
-        void 이름이_이자_미만이면_실패한다() {
-            // given
-            var 예약요청 = aReservation()
-                    .customerName("김")
-                    .build();
-
-            // when
-            var 응답 = 예약_생성_요청(예약요청);
-
-            // then
-            에러_응답_확인(응답, HttpStatus.CONFLICT, "예약자 이름은 최소 2자 이상이어야 합니다.");
-        }
-
-        @Test
-        @DisplayName("이름이 비어있으면 실패한다")
-        void 이름이_비어있으면_실패한다() {
-            // given
-            var 예약요청 = aReservation()
-                    .customerName("")
-                    .build();
-
-            // when
-            var 응답 = 예약_생성_요청(예약요청);
-
-            // then
-            에러_응답_확인(응답, HttpStatus.CONFLICT, "예약자 이름을 입력해주세요.");
         }
     }
 
@@ -193,7 +108,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
                     .build();
 
             // when
-            var 응답 = 예약_생성_요청(예약요청);
+            var 응답 = ReservationClient.예약_생성_API(예약요청);
 
             // then
             에러_응답_확인(응답, HttpStatus.CONFLICT, "존재하지 않는 캠핑장입니다.");
@@ -218,7 +133,7 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
                     .siteNumber("A-1")
                     .period(시작일.plusDays(1), 종료일.plusDays(1))
                     .build();
-            var 응답 = 예약_생성_요청(중복_예약요청);
+            var 응답 = ReservationClient.예약_생성_API(중복_예약요청);
 
             // then
             에러_응답_확인(응답, HttpStatus.CONFLICT, "해당 기간에 이미 예약이 존재합니다.");

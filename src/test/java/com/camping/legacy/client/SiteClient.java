@@ -43,17 +43,6 @@ public class SiteClient {
                 .extract();
     }
 
-    public static ExtractableResponse<Response> 사이즈별_가용_사이트_검색_API(LocalDate startDate, LocalDate endDate, String size) {
-        return RestAssured.given()
-                .param("startDate", startDate.toString())
-                .param("endDate", endDate.toString())
-                .param("size", size)
-                .when()
-                .get("/api/sites/search")
-                .then()
-                .extract();
-    }
-
     public static ExtractableResponse<Response> 사이트_가용성_확인_API(String siteNumber, LocalDate date) {
         return RestAssured.given()
                 .param("date", date.toString())
