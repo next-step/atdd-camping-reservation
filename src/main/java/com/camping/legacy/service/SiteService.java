@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,12 +36,15 @@ public class SiteService {
         return SiteResponse.from(campsite);
     }
     
+    private static final List<String> ACTIVE_STATUSES = Arrays.asList("CONFIRMED", "PENDING");
+
     public List<SiteAvailabilityResponse> getAvailableSites(LocalDate date) {
         List<Campsite> allSites = campsiteRepository.findAll();
         List<SiteAvailabilityResponse> responses = new ArrayList<>();
-        
+
         for (Campsite site : allSites) {
-            boolean isAvailable = !reservationRepository.existsByCampsiteAndReservationDate(site, date);
+            boolean isAvailable = !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+                    site, date, date, ACTIVE_STATUSES);
             
             responses.add(SiteAvailabilityResponse.builder()
                     .siteId(site.getId())
@@ -98,12 +102,10 @@ public class SiteService {
                 }
             }
 
-            boolean startAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getStartDate());
-            boolean endAvailable = !reservationRepository.existsByCampsiteAndReservationDate(
-                    site, request.getEndDate());
+            boolean isAvailable = !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+                    site, request.getEndDate(), request.getStartDate(), ACTIVE_STATUSES);
 
-            if (startAvailable && endAvailable) {
+            if (isAvailable) {
                 // 사이트 크기 결정 (중복된 로직)
                 String size = "";
                 if (site.getSiteNumber().startsWith("A")) {
@@ -156,7 +158,7 @@ public class SiteService {
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
                 .orElseThrow(() -> new RuntimeException("사이트를 찾을 수 없습니다: " + siteNumber));
 
-        return !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                campsite, date, date);
+        return !reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+                campsite, date, date, ACTIVE_STATUSES);
     }
 }

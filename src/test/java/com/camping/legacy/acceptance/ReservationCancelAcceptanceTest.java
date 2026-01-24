@@ -113,7 +113,6 @@ class ReservationCancelAcceptanceTest extends AcceptanceTestBase {
     class ReservationAfterCancellation {
 
         @Test
-        @Disabled("ISSUE-001: 취소된 예약의 상태를 고려한 중복 체크 로직 구현 필요")
         @DisplayName("취소된 사이트를 다른 고객이 예약할 수 있다")
         void shouldAllowOtherCustomerToReserveAfterCancellation() {
             // given

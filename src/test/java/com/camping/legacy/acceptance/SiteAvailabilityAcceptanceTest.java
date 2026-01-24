@@ -1,16 +1,11 @@
 package com.camping.legacy.acceptance;
 
 import com.camping.legacy.AcceptanceTestBase;
-import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.fixture.CampsiteFixture;
 import com.camping.legacy.fixture.ReservationFixture;
 import com.camping.legacy.fixture.SiteFixture;
 import com.camping.legacy.repository.CampsiteRepository;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,7 +56,6 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
     class PeriodSearch {
 
         @Test
-        @Disabled("ISSUE-002: SiteService.searchAvailableSites가 reservationDate 필드를 사용 - startDate/endDate 기반으로 변경 필요")
         @DisplayName("기간 내 예약이 있는 사이트는 검색 결과에서 제외된다")
         void shouldExcludeReservedSiteFromPeriodSearch() {
             // given
@@ -85,7 +79,6 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
     class CancellationReflection {
 
         @Test
-        @Disabled("ISSUE-001: 취소된 예약의 상태를 고려한 가용성 체크 로직 구현 필요")
         @DisplayName("취소된 예약의 사이트는 가용 목록에 표시된다")
         void shouldShowCancelledSiteAsAvailable() {
             // given
