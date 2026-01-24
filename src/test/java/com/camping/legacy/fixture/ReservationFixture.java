@@ -15,63 +15,63 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReservationFixture {
 
     public static ReservationRequest createRequest(String customerName, String siteNumber,
-                                                    LocalDate startDate, LocalDate endDate) {
+        LocalDate startDate, LocalDate endDate) {
         return new ReservationRequest(
-                customerName,
-                startDate,
-                endDate,
-                siteNumber,
-                "01012345678",
-                2,
-                "12가3456",
-                null
+            customerName,
+            startDate,
+            endDate,
+            siteNumber,
+            "01012345678",
+            2,
+            "12가3456",
+            null
         );
     }
 
     public static ReservationRequest createConcurrencyRequest(int index, String siteNumber,
-                                                               LocalDate startDate, LocalDate endDate) {
+        LocalDate startDate, LocalDate endDate) {
         return new ReservationRequest(
-                "고객" + index,
-                startDate,
-                endDate,
-                siteNumber,
-                "0101234567" + index,
-                2,
-                null,
-                null
+            "고객" + index,
+            startDate,
+            endDate,
+            siteNumber,
+            "0101234567" + index,
+            2,
+            null,
+            null
         );
     }
 
     public static ExtractableResponse<Response> createReservation(ReservationRequest request) {
         return RestAssured.given()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/reservations")
-                .then()
-                .extract();
+            .contentType(ContentType.JSON)
+            .body(request)
+            .when()
+            .post("/api/reservations")
+            .then()
+            .extract();
     }
 
     public static ReservationResponse createReservationAndVerify(ReservationRequest request) {
-        ExtractableResponse<Response> response = createReservation(request);
+        var response = createReservation(request);
         assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
         return response.as(ReservationResponse.class);
     }
 
     public static ExtractableResponse<Response> cancelReservation(Long reservationId, String confirmationCode) {
         return RestAssured.given()
-                .param("confirmationCode", confirmationCode)
-                .when()
-                .delete("/api/reservations/{id}", reservationId)
-                .then()
-                .extract();
+            .param("confirmationCode", confirmationCode)
+            .when()
+            .delete("/api/reservations/{id}", reservationId)
+            .then()
+            .extract();
     }
 
     public static ExtractableResponse<Response> getReservation(Long reservationId) {
         return RestAssured.given()
-                .when()
-                .get("/api/reservations/{id}", reservationId)
-                .then()
-                .extract();
+            .when()
+            .get("/api/reservations/{id}", reservationId)
+            .then()
+            .extract();
     }
 }
