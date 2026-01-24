@@ -45,23 +45,23 @@ class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("동일 사이트에 동시 예약 요청 시 하나만 성공한다")
         void shouldAllowOnlyOneReservationForSameSite() throws InterruptedException {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            int numberOfConcurrentRequests = 10;
-            ExecutorService executorService = Executors.newFixedThreadPool(numberOfConcurrentRequests);
-            CountDownLatch startLatch = new CountDownLatch(1);
-            CountDownLatch doneLatch = new CountDownLatch(numberOfConcurrentRequests);
+            var targetDate = LocalDate.now().plusDays(7);
+            var numberOfConcurrentRequests = 10;
+            var executorService = Executors.newFixedThreadPool(numberOfConcurrentRequests);
+            var startLatch = new CountDownLatch(1);
+            var doneLatch = new CountDownLatch(numberOfConcurrentRequests);
 
-            AtomicInteger successCount = new AtomicInteger(0);
-            AtomicInteger failCount = new AtomicInteger(0);
-            List<Future<ExtractableResponse<Response>>> futures = new ArrayList<>();
+            var successCount = new AtomicInteger(0);
+            var failCount = new AtomicInteger(0);
+            var futures = new ArrayList<Future<ExtractableResponse<Response>>>();
 
             // when
-            for (int i = 0; i < numberOfConcurrentRequests; i++) {
-                final int index = i;
-                Future<ExtractableResponse<Response>> future = executorService.submit(() -> {
+            for (var i = 0; i < numberOfConcurrentRequests; i++) {
+                final var index = i;
+                var future = executorService.submit(() -> {
                     try {
                         startLatch.await();
-                        ReservationRequest request = ReservationFixture.createConcurrencyRequest(
+                        var request = ReservationFixture.createConcurrencyRequest(
                                 index, "A-1", targetDate, targetDate.plusDays(2));
                         return RestAssured.given()
                                 .contentType(ContentType.JSON)
@@ -81,9 +81,9 @@ class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
             doneLatch.await(30, TimeUnit.SECONDS);
 
             // then
-            for (Future<ExtractableResponse<Response>> future : futures) {
+            for (var future : futures) {
                 try {
-                    ExtractableResponse<Response> response = future.get();
+                    var response = future.get();
                     if (response.statusCode() == HttpStatus.CREATED.value()) {
                         successCount.incrementAndGet();
                     } else if (response.statusCode() == HttpStatus.CONFLICT.value()) {
@@ -104,23 +104,23 @@ class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("서로 다른 사이트에 동시 예약 요청 시 모두 성공한다")
         void shouldAllowAllReservationsForDifferentSites() throws InterruptedException {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            ExecutorService executorService = Executors.newFixedThreadPool(2);
-            CountDownLatch startLatch = new CountDownLatch(1);
-            CountDownLatch doneLatch = new CountDownLatch(2);
+            var targetDate = LocalDate.now().plusDays(7);
+            var executorService = Executors.newFixedThreadPool(2);
+            var startLatch = new CountDownLatch(1);
+            var doneLatch = new CountDownLatch(2);
 
-            List<Future<ExtractableResponse<Response>>> futures = new ArrayList<>();
+            var futures = new ArrayList<Future<ExtractableResponse<Response>>>();
 
-            String[] sites = {"A-1", "A-2"};
-            String[] customers = {"홍길동", "김철수"};
+            var sites = new String[]{"A-1", "A-2"};
+            var customers = new String[]{"홍길동", "김철수"};
 
             // when
-            for (int i = 0; i < 2; i++) {
-                final int index = i;
-                Future<ExtractableResponse<Response>> future = executorService.submit(() -> {
+            for (var i = 0; i < 2; i++) {
+                final var index = i;
+                var future = executorService.submit(() -> {
                     try {
                         startLatch.await();
-                        ReservationRequest request = ReservationFixture.createRequest(
+                        var request = ReservationFixture.createRequest(
                                 customers[index], sites[index], targetDate, targetDate.plusDays(2));
                         return RestAssured.given()
                                 .contentType(ContentType.JSON)
@@ -140,10 +140,10 @@ class ConcurrencyAcceptanceTest extends AcceptanceTestBase {
             doneLatch.await(30, TimeUnit.SECONDS);
 
             // then
-            int successCount = 0;
-            for (Future<ExtractableResponse<Response>> future : futures) {
+            var successCount = 0;
+            for (var future : futures) {
                 try {
-                    ExtractableResponse<Response> response = future.get();
+                    var response = future.get();
                     if (response.statusCode() == HttpStatus.CREATED.value()) {
                         successCount++;
                     }

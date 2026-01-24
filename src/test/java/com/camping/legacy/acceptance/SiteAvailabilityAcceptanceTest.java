@@ -41,16 +41,16 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("예약된 사이트는 가용 목록에서 제외된다")
         void shouldExcludeReservedSiteFromAvailableList() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
+            var targetDate = LocalDate.now().plusDays(7);
             ReservationFixture.createReservation(
                     ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.getAvailableSites(targetDate);
+            var response = SiteFixture.getAvailableSites(targetDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+            var siteNumbers = response.jsonPath().getList("siteNumber", String.class);
             assertThat(siteNumbers).contains("A-2");
             assertThat(siteNumbers).doesNotContain("A-1");
         }
@@ -65,17 +65,17 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("기간 내 예약이 있는 사이트는 검색 결과에서 제외된다")
         void shouldExcludeReservedSiteFromPeriodSearch() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(10);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(10);
             ReservationFixture.createReservation(
                     ReservationFixture.createRequest("김철수", "A-1", startDate.plusDays(1), startDate.plusDays(2)));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.searchAvailableSites(startDate, endDate);
+            var response = SiteFixture.searchAvailableSites(startDate, endDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+            var siteNumbers = response.jsonPath().getList("siteNumber", String.class);
             assertThat(siteNumbers).doesNotContain("A-1");
         }
     }
@@ -89,17 +89,17 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("취소된 예약의 사이트는 가용 목록에 표시된다")
         void shouldShowCancelledSiteAsAvailable() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            ReservationResponse reservation = ReservationFixture.createReservationAndVerify(
+            var targetDate = LocalDate.now().plusDays(7);
+            var reservation = ReservationFixture.createReservationAndVerify(
                     ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
             ReservationFixture.cancelReservation(reservation.getId(), reservation.getConfirmationCode());
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.getAvailableSites(targetDate);
+            var response = SiteFixture.getAvailableSites(targetDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+            var siteNumbers = response.jsonPath().getList("siteNumber", String.class);
             assertThat(siteNumbers).contains("A-1");
         }
     }
@@ -112,15 +112,15 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("사이즈 필터로 대형 사이트만 검색한다")
         void shouldFilterBySizeLarge() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(10);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(10);
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.searchAvailableSitesWithSize(startDate, endDate, "대형");
+            var response = SiteFixture.searchAvailableSitesWithSize(startDate, endDate, "대형");
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
+            var siteNumbers = response.jsonPath().getList("siteNumber", String.class);
             assertThat(siteNumbers).allMatch(sn -> sn.startsWith("A"));
             assertThat(siteNumbers).noneMatch(sn -> sn.startsWith("B"));
         }
@@ -134,10 +134,10 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("예약 가능한 사이트 조회 시 available이 true이다")
         void shouldReturnAvailableTrueWhenNotReserved() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
+            var targetDate = LocalDate.now().plusDays(7);
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", targetDate);
+            var response = SiteFixture.checkSiteAvailability("A-1", targetDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -149,12 +149,12 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("예약된 사이트 조회 시 available이 false이다")
         void shouldReturnAvailableFalseWhenReserved() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
+            var targetDate = LocalDate.now().plusDays(7);
             ReservationFixture.createReservation(
                     ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", targetDate);
+            var response = SiteFixture.checkSiteAvailability("A-1", targetDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -171,10 +171,10 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("과거 날짜로 가용성 조회 시 에러가 발생한다")
         void shouldFailWhenCheckingPastDate() {
             // given
-            LocalDate pastDate = LocalDate.now().minusDays(3);
+            var pastDate = LocalDate.now().minusDays(3);
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", pastDate);
+            var response = SiteFixture.checkSiteAvailability("A-1", pastDate);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());

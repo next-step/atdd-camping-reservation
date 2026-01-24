@@ -29,7 +29,7 @@ class SiteAcceptanceTest extends AcceptanceTestBase {
     @DisplayName("전체 캠핑 사이트 목록을 조회한다")
     void shouldReturnAllSites() {
         // when
-        ExtractableResponse<Response> response = SiteFixture.getAllSites();
+        var response = SiteFixture.getAllSites();
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
@@ -41,7 +41,7 @@ class SiteAcceptanceTest extends AcceptanceTestBase {
     @DisplayName("특정 캠핑 사이트 상세 정보를 조회한다")
     void shouldReturnSiteDetail() {
         // when
-        ExtractableResponse<Response> response = SiteFixture.getSiteById(1L);
+        var response = SiteFixture.getSiteById(1L);
 
         // then
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());

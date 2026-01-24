@@ -39,16 +39,16 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("정상적인 예약 생성")
         void shouldCreateReservationSuccessfully() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-            ReservationResponse reservation = response.as(ReservationResponse.class);
+            var reservation = response.as(ReservationResponse.class);
             assertThat(reservation.getConfirmationCode()).hasSize(6);
             assertThat(reservation.getStatus()).isEqualTo("CONFIRMED");
             assertThat(reservation.getCustomerName()).isEqualTo("홍길동");
@@ -59,15 +59,15 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("당일 예약 생성")
         void shouldCreateSameDayReservationSuccessfully() {
             // given
-            LocalDate today = LocalDate.now();
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "A-1", today, today);
+            var today = LocalDate.now();
+            var request = ReservationFixture.createRequest("홍길동", "A-1", today, today);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-            ReservationResponse reservation = response.as(ReservationResponse.class);
+            var reservation = response.as(ReservationResponse.class);
             assertThat(reservation.getStartDate()).isEqualTo(today);
             assertThat(reservation.getEndDate()).isEqualTo(today);
         }
@@ -77,16 +77,16 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("취소된 예약 기간에 재예약")
         void shouldAllowReservationAfterCancellation() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest firstRequest = ReservationFixture.createRequest("김철수", "A-1", startDate, endDate);
-            ReservationResponse firstReservation = ReservationFixture.createReservationAndVerify(firstRequest);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var firstRequest = ReservationFixture.createRequest("김철수", "A-1", startDate, endDate);
+            var firstReservation = ReservationFixture.createReservationAndVerify(firstRequest);
 
             ReservationFixture.cancelReservation(firstReservation.getId(), firstReservation.getConfirmationCode());
 
             // when
-            ReservationRequest secondRequest = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(secondRequest);
+            var secondRequest = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
+            var response = ReservationFixture.createReservation(secondRequest);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
@@ -101,11 +101,11 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("과거 날짜로 예약 시도 시 실패한다")
         void shouldFailWhenReservingWithPastDate() {
             // given
-            LocalDate pastDate = LocalDate.now().minusDays(3);
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "A-1", pastDate, pastDate.plusDays(2));
+            var pastDate = LocalDate.now().minusDays(3);
+            var request = ReservationFixture.createRequest("홍길동", "A-1", pastDate, pastDate.plusDays(2));
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -116,12 +116,12 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("종료일이 시작일보다 이전이면 실패한다")
         void shouldFailWhenEndDateBeforeStartDate() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(10);
-            LocalDate endDate = LocalDate.now().plusDays(7);
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(10);
+            var endDate = LocalDate.now().plusDays(7);
+            var request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -132,12 +132,12 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("30일 초과 기간 예약 시 실패한다")
         void shouldFailWhenExceedingMaxDays() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = startDate.plusDays(40);
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = startDate.plusDays(40);
+            var request = ReservationFixture.createRequest("홍길동", "A-1", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -153,12 +153,12 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("이름이 2자 미만이면 실패한다")
         void shouldFailWhenNameTooShort() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest request = ReservationFixture.createRequest("김", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var request = ReservationFixture.createRequest("김", "A-1", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -169,12 +169,12 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("이름이 비어있으면 실패한다")
         void shouldFailWhenNameEmpty() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest request = ReservationFixture.createRequest("", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var request = ReservationFixture.createRequest("", "A-1", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -190,12 +190,12 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("존재하지 않는 사이트 예약 시 실패한다")
         void shouldFailWhenSiteNotExists() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest request = ReservationFixture.createRequest("홍길동", "Z-999", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var request = ReservationFixture.createRequest("홍길동", "Z-999", startDate, endDate);
 
             // when
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(request);
+            var response = ReservationFixture.createReservation(request);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -211,14 +211,14 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         @DisplayName("동일 기간 중복 예약 시 실패한다")
         void shouldFailWhenDuplicatePeriod() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(9);
-            ReservationRequest firstRequest = ReservationFixture.createRequest("김철수", "A-1", startDate, endDate);
+            var startDate = LocalDate.now().plusDays(7);
+            var endDate = LocalDate.now().plusDays(9);
+            var firstRequest = ReservationFixture.createRequest("김철수", "A-1", startDate, endDate);
             ReservationFixture.createReservation(firstRequest);
 
             // when
-            ReservationRequest secondRequest = ReservationFixture.createRequest("홍길동", "A-1", startDate.plusDays(1), endDate.plusDays(1));
-            ExtractableResponse<Response> response = ReservationFixture.createReservation(secondRequest);
+            var secondRequest = ReservationFixture.createRequest("홍길동", "A-1", startDate.plusDays(1), endDate.plusDays(1));
+            var response = ReservationFixture.createReservation(secondRequest);
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CONFLICT.value());
