@@ -62,8 +62,8 @@ public class ReservationService {
         String customerName = request.getCustomerName();
         String phoneNumber = request.getPhoneNumber();
 
-        // 검증
-        Campsite campsite = validateAndGetCampsite(siteNumber);
+        // 검증 (비관적 락으로 Campsite 조회)
+        Campsite campsite = validateAndGetCampsiteWithLock(siteNumber);
         validateReservationDates(startDate, endDate);
         validateCustomerName(customerName);
         validatePhoneNumber(phoneNumber);
@@ -109,11 +109,11 @@ public class ReservationService {
         return ReservationResponse.from(saved);
     }
 
-    private Campsite validateAndGetCampsite(String siteNumber) {
+    private Campsite validateAndGetCampsiteWithLock(String siteNumber) {
         if (!org.springframework.util.StringUtils.hasText(siteNumber)) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         }
-        return campsiteRepository.findBySiteNumber(siteNumber)
+        return campsiteRepository.findBySiteNumberWithLock(siteNumber)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
     }
 
