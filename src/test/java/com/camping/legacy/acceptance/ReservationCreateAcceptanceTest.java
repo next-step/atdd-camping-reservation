@@ -73,9 +73,8 @@ class ReservationCreateAcceptanceTest extends AcceptanceTestBase {
         }
 
         @Test
-        @Disabled("ISSUE-001: 취소된 예약의 상태를 고려한 중복 체크 로직 구현 필요")
         @DisplayName("취소된 예약 기간에 재예약")
-        void shouldAllowReservationAfterCancellation() {
+         void shouldAllowReservationAfterCancellation() {
             // given
             var startDate = LocalDate.now().plusDays(7);
             var endDate = LocalDate.now().plusDays(9);
