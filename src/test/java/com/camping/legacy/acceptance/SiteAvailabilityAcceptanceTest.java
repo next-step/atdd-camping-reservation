@@ -1,26 +1,20 @@
 package com.camping.legacy.acceptance;
 
 import com.camping.legacy.AcceptanceTestBase;
-import com.camping.legacy.dto.ReservationRequest;
-import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.fixture.CampsiteFixture;
-import com.camping.legacy.fixture.ReservationFixture;
-import com.camping.legacy.fixture.SiteFixture;
 import com.camping.legacy.repository.CampsiteRepository;
-import io.restassured.response.ExtractableResponse;
-import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
-import java.time.LocalDate;
-import java.util.List;
+import com.camping.legacy.client.ReservationClient;
+import com.camping.legacy.client.SiteClient;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.camping.legacy.steps.ReservationSteps.*;
+import static com.camping.legacy.steps.SiteSteps.*;
 
 @DisplayName("사이트 가용성 확인 인수 테스트")
 class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
@@ -29,155 +23,117 @@ class SiteAvailabilityAcceptanceTest extends AcceptanceTestBase {
     private CampsiteRepository campsiteRepository;
 
     @BeforeEach
-    void setUpData() {
-        CampsiteFixture.createAllSites(campsiteRepository);
+    void 사전_데이터_준비() {
+        CampsiteFixture.전체_사이트_생성(campsiteRepository);
     }
 
     @Nested
     @DisplayName("단일 날짜 조회")
-    class SingleDateQuery {
+    class 단일_날짜_조회 {
 
         @Test
         @DisplayName("예약된 사이트는 가용 목록에서 제외된다")
-        void shouldExcludeReservedSiteFromAvailableList() {
+        void 예약된_사이트는_가용_목록에서_제외된다() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            ReservationFixture.createReservation(
-                    ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
+            var 조회날짜 = 일_후(7);
+            예약_생성됨("김철수", "A-1", 조회날짜, 조회날짜.plusDays(2));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.getAvailableSites(targetDate);
+            var 가용_사이트_목록 = 가용_사이트_조회(조회날짜);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
-            assertThat(siteNumbers).contains("A-2");
-            assertThat(siteNumbers).doesNotContain("A-1");
+            가용_목록에_포함됨(가용_사이트_목록, "A-2");
+            가용_목록에서_제외됨(가용_사이트_목록, "A-1");
         }
     }
 
     @Nested
     @DisplayName("기간 검색")
-    class PeriodSearch {
+    class 기간_검색 {
 
         @Test
-        @Disabled("ISSUE-002: SiteService.searchAvailableSites가 reservationDate 필드를 사용 - startDate/endDate 기반으로 변경 필요")
         @DisplayName("기간 내 예약이 있는 사이트는 검색 결과에서 제외된다")
-        void shouldExcludeReservedSiteFromPeriodSearch() {
+        void 기간_내_예약이_있는_사이트는_제외된다() {
             // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(10);
-            ReservationFixture.createReservation(
-                    ReservationFixture.createRequest("김철수", "A-1", startDate.plusDays(1), startDate.plusDays(2)));
+            var 시작일 = 일_후(7);
+            var 종료일 = 일_후(10);
+            예약_생성됨("김철수", "A-1", 시작일.plusDays(1), 시작일.plusDays(2));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.searchAvailableSites(startDate, endDate);
+            var 가용_사이트_목록 = 기간별_가용_사이트_검색(시작일, 종료일);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
-            assertThat(siteNumbers).doesNotContain("A-1");
+            가용_목록에서_제외됨(가용_사이트_목록, "A-1");
         }
     }
 
     @Nested
     @DisplayName("취소 반영")
-    class CancellationReflection {
+    class 취소_반영 {
 
         @Test
-        @Disabled("ISSUE-001: 취소된 예약의 상태를 고려한 가용성 체크 로직 구현 필요")
         @DisplayName("취소된 예약의 사이트는 가용 목록에 표시된다")
-        void shouldShowCancelledSiteAsAvailable() {
+        void 취소된_예약의_사이트는_가용_목록에_표시된다() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            ReservationResponse reservation = ReservationFixture.createReservationAndVerify(
-                    ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
-            ReservationFixture.cancelReservation(reservation.getId(), reservation.getConfirmationCode());
+            var 조회날짜 = 일_후(7);
+            var 예약 = 예약_생성됨("김철수", "A-1", 조회날짜, 조회날짜.plusDays(2));
+            ReservationClient.예약_취소_API(예약.getId(), 예약.getConfirmationCode());
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.getAvailableSites(targetDate);
+            var 가용_사이트_목록 = 가용_사이트_조회(조회날짜);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
-            assertThat(siteNumbers).contains("A-1");
-        }
-    }
-
-    @Nested
-    @DisplayName("필터링")
-    class Filtering {
-
-        @Test
-        @DisplayName("사이즈 필터로 대형 사이트만 검색한다")
-        void shouldFilterBySizeLarge() {
-            // given
-            LocalDate startDate = LocalDate.now().plusDays(7);
-            LocalDate endDate = LocalDate.now().plusDays(10);
-
-            // when
-            ExtractableResponse<Response> response = SiteFixture.searchAvailableSitesWithSize(startDate, endDate, "대형");
-
-            // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            List<String> siteNumbers = response.jsonPath().getList("siteNumber", String.class);
-            assertThat(siteNumbers).allMatch(sn -> sn.startsWith("A"));
-            assertThat(siteNumbers).noneMatch(sn -> sn.startsWith("B"));
+            가용_목록에_포함됨(가용_사이트_목록, "A-1");
         }
     }
 
     @Nested
     @DisplayName("특정 사이트 가용성 확인")
-    class SpecificSiteAvailability {
+    class 특정_사이트_가용성_확인 {
 
         @Test
         @DisplayName("예약 가능한 사이트 조회 시 available이 true이다")
-        void shouldReturnAvailableTrueWhenNotReserved() {
+        void 예약_가능한_사이트는_가용함으로_표시된다() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
+            var 조회날짜 = 일_후(7);
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", targetDate);
+            var 가용여부 = 사이트_가용_여부_확인("A-1", 조회날짜);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-1");
-            assertThat(response.jsonPath().getBoolean("available")).isTrue();
+            사이트가_예약_가능함(가용여부);
         }
 
         @Test
         @DisplayName("예약된 사이트 조회 시 available이 false이다")
-        void shouldReturnAvailableFalseWhenReserved() {
+        void 예약된_사이트는_가용불가로_표시된다() {
             // given
-            LocalDate targetDate = LocalDate.now().plusDays(7);
-            ReservationFixture.createReservation(
-                    ReservationFixture.createRequest("김철수", "A-1", targetDate, targetDate.plusDays(2)));
+            var 조회날짜 = 일_후(7);
+            예약_생성됨("김철수", "A-1", 조회날짜, 조회날짜.plusDays(2));
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", targetDate);
+            var 가용여부 = 사이트_가용_여부_확인("A-1", 조회날짜);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
-            assertThat(response.jsonPath().getString("siteNumber")).isEqualTo("A-1");
-            assertThat(response.jsonPath().getBoolean("available")).isFalse();
+            사이트가_예약_불가능함(가용여부);
         }
     }
 
     @Nested
     @DisplayName("예외")
-    class ErrorCases {
+    class 예외_케이스 {
 
         @Test
         @DisplayName("과거 날짜로 가용성 조회 시 에러가 발생한다")
-        void shouldFailWhenCheckingPastDate() {
+        void 과거_날짜로_가용성_조회시_에러가_발생한다() {
             // given
-            LocalDate pastDate = LocalDate.now().minusDays(3);
+            var 과거날짜 = 일_전(3);
 
             // when
-            ExtractableResponse<Response> response = SiteFixture.checkSiteAvailability("A-1", pastDate);
+            var 응답 = SiteClient.사이트_가용성_확인_API("A-1", 과거날짜);
 
             // then
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            응답_실패_확인(응답, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -8,12 +8,11 @@ import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
-import com.camping.legacy.util.StringUtils;
-import com.camping.legacy.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -53,223 +52,118 @@ public class ReservationService {
     private static final int MAX_RESERVATION_DAYS = 30;
     
     /**
-     * 예약 생성 (절차적 방식)
-     * - 긴 메서드 (100+ 줄)
-     * - 깊은 중첩
-     * - 모든 로직을 한 곳에
+     * 예약 생성
      */
     public ReservationResponse createReservation(ReservationRequest request) {
-        // ============================================================
-        // STEP 1: 입력 데이터 추출
-        // ============================================================
+        // 입력 데이터 추출
         String siteNumber = request.getSiteNumber();
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
         String customerName = request.getCustomerName();
         String phoneNumber = request.getPhoneNumber();
 
-        // ============================================================
-        // STEP 2: 기본 검증 (중첩 레벨 1)
-        // ============================================================
-        if (siteNumber == null || siteNumber.trim().isEmpty()) {
+        // 검증 (비관적 락으로 Campsite 조회)
+        Campsite campsite = validateAndGetCampsiteWithLock(siteNumber);
+        validateReservationDates(startDate, endDate);
+        validateCustomerName(customerName);
+        validatePhoneNumber(phoneNumber);
+        validateNoConflict(campsite, startDate, endDate);
+
+        // 가격 및 포인트 계산
+        int totalPrice = calculateReservationPrice(startDate, endDate, siteNumber);
+        int earnedPoints = calculatePoints(startDate, endDate, totalPrice);
+        log.info("예약 금액 계산 완료: {}원", totalPrice);
+        log.info("적립 포인트 계산 완료: {}P", earnedPoints);
+
+        // 동시성 문제 재현을 위한 지연
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // 예약 객체 생성 및 저장
+        Reservation reservation = new Reservation();
+        reservation.setCustomerName(customerName);
+        reservation.setStartDate(startDate);
+        reservation.setEndDate(endDate);
+        reservation.setReservationDate(startDate);
+        reservation.setCampsite(campsite);
+        reservation.setPhoneNumber(phoneNumber);
+        reservation.setConfirmationCode(generateConfirmationCode());
+
+        Reservation saved = reservationRepository.save(reservation);
+        log.info("예약 저장 완료: ID={}", saved.getId());
+
+        // 알림 발송 (시뮬레이션)
+        log.info("===========================================");
+        log.info("[예약 확인 알림]");
+        log.info("고객명: {}", saved.getCustomerName());
+        log.info("전화번호: {}", saved.getPhoneNumber());
+        log.info("예약 기간: {} ~ {}", saved.getStartDate(), saved.getEndDate());
+        log.info("확인 코드: {}", saved.getConfirmationCode());
+        log.info("결제 금액: {}원", totalPrice);
+        log.info("적립 포인트: {}P", earnedPoints);
+        log.info("===========================================");
+
+        return ReservationResponse.from(saved);
+    }
+
+    private Campsite validateAndGetCampsiteWithLock(String siteNumber) {
+        if (!org.springframework.util.StringUtils.hasText(siteNumber)) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
-        } else {
-            // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
-                    .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+        }
+        return campsiteRepository.findBySiteNumberWithLock(siteNumber)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
+    }
 
-            // 날짜 검증 (중첩 레벨 2)
-            if (startDate == null || endDate == null) {
-                throw new RuntimeException("예약 기간을 선택해주세요.");
-            } else {
-                // 날짜 논리 검증 (중첩 레벨 3)
-                if (endDate.isBefore(startDate)) {
-                    throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
-                } else {
-                    // 과거 날짜 체크 (중첩 레벨 4)
-                    LocalDate today = LocalDate.now();
-                    if (startDate.isBefore(today)) {
-                        throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
-                    } else {
-                        // 예약 기간 체크 (30일 이내)
-                        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-                        if (days > 30) {
-                            throw new RuntimeException("예약 기간은 최대 30일입니다.");
-                        }
-                    }
-                }
-            }
+    private void validateReservationDates(LocalDate startDate, LocalDate endDate) {
+        if (ObjectUtils.isEmpty(startDate) || ObjectUtils.isEmpty(endDate)) {
+            throw new RuntimeException("예약 기간을 선택해주세요.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
+        }
+        if (startDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+        }
+        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        if (days > MAX_RESERVATION_DAYS) {
+            throw new RuntimeException("예약 기간은 최대 %d일입니다.".formatted(MAX_RESERVATION_DAYS));
+        }
+    }
 
-            // ============================================================
-            // STEP 3: 고객 정보 검증
-            // ============================================================
-            if (customerName == null || customerName.trim().isEmpty()) {
-                throw new RuntimeException("예약자 이름을 입력해주세요.");
-            } else {
-                // 이름 길이 체크
-                if (customerName.length() < 2) {
-                    throw new RuntimeException("예약자 이름은 최소 2자 이상이어야 합니다.");
-                } else if (customerName.length() > 20) {
-                    throw new RuntimeException("예약자 이름은 최대 20자까지 가능합니다.");
-                }
-            }
+    private void validateCustomerName(String customerName) {
+        if (!org.springframework.util.StringUtils.hasText(customerName)) {
+            throw new RuntimeException("예약자 이름을 입력해주세요.");
+        }
+        if (customerName.length() < 2) {
+            throw new RuntimeException("예약자 이름은 최소 2자 이상이어야 합니다.");
+        }
+        if (customerName.length() > 20) {
+            throw new RuntimeException("예약자 이름은 최대 20자까지 가능합니다.");
+        }
+    }
 
-            // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
-                }
-            }
+    private void validatePhoneNumber(String phoneNumber) {
+        if (!org.springframework.util.StringUtils.hasText(phoneNumber)) {
+            return; // 선택 필드
+        }
+        String cleaned = phoneNumber.replaceAll("-", "");
+        int length = cleaned.length();
+        if (length < 10 || length > 11) {
+            throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+        }
+        if (!cleaned.matches("\\d+")) {
+            throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
+        }
+    }
 
-            // ============================================================
-            // STEP 4: 예약 가능 여부 확인
-            // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
-            if (hasConflict) {
-                throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
-            }
-
-            // ============================================================
-            // STEP 5: 가격 계산
-            // ============================================================
-            int totalPrice = 0;
-            LocalDate current = startDate;
-            while (!current.isAfter(endDate)) {
-                int dailyPrice = 0;
-
-                // 사이트 종류별 기본 가격
-                if (siteNumber.startsWith("A")) {
-                    dailyPrice = 80000; // 대형
-                } else if (siteNumber.startsWith("B")) {
-                    dailyPrice = 50000; // 소형
-                } else {
-                    dailyPrice = 60000; // 기타
-                }
-
-                // 주말 체크
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                boolean isWeekend = (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                                   dayOfWeek == java.time.DayOfWeek.SUNDAY);
-
-                // 성수기 체크 (7월, 8월)
-                int month = current.getMonthValue();
-                boolean isPeakSeason = (month >= 7 && month <= 8);
-
-                // 할증 적용
-                if (isWeekend && isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.7); // 70% 할증
-                } else if (isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.5); // 50% 할증
-                } else if (isWeekend) {
-                    dailyPrice = (int) (dailyPrice * 1.3); // 30% 할증
-                }
-
-                totalPrice += dailyPrice;
-                current = current.plusDays(1);
-            }
-
-            log.info("예약 금액 계산 완료: {}원", totalPrice);
-
-            // ============================================================
-            // STEP 6: 포인트 계산
-            // ============================================================
-            double pointRate = 0.05; // 기본 5%
-            current = startDate;
-            boolean hasWeekend = false;
-            while (!current.isAfter(endDate)) {
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                if (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                    dayOfWeek == java.time.DayOfWeek.SUNDAY) {
-                    hasWeekend = true;
-                    break;
-                }
-                current = current.plusDays(1);
-            }
-
-            if (hasWeekend) {
-                pointRate = 0.10; // 주말 10%
-            }
-
-            int earnedPoints = (int) (totalPrice * pointRate);
-            log.info("적립 포인트 계산 완료: {}P", earnedPoints);
-
-            // ============================================================
-            // STEP 7: 동시성 문제 재현을 위한 지연
-            // ============================================================
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            // ============================================================
-            // STEP 8: 예약 객체 생성
-            // ============================================================
-            Reservation reservation = new Reservation();
-            reservation.setCustomerName(customerName);
-            reservation.setStartDate(startDate);
-            reservation.setEndDate(endDate);
-            reservation.setReservationDate(startDate);
-            reservation.setCampsite(campsite);
-            reservation.setPhoneNumber(phoneNumber);
-
-            // 확인 코드 생성
-            String confirmationCode = "";
-            Random random = new Random();
-            for (int i = 0; i < 6; i++) {
-                int choice = random.nextInt(36);
-                if (choice < 10) {
-                    confirmationCode += (char) ('0' + choice);
-                } else {
-                    confirmationCode += (char) ('A' + (choice - 10));
-                }
-            }
-            reservation.setConfirmationCode(confirmationCode);
-
-            // ============================================================
-            // STEP 9: 예약 저장
-            // ============================================================
-            Reservation saved = reservationRepository.save(reservation);
-            log.info("예약 저장 완료: ID={}", saved.getId());
-
-            // ============================================================
-            // STEP 10: 알림 발송 (시뮬레이션)
-            // ============================================================
-            log.info("===========================================");
-            log.info("[예약 확인 알림]");
-            log.info("고객명: {}", saved.getCustomerName());
-            log.info("전화번호: {}", saved.getPhoneNumber());
-            log.info("예약 기간: {} ~ {}", saved.getStartDate(), saved.getEndDate());
-            log.info("확인 코드: {}", saved.getConfirmationCode());
-            log.info("결제 금액: {}원", totalPrice);
-            log.info("적립 포인트: {}P", earnedPoints);
-            log.info("===========================================");
-
-            // ============================================================
-            // STEP 11: 응답 객체 생성 (직접 변환)
-            // ============================================================
-            ReservationResponse response = new ReservationResponse();
-            response.setId(saved.getId());
-            response.setCustomerName(saved.getCustomerName());
-            response.setStartDate(saved.getStartDate());
-            response.setEndDate(saved.getEndDate());
-            response.setPhoneNumber(saved.getPhoneNumber());
-            response.setSiteNumber(saved.getCampsite().getSiteNumber());
-            response.setConfirmationCode(saved.getConfirmationCode());
-            response.setStatus(saved.getStatus());
-
-            return response;
+    private void validateNoConflict(Campsite campsite, LocalDate startDate, LocalDate endDate) {
+        boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatus(
+                campsite, endDate, startDate, "CONFIRMED");
+        if (hasConflict) {
+            throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
         }
     }
     
