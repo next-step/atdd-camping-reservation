@@ -31,6 +31,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.ScriptUtils;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
 
 /**
  * @SpringBootTest
@@ -49,6 +54,9 @@ public abstract class AcceptanceTest {
     @Autowired
     protected TestDataFactory testDataFactory;
 
+    @Autowired
+    private DataSource dataSource;
+
     /*
      * @BeforeEach
      * - 각 테스트 메서드가 실행되기 "직전에" 항상 실행됨
@@ -60,6 +68,22 @@ public abstract class AcceptanceTest {
         RestAssured.filters(new RequestLoggingFilter(), new ResponseLoggingFilter()); // 모든 HTTP 요청/응답 내용을 콘솔에 출력
 
         databaseCleaner.clear(); // DB 초기화 - 모든 테스트를 항상 같은 조건에서 시작하기 위해 DB를 초기화.
-        testDataFactory.initCampsites(); // 테스트에 필요한 기본 데이터 참조하여 데이터 생성
+
+        // @Sql 어노테이션 대신 직접 SQL 실행하여 테스트 데이터 초기화
+        // - 이유: 추상 클래스의 @Sql이 하위 클래스에서 실행 타이밍 문제 발생
+        // - 기존 testDataFactory.initCampsites() 코드는 주석 처리되어 있음 (TestDataFactory 참고)
+        executeSqlScript("/sql/init-campsites.sql");
+    }
+
+    /**
+     * SQL 스크립트 실행 헬퍼 메서드
+     * - @Sql 어노테이션을 대체하여 테스트 데이터 초기화에 사용
+     */
+    protected void executeSqlScript(String scriptPath) {
+        try (Connection connection = dataSource.getConnection()) {
+            ScriptUtils.executeSqlScript(connection, new ClassPathResource(scriptPath));
+        } catch (Exception e) {
+            throw new RuntimeException("SQL 스크립트 실행 실패: " + scriptPath, e);
+        }
     }
 }

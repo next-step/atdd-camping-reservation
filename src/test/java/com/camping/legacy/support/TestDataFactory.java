@@ -43,11 +43,17 @@ public class TestDataFactory {
     public static final String DEFAULT_CUSTOMER_NAME = "홍길동";
     public static final String DEFAULT_PHONE_NUMBER = "01012345678";
 
-    private Map<String, Campsite> campsiteCache = new HashMap<>();
-
     /**
      * 기본 캠핑 사이트 초기화
+     *
+     * @Sql("/sql/init-campsites.sql")로 대체되어 주석 처리
+     * - 기존: Java 코드로 Repository를 통해 INSERT하고 campsiteCache에 캐싱
+     * - 변경: SQL 파일로 INSERT, Repository.findBySiteNumber()로 직접 조회
+     * - 이유: 테스트 데이터 초기화를 SQL로 분리하여 가독성 향상 및 관리 포인트 단일화
      */
+    /*
+    private Map<String, Campsite> campsiteCache = new HashMap<>();
+
     public void initCampsites() {
         campsiteCache.clear();
 
@@ -61,12 +67,14 @@ public class TestDataFactory {
         campsiteCache.put(SITE_B1, b1);
         campsiteCache.put(SITE_B2, b2);
     }
+    */
 
     /**
-     * 캠핑 사이트 조회
+     * 캠핑 사이트 조회 - @Sql로 생성된 데이터를 Repository에서 직접 조회
      */
     public Campsite getCampsite(String siteNumber) {
-        return campsiteCache.get(siteNumber);
+        return campsiteRepository.findBySiteNumber(siteNumber)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사이트: " + siteNumber));
     }
 
     /**
@@ -78,10 +86,7 @@ public class TestDataFactory {
 
     public Reservation createReservation(String siteNumber, LocalDate startDate, LocalDate endDate,
                                          String customerName, String phoneNumber) {
-        Campsite campsite = campsiteCache.get(siteNumber);
-        if (campsite == null) {
-            throw new IllegalArgumentException("존재하지 않는 사이트: " + siteNumber);
-        }
+        Campsite campsite = getCampsite(siteNumber);
 
         Reservation reservation = new Reservation();
         reservation.setCampsite(campsite);
