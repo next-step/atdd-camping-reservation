@@ -1,28 +1,21 @@
 # 시스템 분석 결과
 
-## API 목록
+## API 목록 (총 12개)
 
-### 예약 관리 API (ReservationController)
-
-| Endpoint | Method | 목적 | 주요 파라미터 | 응답 | 비고 |
-|----------|--------|------|--------------|------|------|
-| `/api/reservations` | POST | 예약 생성 | Body: `customerName`, `startDate`, `endDate`, `siteNumber`, `phoneNumber`, `numberOfPeople`, `carNumber`, `requests` | `ReservationResponse` (201) | 6자리 확인코드 자동 생성 |
-| `/api/reservations/{id}` | GET | 예약 단건 조회 | Path: `id` | `ReservationResponse` (200) | 없으면 404 |
-| `/api/reservations` | GET | 예약 목록 조회 | Query: `date`(선택), `customerName`(선택) | `List<ReservationResponse>` (200) | 파라미터 없으면 전체 조회 |
-| `/api/reservations/{id}` | DELETE | 예약 취소 | Path: `id`, Query: `confirmationCode` | 성공 메시지 (200) | 확인코드 검증 필수 |
-| `/api/reservations/{id}` | PUT | 예약 수정 | Path: `id`, Query: `confirmationCode`, Body: `ReservationRequest` | `ReservationResponse` (200) | 확인코드 검증 필수 |
-| `/api/reservations/my` | GET | 내 예약 조회 | Query: `name`, `phone` | `List<ReservationResponse>` (200) | 이름+전화번호 일치 |
-| `/api/reservations/calendar` | GET | 월별 캘린더 조회 | Query: `year`, `month`, `siteId` | `CalendarResponse` (200) | 일별 예약 현황 포함 |
-
-### 사이트 관리 API (SiteController)
-
-| Endpoint | Method | 목적 | 주요 파라미터 | 응답 | 비고 |
-|----------|--------|------|--------------|------|------|
-| `/api/sites` | GET | 전체 사이트 목록 | 없음 | `List<SiteResponse>` (200) | - |
-| `/api/sites/{siteId}` | GET | 사이트 상세 조회 | Path: `siteId` | `SiteResponse` (200) | - |
-| `/api/sites/{siteNumber}/availability` | GET | 특정 사이트 가용성 확인 | Path: `siteNumber`, Query: `date` | `{siteNumber, date, available}` (200) | 단일 날짜 |
-| `/api/sites/available` | GET | 가용 사이트 목록 | Query: `date` | `List<SiteAvailabilityResponse>` (200) | 예약 가능한 사이트만 반환 |
-| `/api/sites/search` | GET | 기간별 사이트 검색 | Query: `startDate`, `endDate`, `size`(선택) | `List<SiteAvailabilityResponse>` (200) | size: 대형/소형 필터 |
+| No | Endpoint | Method | 목적 |
+|----|----------|--------|------|
+| 1 | `/api/reservations` | POST | 예약 생성 |
+| 2 | `/api/reservations/{id}` | GET | 예약 단건 조회 |
+| 3 | `/api/reservations` | GET | 예약 목록 조회 |
+| 4 | `/api/reservations/{id}` | DELETE | 예약 취소 |
+| 5 | `/api/reservations/{id}` | PUT | 예약 수정 |
+| 6 | `/api/reservations/my` | GET | 내 예약 조회 |
+| 7 | `/api/reservations/calendar` | GET | 월별 캘린더 조회 |
+| 8 | `/api/sites` | GET | 전체 사이트 목록 |
+| 9 | `/api/sites/{siteId}` | GET | 사이트 상세 조회 |
+| 10 | `/api/sites/{siteNumber}/availability` | GET | 특정 사이트 가용성 확인 |
+| 11 | `/api/sites/available` | GET | 가용 사이트 목록 |
+| 12 | `/api/sites/search` | GET | 기간별 사이트 검색 |
 
 ---
 
