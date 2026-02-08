@@ -22,7 +22,7 @@ public class HomeControllerTest {
         RestAssured.port = port;
     }
 
-    @DisplayName("메인 페이지를 요청하면 index.html을 반환한다")
+    @DisplayName("메인 페이지를 요청하면 정상 응답을 반환한다")
     @Test
     void home_ReturnsIndexHtml() {
         RestAssured.given().log().all()
