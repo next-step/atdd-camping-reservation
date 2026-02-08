@@ -9,7 +9,7 @@ Feature: 예약 생성
       | customerName | phoneNumber   | siteNumber | startDate   | endDate     |
       | 홍길동       | 010-1234-5678 | A-1        | 2026-02-10  | 2026-02-12  |
     Then 요청이 성공한다
-    And response body contains "confirmationCode" with 6 alphanumeric chars
+    And 응답에는 6자리 영숫자로 된 확인 코드가 포함된다
 
   Scenario: 실패 - 기간 중복
     Given today is 2026-02-05
@@ -54,7 +54,7 @@ Feature: 예약 조회(단건)
     Given a reservation exists with id 1
     When ID 1번인 예약을 조회하면
     Then 요청이 성공한다
-    And response body contains reservation id 1
+    And 응답에는 예약 ID 1이 포함된다
 
   Scenario: 실패 - 존재하지 않는 예약 ID
     When ID 99999번인 예약을 조회하면
@@ -67,19 +67,19 @@ Feature: 예약 조회(목록)
     Given a reservation exists for site "A-1" from "2026-02-10" to "2026-02-12"
     When "2026-02-11" 날짜의 예약을 조회하면
     Then 요청이 성공한다
-    And response list contains that reservation
+    And 응답 목록에는 해당 예약이 포함된다
 
   Scenario: 정상 - 이름으로 예약 조회
     Given a reservation exists for customer "홍길동"
     When "홍길동" 고객의 예약을 조회하면
     Then 요청이 성공한다
-    And response list contains reservations for customer "홍길동"
+    And 응답 목록에는 "홍길동" 고객의 예약이 포함된다
 
   Scenario: 정상 - 이름+전화번호로 내 예약 조회
     Given a reservation exists for customer "홍길동" with phone "010-1234-5678"
     When 이름 "홍길동", 전화번호 "010-1234-5678"로 내 예약을 조회하면
     Then 요청이 성공한다
-    And response list contains reservations for customer "홍길동"
+    And 응답 목록에는 "홍길동" 고객의 예약이 포함된다
 
   Scenario: 실패 - 잘못된 날짜 포맷
     When "2026-02-30" 이라는 잘못된 날짜로 예약을 조회하면
@@ -94,7 +94,7 @@ Feature: 예약 수정
       | customerName | startDate   | endDate     |
       | 홍길동       | 2026-02-20  | 2026-02-22  |
     Then 요청이 성공한다
-    And response body reflects updated dates
+    And 응답에는 수정된 날짜가 반영되어 있다
 
   Scenario: 실패 - 확인 코드 불일치
     Given a reservation exists with id 1 and confirmation code "ABC123"
@@ -117,7 +117,7 @@ Feature: 예약 취소
     Given a reservation exists with id 1 and confirmation code "ABC123"
     When 확인 코드 "ABC123"으로 예약 1번을 취소하면
     Then 요청이 성공한다
-    And response body contains "예약이 취소되었습니다."
+    And 응답에는 "예약이 취소되었습니다." 메시지가 포함된다
 
   Scenario: 실패 - 확인 코드 불일치
     Given a reservation exists with id 1 and confirmation code "ABC123"
@@ -131,13 +131,13 @@ Feature: 사이트 조회
     Given campsites exist
     When 전체 사이트 목록을 조회하면
     Then 요청이 성공한다
-    And response list contains sites
+    And 응답 목록에는 사이트 정보가 포함된다
 
   Scenario: 예외 - 사이트가 없으면 빈 목록
     Given no campsites exist
     When 전체 사이트 목록을 조회하면
     Then 요청이 성공한다
-    And response list is empty
+    And 응답 목록은 비어있다
 
 Feature: 사이트 상세
   사이트 ID로 상세 정보를 조회할 수 있어야 한다.
@@ -146,7 +146,7 @@ Feature: 사이트 상세
     Given a campsite exists with id 1
     When ID 1번인 사이트를 조회하면
     Then 요청이 성공한다
-    And response body contains campsite id 1
+    And 응답에는 캠핑장 ID 1이 포함된다
 
   Scenario: 실패 - 존재하지 않는 사이트 ID
     When ID 99999번인 사이트를 조회하면
@@ -159,7 +159,7 @@ Feature: 사이트 가용성 조회(단건)
     Given campsite "A-1" exists
     When "A-1" 사이트의 "2026-02-10" 날짜 가용성을 확인하면
     Then 요청이 성공한다
-    And response body contains "available"
+    And 응답에는 "available" 상태가 포함된다
 
   Scenario: 실패 - 과거 날짜 조회
     Given today is 2026-02-05
@@ -174,7 +174,7 @@ Feature: 가용성 조회(단일 날짜)
     Given a reservation exists for site "A-1" with reservationDate "2026-02-10"
     When "2026-02-10" 날짜에 예약 가능한 사이트를 조회하면
     Then 요청이 성공한다
-    And response list does not include site "A-1"
+    And 응답 목록에는 "A-1" 사이트가 포함되지 않는다
 
   Scenario: 실패 - date 파라미터 누락
     When 날짜를 지정하지 않고 예약 가능한 사이트를 조회하면
@@ -188,7 +188,7 @@ Feature: 가용성 조회(기간)
     And no reservation exists for site "A-1" on "2026-02-20" and "2026-02-22"
     When "2026-02-20"부터 "2026-02-22"까지 "대형" 사이즈로 예약 가능한 사이트를 조회하면
     Then 요청이 성공한다
-    And response list only contains size "대형"
+    And 응답 목록에는 "대형" 사이즈의 사이트만 포함된다
 
   Scenario: 실패 - 종료일이 시작일보다 이전
     When 시작일이 "2026-02-22", 종료일이 "2026-02-20"으로 예약 가능한 사이트를 조회하면
@@ -201,8 +201,8 @@ Feature: 월별 예약 현황
     Given a campsite exists with id 1
     When 2026년 2월의 1번 사이트 예약 캘린더를 조회하면
     Then 요청이 성공한다
-    And response body contains daily statuses
-    And reserved days are marked with "available=false"
+    And 응답에는 일별 상태 정보가 포함된다
+    And 예약된 날짜는 "available=false"로 표시된다
 
   Scenario: 실패 - 존재하지 않는 사이트 ID
     When 2026년 2월의 99999번 사이트 예약 캘린더를 조회하면
