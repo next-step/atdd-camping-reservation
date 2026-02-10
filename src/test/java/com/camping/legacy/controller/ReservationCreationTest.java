@@ -26,13 +26,6 @@ public class ReservationCreationTest extends AcceptanceTest {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    @BeforeEach
-    void setUp() {
-        super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
-    }
-
     @Test
     @DisplayName("Scenario: 정상 - 유효한 예약 생성")
     void createValidReservation() {

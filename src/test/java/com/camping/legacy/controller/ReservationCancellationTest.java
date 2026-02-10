@@ -30,8 +30,6 @@ public class ReservationCancellationTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
 
         Campsite site = campsiteRepository.save(new Campsite("A-1", "Test site", 4));
         existingReservation = new Reservation("홍길동", LocalDate.parse("2030-02-10"), LocalDate.parse("2030-02-12"), site);

@@ -30,8 +30,6 @@ public class ReservationLookupListTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
 
         Campsite site1 = campsiteRepository.save(new Campsite("A-1", "Test site A", 4));
         Campsite site2 = campsiteRepository.save(new Campsite("B-1", "Test site B", 2));

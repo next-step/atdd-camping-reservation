@@ -30,8 +30,6 @@ public class AvailabilityLookupSingleDateTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
 
         // Given: a reservation exists for site "A-1"
         reservedSite = campsiteRepository.save(new Campsite("A-1", "Reserved Site", 4));

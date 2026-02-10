@@ -21,13 +21,6 @@ public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    @BeforeEach
-    void setUp() {
-        super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
-    }
-
     @Test
     @DisplayName("Scenario: 정상 - 기간 가용 사이트 + size 필터")
     void searchAvailableSitesWithSizeFilter() {

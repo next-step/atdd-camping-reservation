@@ -18,12 +18,6 @@ public class SiteLookupTest extends AcceptanceTest {
     @Autowired
     private CampsiteRepository campsiteRepository;
 
-    @BeforeEach
-    void setUp() {
-        super.setUp();
-        campsiteRepository.deleteAll();
-    }
-
     @Test
     @DisplayName("Scenario: 정상 - 전체 사이트 조회")
     void findAllSites() {

@@ -24,13 +24,6 @@ public class MultiNightReservationTest extends AcceptanceTest {
     @Autowired
     private ReservationRepository reservationRepository;
 
-    @BeforeEach
-    void setUp() {
-        super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
-    }
-
     @Test
     @DisplayName("Scenario: 정상 - 3박 예약")
     void createMultiNightReservation() {

@@ -22,7 +22,6 @@ public class SiteDetailTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        campsiteRepository.deleteAll();
 
         // Given: a campsite exists
         existingSite = campsiteRepository.save(new Campsite("A-1", "Test site", 4));

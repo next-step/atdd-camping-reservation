@@ -29,8 +29,6 @@ public class MonthlyReservationStatusTest extends AcceptanceTest {
     @BeforeEach
     void setUp() {
         super.setUp();
-        reservationRepository.deleteAll();
-        campsiteRepository.deleteAll();
 
         existingSite = campsiteRepository.save(new Campsite("A-1", "Test Site", 4));
         Reservation reservation = new Reservation(
