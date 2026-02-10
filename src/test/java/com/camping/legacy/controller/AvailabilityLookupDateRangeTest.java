@@ -8,18 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import static org.hamcrest.Matchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 가용성 조회(기간)")
-public class AvailabilityLookupDateRangeTest {
-
-    @LocalServerPort
-    private int port;
+public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
@@ -29,7 +23,7 @@ public class AvailabilityLookupDateRangeTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
     }
@@ -44,8 +38,8 @@ public class AvailabilityLookupDateRangeTest {
         // When: I GET "/api/sites/search?..."
         // Then: response is 200 and list only contains large sites
         RestAssured.given().log().all()
-                .queryParam("startDate", "2026-02-20")
-                .queryParam("endDate", "2026-02-22")
+                .queryParam("startDate", "2030-02-20")
+                .queryParam("endDate", "2030-02-22")
                 .queryParam("size", "대형")
                 .when().get("/api/sites/search")
                 .then().log().all()
@@ -60,8 +54,8 @@ public class AvailabilityLookupDateRangeTest {
         // When: I GET "/api/sites/search?..." with invalid date range
         // Then: an error response is returned
         RestAssured.given().log().all()
-                .queryParam("startDate", "2026-02-22")
-                .queryParam("endDate", "2026-02-20")
+                .queryParam("startDate", "2030-02-22")
+                .queryParam("endDate", "2030-02-20")
                 .when().get("/api/sites/search")
                 .then().log().all()
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());

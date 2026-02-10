@@ -7,26 +7,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 사이트 조회")
-public class SiteLookupTest {
-
-    @LocalServerPort
-    private int port;
+public class SiteLookupTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         campsiteRepository.deleteAll();
     }
 

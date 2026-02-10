@@ -9,20 +9,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 가용성 조회(단일 날짜)")
-public class AvailabilityLookupSingleDateTest {
-
-    @LocalServerPort
-    private int port;
+public class AvailabilityLookupSingleDateTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
@@ -35,7 +29,7 @@ public class AvailabilityLookupSingleDateTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
 
@@ -44,11 +38,11 @@ public class AvailabilityLookupSingleDateTest {
         availableSite = campsiteRepository.save(new Campsite("A-2", "Available Site", 4));
         Reservation reservation = new Reservation(
                 "홍길동",
-                LocalDate.parse("2026-02-10"),
-                LocalDate.parse("2026-02-10"),
+                LocalDate.parse("2030-02-10"),
+                LocalDate.parse("2030-02-10"),
                 reservedSite
         );
-        reservation.setReservationDate(LocalDate.parse("2026-02-10"));
+        reservation.setReservationDate(LocalDate.parse("2030-02-10"));
         reservationRepository.save(reservation);
     }
 
@@ -58,7 +52,7 @@ public class AvailabilityLookupSingleDateTest {
         // When: I GET "/api/sites/available?date=..."
         // Then: response is 200 and list does not include the reserved site
         RestAssured.given().log().all()
-                .queryParam("date", "2026-02-10")
+                .queryParam("date", "2030-02-10")
                 .when().get("/api/sites/available")
                 .then().log().all()
                 .statusCode(HttpStatus.OK.value())

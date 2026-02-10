@@ -10,8 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
@@ -19,12 +17,8 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.matchesRegex;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 예약 생성")
-public class ReservationCreationTest {
-
-    @LocalServerPort
-    private int port;
+public class ReservationCreationTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
@@ -34,7 +28,7 @@ public class ReservationCreationTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
     }
@@ -50,8 +44,8 @@ public class ReservationCreationTest {
                 "customerName", "홍길동",
                 "phoneNumber", "010-1234-5678",
                 "siteNumber", "A-1",
-                "startDate", "2026-02-10",
-                "endDate", "2026-02-12"
+                "startDate", "2030-02-10",
+                "endDate", "2030-02-12"
         );
 
         RestAssured.given().log().all()
@@ -70,8 +64,8 @@ public class ReservationCreationTest {
         Campsite site = campsiteRepository.save(new Campsite("A-1", "Test site", 4));
         reservationRepository.save(new Reservation(
                 "기존예약자",
-                LocalDate.parse("2026-02-10"),
-                LocalDate.parse("2026-02-12"),
+                LocalDate.parse("2030-02-10"),
+                LocalDate.parse("2030-02-12"),
                 site
         ));
 
@@ -80,8 +74,8 @@ public class ReservationCreationTest {
                 "customerName", "김철수",
                 "phoneNumber", "010-2222-3333",
                 "siteNumber", "A-1",
-                "startDate", "2026-02-11",
-                "endDate", "2026-02-13"
+                "startDate", "2030-02-11",
+                "endDate", "2030-02-13"
         );
 
         RestAssured.given().log().all()
@@ -103,8 +97,8 @@ public class ReservationCreationTest {
                 "customerName", "이영희",
                 "phoneNumber", "010-4444-5555",
                 "siteNumber", "A-1",
-                "startDate", "2026-02-12",
-                "endDate", "2026-02-10"
+                "startDate", "2030-02-12",
+                "endDate", "2030-02-10"
         );
 
         RestAssured.given().log().all()

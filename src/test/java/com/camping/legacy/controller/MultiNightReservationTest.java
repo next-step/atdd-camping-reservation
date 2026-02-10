@@ -10,19 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.Map;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 연박 예약")
-public class MultiNightReservationTest {
-
-    @LocalServerPort
-    private int port;
+public class MultiNightReservationTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
@@ -32,7 +26,7 @@ public class MultiNightReservationTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
     }
@@ -48,8 +42,8 @@ public class MultiNightReservationTest {
                 "customerName", "박민수",
                 "phoneNumber", "010-6666-7777",
                 "siteNumber", "B-1",
-                "startDate", "2026-02-14",
-                "endDate", "2026-02-16"
+                "startDate", "2030-02-14",
+                "endDate", "2030-02-16"
         );
 
         RestAssured.given().log().all()
@@ -67,8 +61,8 @@ public class MultiNightReservationTest {
         Campsite site = campsiteRepository.save(new Campsite("B-1", "Test site", 4));
         reservationRepository.save(new Reservation(
                 "기존예약자",
-                LocalDate.parse("2026-02-15"),
-                LocalDate.parse("2026-02-15"),
+                LocalDate.parse("2030-02-15"),
+                LocalDate.parse("2030-02-15"),
                 site
         ));
 
@@ -77,8 +71,8 @@ public class MultiNightReservationTest {
                 "customerName", "정수진",
                 "phoneNumber", "010-8888-9999",
                 "siteNumber", "B-1",
-                "startDate", "2026-02-14",
-                "endDate", "2026-02-16"
+                "startDate", "2030-02-14",
+                "endDate", "2030-02-16"
         );
 
         RestAssured.given().log().all()

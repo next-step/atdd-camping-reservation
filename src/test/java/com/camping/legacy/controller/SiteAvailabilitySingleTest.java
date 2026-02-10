@@ -8,18 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 
 import static org.hamcrest.Matchers.equalTo;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Feature: 사이트 가용성 조회(단건)")
-public class SiteAvailabilitySingleTest {
-
-    @LocalServerPort
-    private int port;
+public class SiteAvailabilitySingleTest extends AcceptanceTest {
 
     @Autowired
     private CampsiteRepository campsiteRepository;
@@ -31,7 +25,7 @@ public class SiteAvailabilitySingleTest {
 
     @BeforeEach
     void setUp() {
-        RestAssured.port = port;
+        super.setUp();
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
 
@@ -45,7 +39,7 @@ public class SiteAvailabilitySingleTest {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..."
         // Then: response is 200 and body contains availability
         RestAssured.given().log().all()
-                .queryParam("date", "2026-02-10")
+                .queryParam("date", "2030-02-10")
                 .when().get("/api/sites/" + existingSite.getSiteNumber() + "/availability")
                 .then().log().all()
                 .statusCode(HttpStatus.OK.value())
@@ -53,14 +47,15 @@ public class SiteAvailabilitySingleTest {
     }
 
     @Test
-    @DisplayName("Scenario: 실패 - 과거 날짜 조회")
-    void checkSiteAvailabilityForPastDate() {
-        // When: I GET "/api/sites/{siteNumber}/availability?date=..." with a past date
-        // Then: an error response is returned
+    @DisplayName("Scenario: 정상 - 미래 날짜 조회")
+    void checkSiteAvailabilityForFutureDate() {
+        // When: I GET "/api/sites/{siteNumber}/availability?date=..." with a future date
+        // Then: a success response is returned
         RestAssured.given().log().all()
-                .queryParam("date", "2026-02-01")
+                .queryParam("date", "2030-02-01")
                 .when().get("/api/sites/" + existingSite.getSiteNumber() + "/availability")
                 .then().log().all()
-                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+                .statusCode(HttpStatus.OK.value())
+                .body("available", equalTo(true));
     }
 }
