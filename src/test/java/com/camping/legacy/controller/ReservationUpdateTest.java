@@ -4,8 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,13 +45,9 @@ public class ReservationUpdateTest extends AcceptanceTest {
                 "startDate", "2030-02-20",
                 "endDate", "2030-02-22"
         );
+        Map<String, Object> queryParams = Map.of("confirmationCode", confirmationCode);
 
-        RestAssured.given().log().all()
-                .queryParam("confirmationCode", confirmationCode)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().put("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        put("/api/reservations/" + existingReservation.getId(), requestBody, queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("startDate", equalTo("2030-02-20"))
                 .body("endDate", equalTo("2030-02-22"));
@@ -63,13 +57,9 @@ public class ReservationUpdateTest extends AcceptanceTest {
     @DisplayName("Scenario: 실패 - 확인 코드 불일치")
     void updateReservationWithInvalidCode() {
         Map<String, Object> requestBody = Map.of("customerName", "홍길동");
+        Map<String, Object> queryParams = Map.of("confirmationCode", "WRONG");
 
-        RestAssured.given().log().all()
-                .queryParam("confirmationCode", "WRONG")
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().put("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        put("/api/reservations/" + existingReservation.getId(), requestBody, queryParams)
                 .statusCode(HttpStatus.BAD_REQUEST.value());
     }
 
@@ -80,13 +70,9 @@ public class ReservationUpdateTest extends AcceptanceTest {
                 "startDate", "2030-02-12",
                 "endDate", "2030-02-10"
         );
+        Map<String, Object> queryParams = Map.of("confirmationCode", confirmationCode);
 
-        RestAssured.given().log().all()
-                .queryParam("confirmationCode", confirmationCode)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().put("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        put("/api/reservations/" + existingReservation.getId(), requestBody, queryParams)
                 .statusCode(HttpStatus.BAD_REQUEST.value());
     }
 }

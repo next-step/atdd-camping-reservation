@@ -4,7 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
 
@@ -45,10 +45,8 @@ public class ReservationLookupListTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 정상 - 날짜로 예약 조회")
     void findReservationsByDate() {
-        RestAssured.given().log().all()
-                .queryParam("date", "2030-02-11")
-                .when().get("/api/reservations")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("date", "2030-02-11");
+        get("/api/reservations", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(2))
                 .body("customerName", hasItems("홍길동", "김철수"));
@@ -57,10 +55,8 @@ public class ReservationLookupListTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 정상 - 이름으로 예약 조회")
     void findReservationsByCustomerName() {
-        RestAssured.given().log().all()
-                .queryParam("customerName", "홍길동")
-                .when().get("/api/reservations")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("customerName", "홍길동");
+        get("/api/reservations", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(1))
                 .body("[0].customerName", equalTo("홍길동"));
@@ -69,11 +65,11 @@ public class ReservationLookupListTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 정상 - 이름+전화번호로 내 예약 조회")
     void findMyReservationsByNameAndPhone() {
-        RestAssured.given().log().all()
-                .queryParam("name", "홍길동")
-                .queryParam("phone", "010-1234-5678")
-                .when().get("/api/reservations/my")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of(
+                "name", "홍길동",
+                "phone", "010-1234-5678"
+        );
+        get("/api/reservations/my", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(1))
                 .body("[0].customerName", equalTo("홍길동"));
@@ -82,10 +78,8 @@ public class ReservationLookupListTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 실패 - 잘못된 날짜 포맷")
     void findReservationsWithInvalidDateFormat() {
-        RestAssured.given().log().all()
-                .queryParam("date", "2030-02-30")
-                .when().get("/api/reservations")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("date", "2030-02-30");
+        get("/api/reservations", queryParams)
                 .statusCode(HttpStatus.BAD_REQUEST.value());
     }
 }

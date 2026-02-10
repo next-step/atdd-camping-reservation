@@ -4,9 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,11 +38,7 @@ public class ReservationCreationTest extends AcceptanceTest {
                 "endDate", "2030-02-12"
         );
 
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().post("/api/reservations")
-                .then().log().all()
+        post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CREATED.value())
                 .body("confirmationCode", matchesRegex("[a-zA-Z0-9]{6}"));
     }
@@ -71,11 +64,7 @@ public class ReservationCreationTest extends AcceptanceTest {
                 "endDate", "2030-02-13"
         );
 
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().post("/api/reservations")
-                .then().log().all()
+        post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CONFLICT.value());
     }
 
@@ -94,11 +83,8 @@ public class ReservationCreationTest extends AcceptanceTest {
                 "endDate", "2030-02-10"
         );
 
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().post("/api/reservations")
-                .then().log().all()
+        post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CONFLICT.value());
     }
 }
+

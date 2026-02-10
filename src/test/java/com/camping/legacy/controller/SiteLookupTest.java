@@ -2,8 +2,6 @@ package com.camping.legacy.controller;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.repository.CampsiteRepository;
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +25,7 @@ public class SiteLookupTest extends AcceptanceTest {
 
         // When: I GET "/api/sites"
         // Then: response status is 200 and list contains sites
-        RestAssured.given().log().all()
-                .when().get("/api/sites")
-                .then().log().all()
+        get("/api/sites")
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(2));
     }
@@ -42,9 +38,7 @@ public class SiteLookupTest extends AcceptanceTest {
 
         // When: I GET "/api/sites"
         // Then: response status is 200 and list is empty
-        RestAssured.given().log().all()
-                .when().get("/api/sites")
-                .then().log().all()
+        get("/api/sites")
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(0));
     }

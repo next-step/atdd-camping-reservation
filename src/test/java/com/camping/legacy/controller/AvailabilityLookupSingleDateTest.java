@@ -4,7 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
 
@@ -49,10 +49,8 @@ public class AvailabilityLookupSingleDateTest extends AcceptanceTest {
     void findAvailableSitesByDate() {
         // When: I GET "/api/sites/available?date=..."
         // Then: response is 200 and list does not include the reserved site
-        RestAssured.given().log().all()
-                .queryParam("date", "2030-02-10")
-                .when().get("/api/sites/available")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("date", "2030-02-10");
+        get("/api/sites/available", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("siteNumber", not(hasItem(reservedSite.getSiteNumber())))
                 .body("siteNumber", hasItem(availableSite.getSiteNumber()));
@@ -63,9 +61,7 @@ public class AvailabilityLookupSingleDateTest extends AcceptanceTest {
     void findAvailableSitesWithMissingDate() {
         // When: I GET "/api/sites/available" without a date
         // Then: response is 400
-        RestAssured.given().log().all()
-                .when().get("/api/sites/available")
-                .then().log().all()
+        get("/api/sites/available")
                 .statusCode(HttpStatus.BAD_REQUEST.value());
     }
 }

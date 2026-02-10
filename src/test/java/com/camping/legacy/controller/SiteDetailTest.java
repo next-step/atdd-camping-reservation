@@ -2,7 +2,6 @@ package com.camping.legacy.controller;
 
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.repository.CampsiteRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,9 +31,7 @@ public class SiteDetailTest extends AcceptanceTest {
     void findSiteDetail() {
         // When: I GET "/api/sites/{id}"
         // Then: response is 200 and contains site details
-        RestAssured.given().log().all()
-                .when().get("/api/sites/" + existingSite.getId())
-                .then().log().all()
+        get("/api/sites/" + existingSite.getId())
                 .statusCode(HttpStatus.OK.value())
                 .body("id", equalTo(existingSite.getId().intValue()));
     }
@@ -44,9 +41,7 @@ public class SiteDetailTest extends AcceptanceTest {
     void findSiteDetailWithNonExistentId() {
         // When: I GET "/api/sites/{id}" with a non-existent id
         // Then: response is 404
-        RestAssured.given().log().all()
-                .when().get("/api/sites/99999")
-                .then().log().all()
+        get("/api/sites/99999")
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 }

@@ -4,7 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,9 +44,7 @@ public class ReservationLookupSingleTest extends AcceptanceTest {
     void findReservationById() {
         // When: I GET "/api/reservations/{id}"
         // Then: response status should be 200 and body contains the reservation
-        RestAssured.given().log().all()
-                .when().get("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        get("/api/reservations/" + existingReservation.getId())
                 .statusCode(HttpStatus.OK.value())
                 .body("id", equalTo(existingReservation.getId().intValue()));
     }
@@ -57,9 +54,7 @@ public class ReservationLookupSingleTest extends AcceptanceTest {
     void findReservationByNonExistentId() {
         // When: I GET "/api/reservations/{id}" with a non-existent id
         // Then: response status should be 404
-        RestAssured.given().log().all()
-                .when().get("/api/reservations/99999")
-                .then().log().all()
+        get("/api/reservations/99999")
                 .statusCode(HttpStatus.NOT_FOUND.value());
     }
 }

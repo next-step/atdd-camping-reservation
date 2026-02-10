@@ -4,9 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,11 +36,7 @@ public class MultiNightReservationTest extends AcceptanceTest {
                 "endDate", "2030-02-16"
         );
 
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().post("/api/reservations")
-                .then().log().all()
+        post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CREATED.value());
     }
 
@@ -68,11 +61,7 @@ public class MultiNightReservationTest extends AcceptanceTest {
                 "endDate", "2030-02-16"
         );
 
-        RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when().post("/api/reservations")
-                .then().log().all()
+        post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CONFLICT.value());
     }
 }

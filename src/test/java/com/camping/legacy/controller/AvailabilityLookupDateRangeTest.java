@@ -3,12 +3,12 @@ package com.camping.legacy.controller;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+
+import java.util.Map;
 
 import static org.hamcrest.Matchers.*;
 
@@ -30,12 +30,12 @@ public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
 
         // When: I GET "/api/sites/search?..."
         // Then: response is 200 and list only contains large sites
-        RestAssured.given().log().all()
-                .queryParam("startDate", "2030-02-20")
-                .queryParam("endDate", "2030-02-22")
-                .queryParam("size", "대형")
-                .when().get("/api/sites/search")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of(
+                "startDate", "2030-02-20",
+                "endDate", "2030-02-22",
+                "size", "대형"
+        );
+        get("/api/sites/search", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("$", hasSize(1))
                 .body("[0].description", containsString("대형"));
@@ -46,11 +46,11 @@ public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
     void searchAvailableSitesWithEndDateBeforeStartDate() {
         // When: I GET "/api/sites/search?..." with invalid date range
         // Then: an error response is returned
-        RestAssured.given().log().all()
-                .queryParam("startDate", "2030-02-22")
-                .queryParam("endDate", "2030-02-20")
-                .when().get("/api/sites/search")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of(
+                "startDate", "2030-02-22",
+                "endDate", "2030-02-20"
+        );
+        get("/api/sites/search", queryParams)
                 .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 }

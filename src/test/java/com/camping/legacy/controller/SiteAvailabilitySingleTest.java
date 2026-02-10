@@ -3,12 +3,13 @@ package com.camping.legacy.controller;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+
+import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 
@@ -36,10 +37,8 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailability() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..."
         // Then: response is 200 and body contains availability
-        RestAssured.given().log().all()
-                .queryParam("date", "2030-02-10")
-                .when().get("/api/sites/" + existingSite.getSiteNumber() + "/availability")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("date", "2030-02-10");
+        get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
     }
@@ -49,10 +48,8 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailabilityForFutureDate() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..." with a future date
         // Then: a success response is returned
-        RestAssured.given().log().all()
-                .queryParam("date", "2030-02-01")
-                .when().get("/api/sites/" + existingSite.getSiteNumber() + "/availability")
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("date", "2030-02-01");
+        get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
     }

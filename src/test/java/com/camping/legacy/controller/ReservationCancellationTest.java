@@ -4,7 +4,6 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
-import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
 
@@ -40,10 +40,8 @@ public class ReservationCancellationTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 정상 - 확인 코드로 취소")
     void cancelReservationWithValidCode() {
-        RestAssured.given().log().all()
-                .queryParam("confirmationCode", confirmationCode)
-                .when().delete("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("confirmationCode", confirmationCode);
+        delete("/api/reservations/" + existingReservation.getId(), queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("message", equalTo("예약이 취소되었습니다."));
     }
@@ -51,10 +49,8 @@ public class ReservationCancellationTest extends AcceptanceTest {
     @Test
     @DisplayName("Scenario: 실패 - 확인 코드 불일치")
     void cancelReservationWithInvalidCode() {
-        RestAssured.given().log().all()
-                .queryParam("confirmationCode", "WRONG")
-                .when().delete("/api/reservations/" + existingReservation.getId())
-                .then().log().all()
+        Map<String, Object> queryParams = Map.of("confirmationCode", "WRONG");
+        delete("/api/reservations/" + existingReservation.getId(), queryParams)
                 .statusCode(HttpStatus.BAD_REQUEST.value());
     }
 }
