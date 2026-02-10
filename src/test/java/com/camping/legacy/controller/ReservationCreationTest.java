@@ -27,13 +27,14 @@ public class ReservationCreationTest extends AcceptanceTest {
     @DisplayName("Scenario: 정상 - 유효한 예약 생성")
     void createValidReservation() {
         // Given: campsite "A-1" exists
-        campsiteRepository.save(new Campsite("A-1", "Test site", 4));
+        String existingSiteNumber = "A-1";
+        campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
 
         // When: I POST "/api/reservations" with valid data
         Map<String, Object> requestBody = Map.of(
                 "customerName", "홍길동",
                 "phoneNumber", "010-1234-5678",
-                "siteNumber", "A-1",
+                "siteNumber", existingSiteNumber,
                 "startDate", "2030-02-10",
                 "endDate", "2030-02-12"
         );
@@ -47,7 +48,8 @@ public class ReservationCreationTest extends AcceptanceTest {
     @DisplayName("Scenario: 실패 - 기간 중복")
     void createReservationWithOverlappingDates() {
         // Given: campsite "A-1" has an existing reservation
-        Campsite site = campsiteRepository.save(new Campsite("A-1", "Test site", 4));
+        String existingSiteNumber = "A-1";
+        Campsite site = campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
         reservationRepository.save(new Reservation(
                 "기존예약자",
                 LocalDate.parse("2030-02-10"),
@@ -59,7 +61,7 @@ public class ReservationCreationTest extends AcceptanceTest {
         Map<String, Object> requestBody = Map.of(
                 "customerName", "김철수",
                 "phoneNumber", "010-2222-3333",
-                "siteNumber", "A-1",
+                "siteNumber", existingSiteNumber,
                 "startDate", "2030-02-11",
                 "endDate", "2030-02-13"
         );
@@ -72,13 +74,14 @@ public class ReservationCreationTest extends AcceptanceTest {
     @DisplayName("Scenario: 실패 - 종료일이 시작일보다 이전")
     void createReservationWithEndDateBeforeStartDate() {
         // Given: campsite "A-1" exists
-        campsiteRepository.save(new Campsite("A-1", "Test site", 4));
+        String existingSiteNumber = "A-1";
+        campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
 
         // When: I POST "/api/reservations" with end date before start date
         Map<String, Object> requestBody = Map.of(
                 "customerName", "이영희",
                 "phoneNumber", "010-4444-5555",
-                "siteNumber", "A-1",
+                "siteNumber", existingSiteNumber,
                 "startDate", "2030-02-12",
                 "endDate", "2030-02-10"
         );
