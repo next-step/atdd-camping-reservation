@@ -1,0 +1,56 @@
+package com.camping.legacy.controller;
+
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.repository.CampsiteRepository;
+import com.camping.legacy.repository.ReservationRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+
+import java.time.LocalDate;
+import java.util.Map;
+
+import static org.hamcrest.Matchers.equalTo;
+
+@DisplayName("Feature: 예약 취소")
+public class ReservationCancellationTest extends AcceptanceTest {
+
+    @Autowired
+    private CampsiteRepository campsiteRepository;
+
+    @Autowired
+    private ReservationRepository reservationRepository;
+
+    private Reservation existingReservation;
+    private final String confirmationCode = "ABC123";
+
+    @BeforeEach
+    void setUp() {
+        super.setUp();
+
+        Campsite site = campsiteRepository.save(new Campsite("A-1", "Test site", 4));
+        existingReservation = new Reservation("홍길동", LocalDate.parse("2030-02-10"), LocalDate.parse("2030-02-12"), site);
+        existingReservation.setConfirmationCode(confirmationCode);
+        reservationRepository.save(existingReservation);
+    }
+
+    @Test
+    @DisplayName("Scenario: 정상 - 확인 코드로 취소")
+    void cancelReservationWithValidCode() {
+        Map<String, Object> queryParams = Map.of("confirmationCode", confirmationCode);
+        delete("/api/reservations/" + existingReservation.getId(), queryParams)
+                .statusCode(HttpStatus.OK.value())
+                .body("message", equalTo("예약이 취소되었습니다."));
+    }
+
+    @Test
+    @DisplayName("Scenario: 실패 - 확인 코드 불일치")
+    void cancelReservationWithInvalidCode() {
+        Map<String, Object> queryParams = Map.of("confirmationCode", "WRONG");
+        delete("/api/reservations/" + existingReservation.getId(), queryParams)
+                .statusCode(HttpStatus.BAD_REQUEST.value());
+    }
+}
