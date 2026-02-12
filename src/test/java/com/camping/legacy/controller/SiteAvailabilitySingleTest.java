@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -52,5 +53,14 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
         get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
+    }
+
+    @Test
+    @DisplayName("Scenario: 실패 - 30일 이후 날짜 조회 불가")
+    void checkSiteAvailabilityBeyond30Days() {
+        String futureDate = LocalDate.now().plusDays(31).toString();
+        Map<String, Object> queryParams = Map.of("date", futureDate);
+        get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
+                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 }
