@@ -84,6 +84,12 @@ public class SiteService {
             throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
         }
 
+        // 총 검색 기간 30일 이내 체크
+        long searchDays = ChronoUnit.DAYS.between(startDate, endDate);
+        if (searchDays > 30) {
+            throw new RuntimeException("총 검색 기간은 30일을 초과할 수 없습니다.");
+        }
+
         List<Campsite> allSites = campsiteRepository.findAll();
         List<SiteAvailabilityResponse> availableSites = new ArrayList<>();
 

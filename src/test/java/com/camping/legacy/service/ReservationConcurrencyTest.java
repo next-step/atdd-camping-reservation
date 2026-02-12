@@ -4,6 +4,7 @@ import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,12 @@ class ReservationConcurrencyTest {
         reservationRepository.deleteAll();
         campsiteRepository.deleteAll();
         campsiteRepository.save(new Campsite("A-1", "대형 사이트", 8));
+    }
+
+    @AfterEach
+    void tearDown() {
+        reservationRepository.deleteAll();
+        campsiteRepository.deleteAll();
     }
 
     @Test

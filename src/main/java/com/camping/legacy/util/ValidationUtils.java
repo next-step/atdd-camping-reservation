@@ -111,6 +111,12 @@ public class ValidationUtils {
             return false;
         }
 
+        // 총 예약 기간 30일 이내인지 체크
+        long reservationDays = ChronoUnit.DAYS.between(startDate, endDate);
+        if (reservationDays > 30) {
+            return false;
+        }
+
         return true;
     }
 

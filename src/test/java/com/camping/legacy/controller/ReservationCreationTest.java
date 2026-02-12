@@ -101,7 +101,7 @@ public class ReservationCreationTest extends AcceptanceTest {
     }
 
     @Test
-    @DisplayName("Scenario: 실패 - 30일 이후 예약 불가")
+    @DisplayName("Scenario: 실패 - 오늘로부터 31일 이후 예약 불가")
     void createReservationBeyond30Days() {
         // Given: campsite "A-1" exists
         String existingSiteNumber = "A-1";
@@ -124,7 +124,7 @@ public class ReservationCreationTest extends AcceptanceTest {
     }
 
     @Test
-    @DisplayName("Scenario: 정상 - 30일째 되는 날 예약 가능")
+    @DisplayName("Scenario: 정상 - 오늘로부터 30일째 되는 날 예약 가능")
     void createReservationExactly30Days() {
         // Given: campsite "A-1" exists
         String existingSiteNumber = "A-1";
@@ -145,5 +145,28 @@ public class ReservationCreationTest extends AcceptanceTest {
         post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CREATED.value())
                 .body("confirmationCode", matchesRegex("[a-zA-Z0-9]{6}"));
+    }
+
+    @Test
+    @DisplayName("Scenario: 실패 - 총 예약 기간 31일 초과")
+    void createReservationWithPeriodExceeding30Days() {
+        // Given: campsite "A-1" exists
+        String existingSiteNumber = "A-1";
+        campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
+
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(32);
+
+        // When: I POST "/api/reservations" with reservation period exceeding 30 days
+        Map<String, Object> requestBody = Map.of(
+                "customerName", "이영수",
+                "phoneNumber", "010-9999-0000",
+                "siteNumber", existingSiteNumber,
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
+        );
+
+        post("/api/reservations", requestBody)
+                .statusCode(HttpStatus.CONFLICT.value());
     }
 }

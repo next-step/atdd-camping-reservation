@@ -96,6 +96,12 @@ public class ReservationService {
                         if (daysFromToday > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("오늘로부터 30일 이내에만 예약 가능합니다.");
                         }
+
+                        // 총 예약 기간 체크 (30일 이내)
+                        long reservationDays = ChronoUnit.DAYS.between(startDate, endDate);
+                        if (reservationDays > MAX_RESERVATION_DAYS) {
+                            throw new RuntimeException("총 예약 기간은 30일을 초과할 수 없습니다.");
+                        }
                     }
                 }
             }

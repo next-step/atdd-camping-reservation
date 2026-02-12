@@ -62,7 +62,7 @@ public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
     }
 
     @Test
-    @DisplayName("Scenario: 실패 - 30일 이후 기간 검색 불가")
+    @DisplayName("Scenario: 실패 - 오늘로부터 31일 이후 기간 검색 불가")
     void searchAvailableSitesBeyond30Days() {
         // Given: campsites exist
         campsiteRepository.save(new Campsite("A-1", "대형 사이트", 8));
@@ -71,6 +71,25 @@ public class AvailabilityLookupDateRangeTest extends AcceptanceTest {
         LocalDate endDate = LocalDate.now().plusDays(33);
 
         // When: I GET "/api/sites/search?..." with start date beyond 30 days
+        // Then: an error response is returned
+        Map<String, Object> queryParams = Map.of(
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
+        );
+        get("/api/sites/search", queryParams)
+                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+    }
+
+    @Test
+    @DisplayName("Scenario: 실패 - 총 검색 기간 31일 초과")
+    void searchAvailableSitesWithPeriodExceeding30Days() {
+        // Given: campsites exist
+        campsiteRepository.save(new Campsite("A-1", "대형 사이트", 8));
+
+        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate endDate = LocalDate.now().plusDays(32);
+
+        // When: I GET "/api/sites/search?..." with search period exceeding 30 days
         // Then: an error response is returned
         Map<String, Object> queryParams = Map.of(
                 "startDate", startDate.toString(),

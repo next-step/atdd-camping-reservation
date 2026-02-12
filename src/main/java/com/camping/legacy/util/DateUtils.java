@@ -72,6 +72,12 @@ public class DateUtils {
             return false;
         }
 
+        // 총 예약 기간 30일 이내인지 확인
+        long reservationDays = getDaysBetween(startDate, endDate);
+        if (reservationDays > 30) {
+            return false;
+        }
+
         // 모든 검증 통과
         return true;
     }
