@@ -78,6 +78,12 @@ public class SiteService {
             throw new RuntimeException("과거 날짜는 검색할 수 없습니다.");
         }
 
+        // 30일 이내 체크
+        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+        if (daysFromToday > 30) {
+            throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
+        }
+
         List<Campsite> allSites = campsiteRepository.findAll();
         List<SiteAvailabilityResponse> availableSites = new ArrayList<>();
 
@@ -151,6 +157,12 @@ public class SiteService {
         LocalDate today = LocalDate.now();
         if (date.isBefore(today)) {
             throw new RuntimeException("과거 날짜는 조회할 수 없습니다.");
+        }
+
+        // 30일 이내 체크
+        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, date);
+        if (daysFromToday > 30) {
+            throw new RuntimeException("오늘로부터 30일 이내에만 조회 가능합니다.");
         }
 
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)

@@ -66,9 +66,9 @@ public class DateUtils {
             return false;
         }
 
-        // 예약 기간이 30일을 초과하는지 확인
-        long days = getDaysBetween(startDate, endDate);
-        if (days > 30) {
+        // 오늘로부터 30일 이내인지 확인
+        long daysFromToday = getDaysBetween(LocalDate.now(), startDate);
+        if (daysFromToday > 30) {
             return false;
         }
 

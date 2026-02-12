@@ -37,7 +37,7 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailability() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..."
         // Then: response is 200 and body contains availability
-        Map<String, Object> queryParams = Map.of("date", "2030-02-10");
+        Map<String, Object> queryParams = Map.of("date", "2026-02-14");
         get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
@@ -48,7 +48,7 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailabilityForFutureDate() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..." with a future date
         // Then: a success response is returned
-        Map<String, Object> queryParams = Map.of("date", "2030-02-01");
+        Map<String, Object> queryParams = Map.of("date", "2026-02-14");
         get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));

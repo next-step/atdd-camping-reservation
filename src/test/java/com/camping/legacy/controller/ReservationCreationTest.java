@@ -30,13 +30,16 @@ public class ReservationCreationTest extends AcceptanceTest {
         String existingSiteNumber = "A-1";
         campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
 
+        LocalDate startDate = LocalDate.now().plusDays(5);
+        LocalDate endDate = LocalDate.now().plusDays(7);
+
         // When: I POST "/api/reservations" with valid data
         Map<String, Object> requestBody = Map.of(
                 "customerName", "홍길동",
                 "phoneNumber", "010-1234-5678",
                 "siteNumber", existingSiteNumber,
-                "startDate", "2030-02-10",
-                "endDate", "2030-02-12"
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
         );
 
         post("/api/reservations", requestBody)
@@ -50,10 +53,14 @@ public class ReservationCreationTest extends AcceptanceTest {
         // Given: campsite "A-1" has an existing reservation
         String existingSiteNumber = "A-1";
         Campsite site = campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
+
+        LocalDate startDate = LocalDate.now().plusDays(5);
+        LocalDate endDate = LocalDate.now().plusDays(7);
+
         reservationRepository.save(new Reservation(
                 "기존예약자",
-                LocalDate.parse("2030-02-10"),
-                LocalDate.parse("2030-02-12"),
+                startDate,
+                endDate,
                 site
         ));
 
@@ -62,8 +69,8 @@ public class ReservationCreationTest extends AcceptanceTest {
                 "customerName", "김철수",
                 "phoneNumber", "010-2222-3333",
                 "siteNumber", existingSiteNumber,
-                "startDate", "2030-02-11",
-                "endDate", "2030-02-13"
+                "startDate", startDate.plusDays(1).toString(),
+                "endDate", endDate.plusDays(1).toString()
         );
 
         post("/api/reservations", requestBody)
@@ -77,17 +84,66 @@ public class ReservationCreationTest extends AcceptanceTest {
         String existingSiteNumber = "A-1";
         campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
 
+        LocalDate startDate = LocalDate.now().plusDays(7);
+        LocalDate endDate = LocalDate.now().plusDays(5);
+
         // When: I POST "/api/reservations" with end date before start date
         Map<String, Object> requestBody = Map.of(
                 "customerName", "이영희",
                 "phoneNumber", "010-4444-5555",
                 "siteNumber", existingSiteNumber,
-                "startDate", "2030-02-12",
-                "endDate", "2030-02-10"
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
         );
 
         post("/api/reservations", requestBody)
                 .statusCode(HttpStatus.CONFLICT.value());
     }
-}
 
+    @Test
+    @DisplayName("Scenario: 실패 - 30일 이후 예약 불가")
+    void createReservationBeyond30Days() {
+        // Given: campsite "A-1" exists
+        String existingSiteNumber = "A-1";
+        campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
+
+        LocalDate startDate = LocalDate.now().plusDays(31);
+        LocalDate endDate = LocalDate.now().plusDays(33);
+
+        // When: I POST "/api/reservations" with start date beyond 30 days
+        Map<String, Object> requestBody = Map.of(
+                "customerName", "박영수",
+                "phoneNumber", "010-5555-6666",
+                "siteNumber", existingSiteNumber,
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
+        );
+
+        post("/api/reservations", requestBody)
+                .statusCode(HttpStatus.CONFLICT.value());
+    }
+
+    @Test
+    @DisplayName("Scenario: 정상 - 30일째 되는 날 예약 가능")
+    void createReservationExactly30Days() {
+        // Given: campsite "A-1" exists
+        String existingSiteNumber = "A-1";
+        campsiteRepository.save(new Campsite(existingSiteNumber, "Test site", 4));
+
+        LocalDate startDate = LocalDate.now().plusDays(30);
+        LocalDate endDate = LocalDate.now().plusDays(30);
+
+        // When: I POST "/api/reservations" with start date exactly 30 days from now
+        Map<String, Object> requestBody = Map.of(
+                "customerName", "최경민",
+                "phoneNumber", "010-7777-8888",
+                "siteNumber", existingSiteNumber,
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
+        );
+
+        post("/api/reservations", requestBody)
+                .statusCode(HttpStatus.CREATED.value())
+                .body("confirmationCode", matchesRegex("[a-zA-Z0-9]{6}"));
+    }
+}
