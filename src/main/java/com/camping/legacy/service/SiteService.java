@@ -59,7 +59,7 @@ public class SiteService {
                 .collect(Collectors.toList());
     }
     
-    public List<SiteAvailabilityResponse> searchAvailableSites(SiteSearchRequest request) {
+    public List<SiteAvailabilityResponse> searchAvailableSites(SiteSearchRequest request, LocalDate now) {
         // 날짜 유효성 검증 (중복 코드 - ReservationService와 동일)
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
@@ -73,13 +73,12 @@ public class SiteService {
         }
 
         // 과거 날짜 체크
-        LocalDate today = LocalDate.now();
-        if (startDate.isBefore(today)) {
+        if (startDate.isBefore(now)) {
             throw new RuntimeException("과거 날짜는 검색할 수 없습니다.");
         }
 
         // 30일 이내 체크
-        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, startDate);
         if (daysFromToday > 30) {
             throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
         }
@@ -142,7 +141,7 @@ public class SiteService {
         return availableSites;
     }
     
-    public boolean isAvailable(String siteNumber, LocalDate date) {
+    public boolean isAvailable(String siteNumber, LocalDate date, LocalDate now) {
         // 사이트 번호 검증 (중복 코드)
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
@@ -154,13 +153,12 @@ public class SiteService {
         }
 
         // 과거 날짜 체크
-        LocalDate today = LocalDate.now();
-        if (date.isBefore(today)) {
+        if (date.isBefore(now)) {
             throw new RuntimeException("과거 날짜는 조회할 수 없습니다.");
         }
 
         // 30일 이내 체크
-        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, date);
+        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, date);
         if (daysFromToday > 30) {
             throw new RuntimeException("오늘로부터 30일 이내에만 조회 가능합니다.");
         }

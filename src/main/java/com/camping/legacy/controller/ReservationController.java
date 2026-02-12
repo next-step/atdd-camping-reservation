@@ -30,8 +30,9 @@ public class ReservationController {
     
     @PostMapping
     public ResponseEntity<?> createReservation(@RequestBody ReservationRequest request) {
+        LocalDate now = LocalDate.now();
         try {
-            ReservationResponse response = reservationService.createReservation(request);
+            ReservationResponse response = reservationService.createReservation(request, now);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
@@ -71,7 +72,7 @@ public class ReservationController {
             @PathVariable Long id,
             @RequestParam String confirmationCode) {
         try {
-            reservationService.cancelReservation(id, confirmationCode);
+            reservationService.cancelReservation(id, confirmationCode, LocalDate.now());
             Map<String, String> response = new HashMap<>();
             response.put("message", "예약이 취소되었습니다.");
             return ResponseEntity.ok(response);
@@ -88,7 +89,7 @@ public class ReservationController {
             @RequestBody ReservationRequest request,
             @RequestParam String confirmationCode) {
         try {
-            ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode);
+            ReservationResponse response = reservationService.updateReservation(id, request, confirmationCode, LocalDate.now());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

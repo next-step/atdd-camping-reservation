@@ -58,7 +58,7 @@ public class ReservationService {
      * - 깊은 중첩
      * - 모든 로직을 한 곳에
      */
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResponse createReservation(ReservationRequest request, LocalDate now) {
         // ============================================================
         // STEP 1: 입력 데이터 추출
         // ============================================================
@@ -87,12 +87,11 @@ public class ReservationService {
                     throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
                 } else {
                     // 과거 날짜 체크 (중첩 레벨 4)
-                    LocalDate today = LocalDate.now();
-                    if (startDate.isBefore(today)) {
+                    if (startDate.isBefore(now)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
                         // 예약 기간 체크 (오늘로부터 30일 이내)
-                        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+                        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, startDate);
                         if (daysFromToday > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("오늘로부터 30일 이내에만 예약 가능합니다.");
                         }
@@ -299,16 +298,15 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode) {
+    public void cancelReservation(Long id, String confirmationCode, LocalDate now) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
-        LocalDate today = LocalDate.now();
-        if (reservation.getStartDate().equals(today)) {
+
+        if (reservation.getStartDate().equals(now)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");
@@ -355,7 +353,7 @@ public class ReservationService {
         return responses;
     }
     
-    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode, LocalDate now) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
@@ -381,8 +379,7 @@ public class ReservationService {
             }
 
             // 과거 날짜 체크
-            LocalDate today = LocalDate.now();
-            if (startDate.isBefore(today)) {
+            if (startDate.isBefore(now)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
         }
@@ -501,7 +498,7 @@ public class ReservationService {
         // ============================================================
         ReservationResponse reservationResponse = null;
         try {
-            reservationResponse = createReservation(request);
+            reservationResponse = createReservation(request, LocalDate.now());
         } catch (Exception e) {
             log.error("예약 생성 실패: {}", e.getMessage());
             throw new RuntimeException("예약 생성 중 오류가 발생했습니다: " + e.getMessage());
