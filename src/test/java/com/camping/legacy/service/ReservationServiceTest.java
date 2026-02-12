@@ -10,6 +10,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -373,5 +377,51 @@ class ReservationServiceTest {
         ReservationResponse response = reservationService.createReservation(second, NOW);
 
         assertThat(response.getSiteNumber()).isEqualTo("B-1");
+    }
+
+    @Test
+    @DisplayName("동시성 - 같은 사이트/기간에 동시 예약 시 하나만 성공해야 한다")
+    void onlyOneReservationSucceedsWhenConcurrent() throws InterruptedException {
+        int threadCount = 10;
+        ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch readyLatch = new CountDownLatch(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        for (int i = 0; i < threadCount; i++) {
+            final String name = "고객" + i;
+            final String phone = "010-0000-" + String.format("%04d", i);
+            executor.submit(() -> {
+                try {
+                    readyLatch.countDown();
+                    startLatch.await();
+
+                    ReservationRequest request = new ReservationRequest(
+                            name,
+                            LocalDate.of(2030, 2, 5),
+                            LocalDate.of(2030, 2, 7),
+                            "A-1", phone,
+                            null, null, null
+                    );
+                    reservationService.createReservation(request, NOW);
+                    successCount.incrementAndGet();
+                } catch (RuntimeException e) {
+                    failCount.incrementAndGet();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+        }
+
+        readyLatch.await();
+        startLatch.countDown();
+        executor.shutdown();
+        executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+
+        assertThat(successCount.get())
+                .describedAs("동시 예약 시 정확히 1건만 성공해야 한다 (성공: %d, 실패: %d)", successCount.get(), failCount.get())
+                .isEqualTo(1);
+        assertThat(failCount.get()).isEqualTo(threadCount - 1);
     }
 }
