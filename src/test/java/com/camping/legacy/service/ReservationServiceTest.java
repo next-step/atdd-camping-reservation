@@ -222,6 +222,135 @@ class ReservationServiceTest {
     }
 
     @Test
+    @DisplayName("정상 - 당일 예약 가능 (startDate == now)")
+    void createReservationForToday() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 2, 1),
+                LocalDate.of(2030, 2, 3),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        ReservationResponse response = reservationService.createReservation(request, NOW);
+
+        assertThat(response.getStartDate()).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("실패 - 하루 전 과거 날짜 (startDate == now - 1)")
+    void failWhenStartDateIsYesterday() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 1, 31),
+                LocalDate.of(2030, 2, 2),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("과거 날짜로 예약할 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("실패 - 31일 뒤 예약 불가 (경계값 now + 31)")
+    void failWhenStartDate31DaysLater() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 3, 4),
+                LocalDate.of(2030, 3, 4),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("오늘로부터 30일 이내에만 예약 가능합니다.");
+    }
+
+    @Test
+    @DisplayName("정상 - now가 달라지면 같은 날짜도 예약 가능")
+    void createReservationWithDifferentNow() {
+        LocalDate laterNow = LocalDate.of(2030, 3, 1);
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 3, 4),
+                LocalDate.of(2030, 3, 6),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        ReservationResponse response = reservationService.createReservation(request, laterNow);
+
+        assertThat(response.getStartDate()).isEqualTo(LocalDate.of(2030, 3, 4));
+    }
+
+    @Test
+    @DisplayName("실패 - startDate와 endDate가 같은 날인데 endDate가 이전 (같은 날은 허용)")
+    void createReservationSameDay() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 2, 5),
+                LocalDate.of(2030, 2, 5),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        ReservationResponse response = reservationService.createReservation(request, NOW);
+
+        assertThat(response.getStartDate()).isEqualTo(response.getEndDate());
+    }
+
+    @Test
+    @DisplayName("실패 - endDate만 과거 (startDate 유효, endDate < startDate)")
+    void failWhenEndDateBeforeStartDateByOneDay() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 2, 10),
+                LocalDate.of(2030, 2, 9),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("종료일이 시작일보다 이전일 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("실패 - startDate null, endDate 유효")
+    void failWhenStartDateNull() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                null,
+                LocalDate.of(2030, 2, 7),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("예약 기간을 선택해주세요.");
+    }
+
+    @Test
+    @DisplayName("실패 - startDate 유효, endDate null")
+    void failWhenEndDateNull() {
+        ReservationRequest request = new ReservationRequest(
+                "홍길동",
+                LocalDate.of(2030, 2, 5),
+                null,
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("예약 기간을 선택해주세요.");
+    }
+
+    @Test
     @DisplayName("정상 - 다른 사이트에는 같은 기간 예약 가능")
     void createReservationOnDifferentSite() {
         ReservationRequest first = new ReservationRequest(
