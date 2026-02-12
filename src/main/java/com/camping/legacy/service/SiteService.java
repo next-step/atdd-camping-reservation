@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -78,7 +79,7 @@ public class SiteService {
         }
 
         // 30일 이내 체크
-        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, startDate);
+        long daysFromToday = ChronoUnit.DAYS.between(now, startDate);
         if (daysFromToday > 30) {
             throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
         }
@@ -158,7 +159,7 @@ public class SiteService {
         }
 
         // 30일 이내 체크
-        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, date);
+        long daysFromToday = ChronoUnit.DAYS.between(now, date);
         if (daysFromToday > 30) {
             throw new RuntimeException("오늘로부터 30일 이내에만 조회 가능합니다.");
         }

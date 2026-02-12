@@ -1,6 +1,7 @@
 package com.camping.legacy.util;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 /**
  * 검증 로직 유틸리티 클래스
@@ -105,7 +106,7 @@ public class ValidationUtils {
         }
 
         // 오늘로부터 30일 이내인지 체크
-        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+        long daysFromToday = ChronoUnit.DAYS.between(today, startDate);
         if (daysFromToday > 30) {
             return false;
         }

@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -91,7 +92,7 @@ public class ReservationService {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
                         // 예약 기간 체크 (오늘로부터 30일 이내)
-                        long daysFromToday = java.time.temporal.ChronoUnit.DAYS.between(now, startDate);
+                        long daysFromToday = ChronoUnit.DAYS.between(now, startDate);
                         if (daysFromToday > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("오늘로부터 30일 이내에만 예약 가능합니다.");
                         }
