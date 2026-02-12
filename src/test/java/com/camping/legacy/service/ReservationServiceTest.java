@@ -516,22 +516,22 @@ class ReservationServiceTest {
         assertThat(response.getCustomerName()).isEqualTo(name);
     }
 
-//    @Test
-//    @DisplayName("실패 - 이름 21자 (최대 초과)")
-//    void failWhenCustomerNameTooLong() {
-//        String name = "가나다라마바사아자차카타파하갸냐댜랴마바"; // 21자
-//        ReservationRequest request = new ReservationRequest(
-//                name,
-//                LocalDate.of(2030, 2, 5),
-//                LocalDate.of(2030, 2, 7),
-//                "A-1", "010-1234-5678",
-//                null, null, null
-//        );
-//
-//        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
-//                .isInstanceOf(RuntimeException.class)
-//                .hasMessage("예약자 이름은 최대 20자까지 가능합니다.");
-//    }
+    @Test
+    @DisplayName("실패 - 이름 21자 (최대 초과)")
+    void failWhenCustomerNameTooLong() {
+        String name = "가나다라마바사아자차카타파하갸냐댜랴마바사"; // 21자
+        ReservationRequest request = new ReservationRequest(
+                name,
+                LocalDate.of(2030, 2, 5),
+                LocalDate.of(2030, 2, 7),
+                "A-1", "010-1234-5678",
+                null, null, null
+        );
+
+        assertThatThrownBy(() -> reservationService.createReservation(request, NOW))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("예약자 이름은 최대 20자까지 가능합니다.");
+    }
 
     // =============================================
     // 경계값 - 전화번호
