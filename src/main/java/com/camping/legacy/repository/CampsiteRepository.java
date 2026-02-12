@@ -13,6 +13,8 @@ public interface CampsiteRepository {
 
     Optional<Campsite> findBySiteNumber(String siteNumber);
 
+    Optional<Campsite> findBySiteNumberWithLock(String siteNumber);
+
     List<Campsite> findAll();
 
     void deleteAll();

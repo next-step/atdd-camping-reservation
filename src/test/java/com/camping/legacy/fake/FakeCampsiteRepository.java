@@ -36,6 +36,11 @@ public class FakeCampsiteRepository implements CampsiteRepository {
     }
 
     @Override
+    public Optional<Campsite> findBySiteNumberWithLock(String siteNumber) {
+        return findBySiteNumber(siteNumber);
+    }
+
+    @Override
     public List<Campsite> findAll() {
         return new ArrayList<>(store.values());
     }
