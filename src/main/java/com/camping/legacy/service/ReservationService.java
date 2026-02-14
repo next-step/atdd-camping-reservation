@@ -7,9 +7,8 @@ import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import com.camping.legacy.util.DatePolicy;
 import com.camping.legacy.util.DateUtils;
-import com.camping.legacy.util.StringUtils;
-import com.camping.legacy.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,12 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -51,7 +45,6 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
     
-    private static final int MAX_RESERVATION_DAYS = 30;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -92,14 +85,12 @@ public class ReservationService {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
                         // 예약 기간 체크 (오늘로부터 30일 이내)
-                        long daysFromToday = ChronoUnit.DAYS.between(now, startDate);
-                        if (daysFromToday > MAX_RESERVATION_DAYS) {
+                        if (!DatePolicy.isWithinBookingWindow(now, startDate)) {
                             throw new RuntimeException("오늘로부터 30일 이내에만 예약 가능합니다.");
                         }
 
                         // 총 예약 기간 체크 (30일 이내)
-                        long reservationDays = ChronoUnit.DAYS.between(startDate, endDate);
-                        if (reservationDays > MAX_RESERVATION_DAYS) {
+                        if (!DatePolicy.isWithinMaxPeriod(startDate, endDate)) {
                             throw new RuntimeException("총 예약 기간은 30일을 초과할 수 없습니다.");
                         }
                     }

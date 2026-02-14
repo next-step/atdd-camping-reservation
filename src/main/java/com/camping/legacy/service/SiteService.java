@@ -6,12 +6,12 @@ import com.camping.legacy.dto.SiteResponse;
 import com.camping.legacy.dto.SiteSearchRequest;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import com.camping.legacy.util.DatePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,14 +79,12 @@ public class SiteService {
         }
 
         // 30일 이내 체크
-        long daysFromToday = ChronoUnit.DAYS.between(now, startDate);
-        if (daysFromToday > 30) {
+        if (!DatePolicy.isWithinBookingWindow(now, startDate)) {
             throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
         }
 
         // 총 검색 기간 30일 이내 체크
-        long searchDays = ChronoUnit.DAYS.between(startDate, endDate);
-        if (searchDays > 30) {
+        if (!DatePolicy.isWithinMaxPeriod(startDate, endDate)) {
             throw new RuntimeException("총 검색 기간은 30일을 초과할 수 없습니다.");
         }
 
@@ -165,8 +163,7 @@ public class SiteService {
         }
 
         // 30일 이내 체크
-        long daysFromToday = ChronoUnit.DAYS.between(now, date);
-        if (daysFromToday > 30) {
+        if (!DatePolicy.isWithinBookingWindow(now, date)) {
             throw new RuntimeException("오늘로부터 30일 이내에만 조회 가능합니다.");
         }
 

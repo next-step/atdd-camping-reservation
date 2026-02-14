@@ -1,7 +1,6 @@
 package com.camping.legacy.util;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 /**
  * 검증 로직 유틸리티 클래스
@@ -105,15 +104,8 @@ public class ValidationUtils {
             return false;
         }
 
-        // 오늘로부터 30일 이내인지 체크
-        long daysFromToday = ChronoUnit.DAYS.between(today, startDate);
-        if (daysFromToday > 30) {
-            return false;
-        }
-
-        // 총 예약 기간 30일 이내인지 체크
-        long reservationDays = ChronoUnit.DAYS.between(startDate, endDate);
-        if (reservationDays > 30) {
+        // 30일 체크 (오늘로부터 30일 이내 + 총 기간 30일 이내)
+        if (!DatePolicy.isValid(today, startDate, endDate)) {
             return false;
         }
 
