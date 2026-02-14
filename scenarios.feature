@@ -27,6 +27,262 @@ Feature: 예약 생성
       | 이영희       | 010-4444-5555 | A-1        | 2026-02-12  | 2026-02-10  |
     Then 오류가 발생한다
 
+Feature: 예약 가격 계산
+  예약 생성 시 사이트 타입, 주말, 성수기에 따라 정확한 가격이 계산되어야 한다.
+
+  # ── 기본 가격 ──
+
+  Scenario: A 사이트(대형) 평일 비수기 1박 기본가
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-02  | 2026-03-02  |
+    Then 요청이 성공한다
+    And 총 금액은 80000원이다
+
+  Scenario: B 사이트(소형) 평일 비수기 1박 기본가
+    Given today is 2026-02-05
+    And campsite "B-1" exists
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-03-02  | 2026-03-02  |
+    Then 요청이 성공한다
+    And 총 금액은 50000원이다
+
+  Scenario: 기타 사이트 평일 비수기 1박 기본가
+    Given today is 2026-02-05
+    And campsite "C-1" exists
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | C-1        | 2026-03-02  | 2026-03-02  |
+    Then 요청이 성공한다
+    And 총 금액은 60000원이다
+
+  # ── 주말 할증 (30%) ──
+
+  Scenario: A 사이트 주말(토요일) 비수기 1박 - 30% 할증
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-07 = 토요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-07  | 2026-03-07  |
+    Then 요청이 성공한다
+    And 총 금액은 104000원이다
+    # 80000 × 1.3 = 104000
+
+  Scenario: B 사이트 주말(일요일) 비수기 1박 - 30% 할증
+    Given today is 2026-02-05
+    And campsite "B-1" exists
+    # 2026-03-08 = 일요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-03-08  | 2026-03-08  |
+    Then 요청이 성공한다
+    And 총 금액은 65000원이다
+    # 50000 × 1.3 = 65000
+
+  # ── 성수기 할증 (50%) ──
+
+  Scenario: A 사이트 성수기(7월) 평일 1박 - 50% 할증
+    Given today is 2026-06-15
+    And campsite "A-1" exists
+    # 2026-07-06 = 월요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-07-06  | 2026-07-06  |
+    Then 요청이 성공한다
+    And 총 금액은 120000원이다
+    # 80000 × 1.5 = 120000
+
+  Scenario: B 사이트 성수기(8월) 평일 1박 - 50% 할증
+    Given today is 2026-07-15
+    And campsite "B-1" exists
+    # 2026-08-03 = 월요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-08-03  | 2026-08-03  |
+    Then 요청이 성공한다
+    And 총 금액은 75000원이다
+    # 50000 × 1.5 = 75000
+
+  # ── 성수기 + 주말 할증 (70%) ──
+
+  Scenario: A 사이트 성수기 주말(7월 토요일) 1박 - 70% 할증
+    Given today is 2026-06-15
+    And campsite "A-1" exists
+    # 2026-07-04 = 토요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-07-04  | 2026-07-04  |
+    Then 요청이 성공한다
+    And 총 금액은 136000원이다
+    # 80000 × 1.7 = 136000
+
+  Scenario: B 사이트 성수기 주말(8월 일요일) 1박 - 70% 할증
+    Given today is 2026-07-15
+    And campsite "B-1" exists
+    # 2026-08-02 = 일요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-08-02  | 2026-08-02  |
+    Then 요청이 성공한다
+    And 총 금액은 85000원이다
+    # 50000 × 1.7 = 85000
+
+  # ── 혼합 기간 (일별 할증 개별 적용) ──
+
+  Scenario: A 사이트 금~일(평일1일 + 주말2일) 비수기 - 혼합 계산
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-06(금)=평일, 03-07(토)=주말, 03-08(일)=주말
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-06  | 2026-03-08  |
+    Then 요청이 성공한다
+    And 총 금액은 288000원이다
+    # 금: 80000 + 토: 104000 + 일: 104000 = 288000
+
+  Scenario: B 사이트 비수기→성수기 전환(6/30~7/1) - 경계값
+    Given today is 2026-06-15
+    And campsite "B-1" exists
+    # 2026-06-30(화)=비수기 평일, 07-01(수)=성수기 평일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-06-30  | 2026-07-01  |
+    Then 요청이 성공한다
+    And 총 금액은 125000원이다
+    # 6/30: 50000(비수기 평일) + 7/1: 75000(성수기 평일) = 125000
+
+  Scenario: A 사이트 성수기 금~일(성수기 평일 + 성수기 주말 혼합)
+    Given today is 2026-06-15
+    And campsite "A-1" exists
+    # 2026-07-03(금)=성수기 평일, 07-04(토)=성수기 주말, 07-05(일)=성수기 주말
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-07-03  | 2026-07-05  |
+    Then 요청이 성공한다
+    And 총 금액은 392000원이다
+    # 금: 120000(×1.5) + 토: 136000(×1.7) + 일: 136000(×1.7) = 392000
+
+  # ── 1일 예약 (startDate == endDate) ──
+
+  Scenario: 1일 예약(당일) - startDate와 endDate가 동일
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-02  | 2026-03-02  |
+    Then 요청이 성공한다
+    And 총 금액은 80000원이다
+
+Feature: 예약 포인트 적립
+  예약 생성 시 기간 내 주말 포함 여부에 따라 정확한 포인트가 적립되어야 한다.
+
+  # ── 기본 적립률 (5%) ──
+
+  Scenario: 평일만 포함된 예약 - 5% 적립
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-02(월)~03-04(수) 평일 3일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-02  | 2026-03-04  |
+    Then 요청이 성공한다
+    And 총 금액은 240000원이다
+    And 적립 포인트는 12000P이다
+    # 240000 × 0.05 = 12000
+
+  Scenario: B 사이트 성수기 평일만 - 5% 적립 (성수기는 적립률에 영향 없음)
+    Given today is 2026-07-01
+    And campsite "B-1" exists
+    # 2026-07-06(월) 성수기 평일 1일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-07-06  | 2026-07-06  |
+    Then 요청이 성공한다
+    And 총 금액은 75000원이다
+    And 적립 포인트는 3750P이다
+    # 75000 × 0.05 = 3750
+
+  # ── 주말 포함 적립률 (10%) ──
+
+  Scenario: 주말이 1일이라도 포함되면 10% 적립
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-06(금)~03-07(토) → 주말 포함
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-06  | 2026-03-07  |
+    Then 요청이 성공한다
+    And 총 금액은 184000원이다
+    And 적립 포인트는 18400P이다
+    # (80000 + 104000) × 0.10 = 18400
+
+  Scenario: 토~일 주말만 예약 - 10% 적립
+    Given today is 2026-02-05
+    And campsite "B-1" exists
+    # 2026-03-07(토)~03-08(일)
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | B-1        | 2026-03-07  | 2026-03-08  |
+    Then 요청이 성공한다
+    And 총 금액은 130000원이다
+    And 적립 포인트는 13000P이다
+    # (65000 + 65000) × 0.10 = 13000
+
+  Scenario: 성수기 주말 포함 예약 - 10% 적립 (할증 가격 기준)
+    Given today is 2026-06-15
+    And campsite "A-1" exists
+    # 2026-07-03(금)=성수기 평일, 07-04(토)=성수기 주말
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-07-03  | 2026-07-04  |
+    Then 요청이 성공한다
+    And 총 금액은 256000원이다
+    And 적립 포인트는 25600P이다
+    # (120000 + 136000) × 0.10 = 25600
+
+  # ── 포인트 소수점 버림 ──
+
+  Scenario: 포인트 계산 시 소수점 이하 버림 처리
+    Given today is 2026-02-05
+    And campsite "C-1" exists
+    # 기타 사이트 평일 1일: 60000 × 0.05 = 3000 (정수로 떨어짐)
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | C-1        | 2026-03-02  | 2026-03-02  |
+    Then 요청이 성공한다
+    And 총 금액은 60000원이다
+    And 적립 포인트는 3000P이다
+
+  # ── 경계값: 주말 경계 (금→토 전환) ──
+
+  Scenario: 금요일만 예약 - 주말 미포함으로 5% 적립
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-06 = 금요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-06  | 2026-03-06  |
+    Then 요청이 성공한다
+    And 총 금액은 80000원이다
+    And 적립 포인트는 4000P이다
+    # 80000 × 0.05 = 4000 (금요일은 주말 아님)
+
+  Scenario: 토요일 1일만 예약 - 주말 포함으로 10% 적립
+    Given today is 2026-02-05
+    And campsite "A-1" exists
+    # 2026-03-07 = 토요일
+    When 다음 정보로 예약을 생성하면:
+      | customerName | siteNumber | startDate   | endDate     |
+      | 홍길동       | A-1        | 2026-03-07  | 2026-03-07  |
+    Then 요청이 성공한다
+    And 총 금액은 104000원이다
+    And 적립 포인트는 10400P이다
+    # 104000 × 0.10 = 10400
+
 Feature: 연박 예약
   연박 예약 시 전체 기간이 하나의 예약으로 처리되어야 한다.
 

@@ -19,6 +19,43 @@
   - 겹치는 기간 예약 시 409 반환.
   - 성공 응답은 201이며 `confirmationCode`가 포함된다.
 
+## 예약 생성 - 가격 계산
+- Feature Name: 예약 가격 계산
+- Class/Method: `com.camping.legacy.service.ReservationService#createReservation` (STEP 5)
+- Acceptance Point:
+  - 가격은 예약 기간(startDate~endDate) 각 날짜별로 개별 계산 후 합산한다.
+  - **기본 가격(1일 기준)**:
+    - A 사이트(대형): ₩80,000
+    - B 사이트(소형): ₩50,000
+    - 기타 사이트: ₩60,000
+  - **할증 정책(일별로 적용)**:
+    - 주말(토, 일): 기본가 × 1.3 (30% 할증)
+    - 성수기(7~8월): 기본가 × 1.5 (50% 할증)
+    - 주말 + 성수기: 기본가 × 1.7 (70% 할증)
+    - 평일 + 비수기: 할증 없음
+  - 할증 적용 후 `(int)` 캐스팅으로 소수점 이하 버림 처리한다.
+- Verify Point:
+  - 평일 비수기 예약 시 기본가만 적용된다.
+  - 주말만 포함된 예약 시 30% 할증이 적용된다.
+  - 성수기 평일 예약 시 50% 할증이 적용된다.
+  - 성수기 주말 예약 시 70% 할증이 적용된다.
+  - 혼합 기간(평일+주말, 비수기+성수기) 예약 시 각 날짜별로 정확히 계산된다.
+  - 응답의 `totalPrice` 필드가 계산 결과와 일치한다.
+
+## 예약 생성 - 포인트 적립
+- Feature Name: 예약 포인트 적립
+- Class/Method: `com.camping.legacy.service.ReservationService#createReservation` (STEP 6)
+- Acceptance Point:
+  - **기본 적립률**: 총 금액의 5%
+  - **주말 포함 적립률**: 예약 기간 중 주말(토, 일)이 1일이라도 포함되면 총 금액의 10%
+  - 적립 포인트는 `(int)` 캐스팅으로 소수점 이하 버림 처리한다.
+  - 포인트 적립률은 전체 기간에 대해 단일 비율로 적용된다(일별 적용이 아님).
+- Verify Point:
+  - 평일만 포함된 예약 시 총 금액의 5%가 적립된다.
+  - 주말이 1일이라도 포함된 예약 시 총 금액의 10%가 적립된다.
+  - 소수점 이하는 버림 처리된다(예: ₩75,000 × 5% = 3,750P, 버림 없음 / ₩78,000 × 5% = 3,900P).
+  - 응답의 `earnedPoints` 필드가 계산 결과와 일치한다.
+
 ## 연박 예약
 - Feature Name: 연박 예약
 - Class/Method: `com.camping.legacy.controller.ReservationController#createReservation`, `com.camping.legacy.service.ReservationService#createReservation`
