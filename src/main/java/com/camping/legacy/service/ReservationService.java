@@ -3,6 +3,7 @@ package com.camping.legacy.service;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.CalendarResponse;
+import com.camping.legacy.dto.PricingResult;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
@@ -44,6 +45,7 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final PricingCalculator pricingCalculator = new PricingCalculator();
     
     
     /**
@@ -138,67 +140,13 @@ public class ReservationService {
             }
 
             // ============================================================
-            // STEP 5: 가격 계산
+            // STEP 5-6: 가격·포인트 계산
             // ============================================================
-            int totalPrice = 0;
-            LocalDate current = startDate;
-            while (!current.isAfter(endDate)) {
-                int dailyPrice = 0;
-
-                // 사이트 종류별 기본 가격
-                if (siteNumber.startsWith("A")) {
-                    dailyPrice = 80000; // 대형
-                } else if (siteNumber.startsWith("B")) {
-                    dailyPrice = 50000; // 소형
-                } else {
-                    dailyPrice = 60000; // 기타
-                }
-
-                // 주말 체크
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                boolean isWeekend = (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                                   dayOfWeek == java.time.DayOfWeek.SUNDAY);
-
-                // 성수기 체크 (7월, 8월)
-                int month = current.getMonthValue();
-                boolean isPeakSeason = (month >= 7 && month <= 8);
-
-                // 할증 적용
-                if (isWeekend && isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.7); // 70% 할증
-                } else if (isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.5); // 50% 할증
-                } else if (isWeekend) {
-                    dailyPrice = (int) (dailyPrice * 1.3); // 30% 할증
-                }
-
-                totalPrice += dailyPrice;
-                current = current.plusDays(1);
-            }
+            PricingResult pricingResult = pricingCalculator.calculate(siteNumber, startDate, endDate);
+            int totalPrice = pricingResult.getTotalPrice();
+            int earnedPoints = pricingResult.getEarnedPoints();
 
             log.info("예약 금액 계산 완료: {}원", totalPrice);
-
-            // ============================================================
-            // STEP 6: 포인트 계산
-            // ============================================================
-            double pointRate = 0.05; // 기본 5%
-            current = startDate;
-            boolean hasWeekend = false;
-            while (!current.isAfter(endDate)) {
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                if (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                    dayOfWeek == java.time.DayOfWeek.SUNDAY) {
-                    hasWeekend = true;
-                    break;
-                }
-                current = current.plusDays(1);
-            }
-
-            if (hasWeekend) {
-                pointRate = 0.10; // 주말 10%
-            }
-
-            int earnedPoints = (int) (totalPrice * pointRate);
             log.info("적립 포인트 계산 완료: {}P", earnedPoints);
 
             // ============================================================
