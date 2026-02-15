@@ -37,7 +37,7 @@ public class SiteController {
             @PathVariable String siteNumber,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         
-        boolean available = siteService.isAvailable(siteNumber, date);
+        boolean available = siteService.isAvailable(siteNumber, date, LocalDate.now());
         
         Map<String, Object> response = new HashMap<>();
         response.put("siteNumber", siteNumber);
@@ -60,6 +60,6 @@ public class SiteController {
             @RequestParam(required = false) String size) {
         
         SiteSearchRequest request = new SiteSearchRequest(startDate, endDate, size);
-        return ResponseEntity.ok(siteService.searchAvailableSites(request));
+        return ResponseEntity.ok(siteService.searchAvailableSites(request, LocalDate.now()));
     }
 }

@@ -27,13 +27,16 @@ public class MultiNightReservationTest extends AcceptanceTest {
         // Given: campsite "B-1" exists
         campsiteRepository.save(new Campsite("B-1", "Test site", 4));
 
+        LocalDate startDate = LocalDate.now().plusDays(10);
+        LocalDate endDate = LocalDate.now().plusDays(12);
+
         // When: I POST "/api/reservations" for 3 nights
         Map<String, Object> requestBody = Map.of(
                 "customerName", "박민수",
                 "phoneNumber", "010-6666-7777",
                 "siteNumber", "B-1",
-                "startDate", "2030-02-14",
-                "endDate", "2030-02-16"
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
         );
 
         post("/api/reservations", requestBody)
@@ -45,20 +48,26 @@ public class MultiNightReservationTest extends AcceptanceTest {
     void createMultiNightReservationWithPartialOverlap() {
         // Given: campsite "B-1" has an existing reservation
         Campsite site = campsiteRepository.save(new Campsite("B-1", "Test site", 4));
+
+        LocalDate existingDate = LocalDate.now().plusDays(11);
+
         reservationRepository.save(new Reservation(
                 "기존예약자",
-                LocalDate.parse("2030-02-15"),
-                LocalDate.parse("2030-02-15"),
+                existingDate,
+                existingDate,
                 site
         ));
+
+        LocalDate startDate = LocalDate.now().plusDays(10);
+        LocalDate endDate = LocalDate.now().plusDays(12);
 
         // When: I POST "/api/reservations" with partial overlap
         Map<String, Object> requestBody = Map.of(
                 "customerName", "정수진",
                 "phoneNumber", "010-8888-9999",
                 "siteNumber", "B-1",
-                "startDate", "2030-02-14",
-                "endDate", "2030-02-16"
+                "startDate", startDate.toString(),
+                "endDate", endDate.toString()
         );
 
         post("/api/reservations", requestBody)

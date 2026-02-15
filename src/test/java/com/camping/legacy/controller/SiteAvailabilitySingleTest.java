@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -37,7 +38,7 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailability() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..."
         // Then: response is 200 and body contains availability
-        Map<String, Object> queryParams = Map.of("date", "2030-02-10");
+        Map<String, Object> queryParams = Map.of("date", "2026-02-14");
         get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
@@ -48,9 +49,18 @@ public class SiteAvailabilitySingleTest extends AcceptanceTest {
     void checkSiteAvailabilityForFutureDate() {
         // When: I GET "/api/sites/{siteNumber}/availability?date=..." with a future date
         // Then: a success response is returned
-        Map<String, Object> queryParams = Map.of("date", "2030-02-01");
+        Map<String, Object> queryParams = Map.of("date", "2026-02-14");
         get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
                 .statusCode(HttpStatus.OK.value())
                 .body("available", equalTo(true));
+    }
+
+    @Test
+    @DisplayName("Scenario: 실패 - 30일 이후 날짜 조회 불가")
+    void checkSiteAvailabilityBeyond30Days() {
+        String futureDate = LocalDate.now().plusDays(31).toString();
+        Map<String, Object> queryParams = Map.of("date", futureDate);
+        get("/api/sites/" + existingSite.getSiteNumber() + "/availability", queryParams)
+                .statusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 }

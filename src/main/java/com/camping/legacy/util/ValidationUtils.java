@@ -104,9 +104,8 @@ public class ValidationUtils {
             return false;
         }
 
-        // 예약 기간이 너무 길지 않은지 체크 (30일 이내)
-        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-        if (days > 30) {
+        // 30일 체크 (오늘로부터 30일 이내 + 총 기간 30일 이내)
+        if (!DatePolicy.isValid(today, startDate, endDate)) {
             return false;
         }
 

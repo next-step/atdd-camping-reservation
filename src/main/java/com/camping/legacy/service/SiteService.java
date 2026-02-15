@@ -6,6 +6,7 @@ import com.camping.legacy.dto.SiteResponse;
 import com.camping.legacy.dto.SiteSearchRequest;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import com.camping.legacy.util.DatePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,7 +60,7 @@ public class SiteService {
                 .collect(Collectors.toList());
     }
     
-    public List<SiteAvailabilityResponse> searchAvailableSites(SiteSearchRequest request) {
+    public List<SiteAvailabilityResponse> searchAvailableSites(SiteSearchRequest request, LocalDate now) {
         // 날짜 유효성 검증 (중복 코드 - ReservationService와 동일)
         LocalDate startDate = request.getStartDate();
         LocalDate endDate = request.getEndDate();
@@ -73,9 +74,18 @@ public class SiteService {
         }
 
         // 과거 날짜 체크
-        LocalDate today = LocalDate.now();
-        if (startDate.isBefore(today)) {
+        if (startDate.isBefore(now)) {
             throw new RuntimeException("과거 날짜는 검색할 수 없습니다.");
+        }
+
+        // 30일 이내 체크
+        if (!DatePolicy.isWithinBookingWindow(now, startDate)) {
+            throw new RuntimeException("오늘로부터 30일 이내에만 검색 가능합니다.");
+        }
+
+        // 총 검색 기간 30일 이내 체크
+        if (!DatePolicy.isWithinMaxPeriod(startDate, endDate)) {
+            throw new RuntimeException("총 검색 기간은 30일을 초과할 수 없습니다.");
         }
 
         List<Campsite> allSites = campsiteRepository.findAll();
@@ -136,7 +146,7 @@ public class SiteService {
         return availableSites;
     }
     
-    public boolean isAvailable(String siteNumber, LocalDate date) {
+    public boolean isAvailable(String siteNumber, LocalDate date, LocalDate now) {
         // 사이트 번호 검증 (중복 코드)
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
@@ -148,9 +158,13 @@ public class SiteService {
         }
 
         // 과거 날짜 체크
-        LocalDate today = LocalDate.now();
-        if (date.isBefore(today)) {
+        if (date.isBefore(now)) {
             throw new RuntimeException("과거 날짜는 조회할 수 없습니다.");
+        }
+
+        // 30일 이내 체크
+        if (!DatePolicy.isWithinBookingWindow(now, date)) {
+            throw new RuntimeException("오늘로부터 30일 이내에만 조회 가능합니다.");
         }
 
         Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)

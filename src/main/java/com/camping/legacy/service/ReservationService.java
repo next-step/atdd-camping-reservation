@@ -3,13 +3,13 @@ package com.camping.legacy.service;
 import com.camping.legacy.domain.Campsite;
 import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.CalendarResponse;
+import com.camping.legacy.dto.PricingResult;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
+import com.camping.legacy.util.DatePolicy;
 import com.camping.legacy.util.DateUtils;
-import com.camping.legacy.util.StringUtils;
-import com.camping.legacy.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,11 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,8 +45,8 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final PricingCalculator pricingCalculator = new PricingCalculator();
     
-    private static final int MAX_RESERVATION_DAYS = 30;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -58,7 +54,7 @@ public class ReservationService {
      * - 깊은 중첩
      * - 모든 로직을 한 곳에
      */
-    public ReservationResponse createReservation(ReservationRequest request) {
+    public ReservationResponse createReservation(ReservationRequest request, LocalDate now) {
         // ============================================================
         // STEP 1: 입력 데이터 추출
         // ============================================================
@@ -74,8 +70,8 @@ public class ReservationService {
         if (siteNumber == null || siteNumber.trim().isEmpty()) {
             throw new RuntimeException("사이트 번호를 입력해주세요.");
         } else {
-            // 사이트 존재 여부 확인 (중첩 레벨 2)
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber)
+            // 사이트 존재 여부 확인 + 비관적 락 (중첩 레벨 2)
+            Campsite campsite = campsiteRepository.findBySiteNumberWithLock(siteNumber)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 캠핑장입니다."));
 
             // 날짜 검증 (중첩 레벨 2)
@@ -87,14 +83,17 @@ public class ReservationService {
                     throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
                 } else {
                     // 과거 날짜 체크 (중첩 레벨 4)
-                    LocalDate today = LocalDate.now();
-                    if (startDate.isBefore(today)) {
+                    if (startDate.isBefore(now)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
-                        // 예약 기간 체크 (30일 이내)
-                        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-                        if (days > 30) {
-                            throw new RuntimeException("예약 기간은 최대 30일입니다.");
+                        // 예약 기간 체크 (오늘로부터 30일 이내)
+                        if (!DatePolicy.isWithinBookingWindow(now, startDate)) {
+                            throw new RuntimeException("오늘로부터 30일 이내에만 예약 가능합니다.");
+                        }
+
+                        // 총 예약 기간 체크 (30일 이내)
+                        if (!DatePolicy.isWithinMaxPeriod(startDate, endDate)) {
+                            throw new RuntimeException("총 예약 기간은 30일을 초과할 수 없습니다.");
                         }
                     }
                 }
@@ -141,67 +140,13 @@ public class ReservationService {
             }
 
             // ============================================================
-            // STEP 5: 가격 계산
+            // STEP 5-6: 가격·포인트 계산
             // ============================================================
-            int totalPrice = 0;
-            LocalDate current = startDate;
-            while (!current.isAfter(endDate)) {
-                int dailyPrice = 0;
-
-                // 사이트 종류별 기본 가격
-                if (siteNumber.startsWith("A")) {
-                    dailyPrice = 80000; // 대형
-                } else if (siteNumber.startsWith("B")) {
-                    dailyPrice = 50000; // 소형
-                } else {
-                    dailyPrice = 60000; // 기타
-                }
-
-                // 주말 체크
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                boolean isWeekend = (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                                   dayOfWeek == java.time.DayOfWeek.SUNDAY);
-
-                // 성수기 체크 (7월, 8월)
-                int month = current.getMonthValue();
-                boolean isPeakSeason = (month >= 7 && month <= 8);
-
-                // 할증 적용
-                if (isWeekend && isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.7); // 70% 할증
-                } else if (isPeakSeason) {
-                    dailyPrice = (int) (dailyPrice * 1.5); // 50% 할증
-                } else if (isWeekend) {
-                    dailyPrice = (int) (dailyPrice * 1.3); // 30% 할증
-                }
-
-                totalPrice += dailyPrice;
-                current = current.plusDays(1);
-            }
+            PricingResult pricingResult = pricingCalculator.calculate(siteNumber, startDate, endDate);
+            int totalPrice = pricingResult.getTotalPrice();
+            int earnedPoints = pricingResult.getEarnedPoints();
 
             log.info("예약 금액 계산 완료: {}원", totalPrice);
-
-            // ============================================================
-            // STEP 6: 포인트 계산
-            // ============================================================
-            double pointRate = 0.05; // 기본 5%
-            current = startDate;
-            boolean hasWeekend = false;
-            while (!current.isAfter(endDate)) {
-                java.time.DayOfWeek dayOfWeek = current.getDayOfWeek();
-                if (dayOfWeek == java.time.DayOfWeek.SATURDAY ||
-                    dayOfWeek == java.time.DayOfWeek.SUNDAY) {
-                    hasWeekend = true;
-                    break;
-                }
-                current = current.plusDays(1);
-            }
-
-            if (hasWeekend) {
-                pointRate = 0.10; // 주말 10%
-            }
-
-            int earnedPoints = (int) (totalPrice * pointRate);
             log.info("적립 포인트 계산 완료: {}P", earnedPoints);
 
             // ============================================================
@@ -299,16 +244,15 @@ public class ReservationService {
                 .collect(Collectors.toList());
     }
     
-    public void cancelReservation(Long id, String confirmationCode) {
+    public void cancelReservation(Long id, String confirmationCode, LocalDate now) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
-        
+
         if (!reservation.getConfirmationCode().equals(confirmationCode)) {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
-        
-        LocalDate today = LocalDate.now();
-        if (reservation.getStartDate().equals(today)) {
+
+        if (reservation.getStartDate().equals(now)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
             reservation.setStatus("CANCELLED");
@@ -355,7 +299,7 @@ public class ReservationService {
         return responses;
     }
     
-    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
+    public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode, LocalDate now) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
 
@@ -381,8 +325,7 @@ public class ReservationService {
             }
 
             // 과거 날짜 체크
-            LocalDate today = LocalDate.now();
-            if (startDate.isBefore(today)) {
+            if (startDate.isBefore(now)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
         }
@@ -501,7 +444,7 @@ public class ReservationService {
         // ============================================================
         ReservationResponse reservationResponse = null;
         try {
-            reservationResponse = createReservation(request);
+            reservationResponse = createReservation(request, LocalDate.now());
         } catch (Exception e) {
             log.error("예약 생성 실패: {}", e.getMessage());
             throw new RuntimeException("예약 생성 중 오류가 발생했습니다: " + e.getMessage());
