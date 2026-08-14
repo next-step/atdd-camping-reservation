@@ -96,6 +96,13 @@ public class ReservationService {
                         if (days > 30) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
+
+                        // 예약 가능 기간 체크 (오늘로부터 30일 이내) - AC-1
+                        // 위 days는 숙박 길이(시작일~종료일)이고, 아래 leadDays는 리드타임(오늘~시작일)이다.
+                        long leadDays = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+                        if (leadDays > 30) {
+                            throw new RuntimeException("오늘로부터 30일 이내만 예약할 수 있습니다.");
+                        }
                     }
                 }
             }

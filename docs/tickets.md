@@ -33,6 +33,15 @@ T-5 수정(PUT)에는 날짜 규칙이 없어 우회된다
 T-1을 어디에 구현할지 정할 때 이 티켓을 같이 본다.  
 ---
 
+T-7 시드 데이터의 한글이 깨져서 조회된다  
+내용: `data.sql`은 디스크에서 UTF-8인데(`file` 확인), `GET /api/reservations/1`의
+`customerName`이 "홍길동"과 일치하지 않는다. 같은 응답 스트림에서 자바 문자열 리터럴
+("대형")은 멀쩡하다. `spring.sql.init.encoding`이 없어 SQL 초기화가 플랫폼 기본
+charset(윈도우 한글=MS949)으로 읽는 것으로 보인다.
+T-1 구현 전부터 있던 것이고 이번 변경과 무관하다. 리눅스/CI에서도 재현되는지 미확인.
+무엇이 확인되면 정리되는가 — 다른 OS에서 같은 증상이 나는지 확인되면 정리된다.  
+---
+
 T-6 생성·수정 응답의 createdAt이 항상 null  
 내용: `ReservationResponse.from()`은 `createdAt`을 채우는데, `createReservation`·
 `updateReservation`·`searchReservations`·`getReservationsByNameAndPhone`은 손으로 필드를
