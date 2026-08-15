@@ -90,6 +90,8 @@ public class ReservationService {
                     LocalDate today = LocalDate.now();
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+                    } else if (java.time.temporal.ChronoUnit.DAYS.between(today, startDate) > MAX_RESERVATION_DAYS) {
+                        throw new RuntimeException("예약 시작일은 오늘로부터 30일 이내여야 합니다.");
                     } else {
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
