@@ -11,3 +11,9 @@
 - 규칙: `@SpringBootTest` + RestAssured로 실제 서버에 HTTP 요청을 보내는 인수 테스트는 `@Transactional` 테스트처럼 자동 롤백되지 않는다 — 커밋된 예약이 DB에 그대로 남는다. 테스트 간 격리를 "먼 미래 날짜를 쓴다", "테스트마다 다른 사이트 번호를 쓴다"는 식으로 우회하지 않고, 클래스에 `@Sql(scripts = "...", executionPhase = BEFORE_TEST_METHOD)`로 매 테스트 전 관련 테이블을 비워 보장한다.
 - 이유: 먼 날짜·다른 사이트로 피하는 방식은 테스트가 늘어날수록 어떤 사이트/날짜가 비어 있는지 계속 추적해야 해서 깨지기 쉽고, 재실행 시 이전 실행이 남긴 데이터와도 충돌할 수 있다. `@Sql` 초기화는 실행 순서·횟수와 무관하게 항상 같은 시작 상태를 보장한다.
 - 적용: `src/test/resources/sql/cleanup-reservations.sql`에 `DELETE FROM reservations;`를 두고, 클래스 레벨에 `@Sql(scripts = "/sql/cleanup-reservations.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)`를 단다. 이후 테스트들은 같은 사이트 번호를 재사용해도 된다.
+
+## @Nested 클래스 위 Javadoc은 그 시점의 실제 레드/그린 상태를 설명해야 한다
+
+- 규칙: `@Nested` 클래스 위 Javadoc에 "왜 지금 레드/그린인지"를 적을 때는 그 시점의 실제 테스트 실행 결과와 일치해야 한다. 구현이 끝나 레드였던 케이스가 그린으로 바뀌면, "아직 구현되지 않아 실패하는 것이 정상이다" 같은 문장을 그대로 두지 않고 구현 완료 상태로 갱신한다.
+- 이유: 주석이 실제 상태와 어긋나면, 나중에 이 테스트를 읽는 사람이 지금도 레드인 줄 알고 불필요하게 원인을 찾거나, 반대로 실제 레드인 케이스를 이미 해결된 것으로 착각할 수 있다.
+- 적용: 언제 확인하는지는 `plan.md` 판정 단계에 있다.

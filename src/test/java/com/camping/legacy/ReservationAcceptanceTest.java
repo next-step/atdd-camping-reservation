@@ -43,7 +43,7 @@ class ReservationAcceptanceTest {
     }
 
     /**
-     * T-1: 시작일-오늘 30일 검증이 아직 구현되지 않아, 31일 뒤 거부 케이스는 현재 실패(레드)하는 것이 정상이다.
+     * T-1: 시작일-오늘 30일 검증 구현 완료. 31일 뒤 거부, 30일/29일 뒤 허용 케이스 모두 그린이다.
      */
     @Nested
     @DisplayName("T-1-1: 시작일이 오늘로부터 30일 이내여야 한다")
@@ -158,14 +158,138 @@ class ReservationAcceptanceTest {
         }
     }
 
+    /**
+     * T-2: 전화번호 필수 검증 구현 완료. 전화번호 없이/공백으로 예약하는 케이스 모두 그린이다.
+     */
+    @Nested
+    @DisplayName("T-2-1: 전화번호는 필수다")
+    class PhoneNumberRequired {
+
+        @Test
+        @DisplayName("전화번호 필드를 생략하면 거부된다")
+        void rejectsMissingPhoneNumber() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body("""
+                    {
+                      "siteNumber": "%s",
+                      "startDate": "%s",
+                      "endDate": "%s",
+                      "customerName": "nophone"
+                    }
+                    """.formatted(SITE, start.format(FMT), end.format(FMT)))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+        }
+
+        @Test
+        @DisplayName("전화번호가 공백이면 거부된다")
+        void rejectsBlankPhoneNumber() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "blankphone", "   "))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+        }
+
+        @Test
+        @DisplayName("전화번호를 제대로 입력하면 예약이 완료된다")
+        void allowsValidPhoneNumber() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "haspphone", "01012345678"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201)
+                .body("phoneNumber", equalTo("01012345678"));
+        }
+    }
+
+    /**
+     * T-2: 전화번호를 필수로 바꾸면서, 이미 되던 형식 검증(하이픈 제거 후 10~11자리 숫자)이
+     * 깨지지 않는지 확인하는 회귀 테스트.
+     */
+    @Nested
+    @DisplayName("T-2-2 회귀: 기존 전화번호 형식 검증이 깨지지 않아야 한다")
+    class PhoneNumberFormatRegression {
+
+        @Test
+        @DisplayName("자릿수가 10자리 미만이면 거부된다")
+        void rejectsTooShortPhoneNumber() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "shortphone", "123456789"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+        }
+
+        @Test
+        @DisplayName("자릿수가 11자리를 넘으면 거부된다")
+        void rejectsTooLongPhoneNumber() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "longphone", "010123456789"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+        }
+
+        @Test
+        @DisplayName("하이픈이 포함돼도 자릿수만 맞으면 허용된다")
+        void allowsPhoneNumberWithHyphens() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "hyphenphone", "010-1234-5678"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201);
+        }
+    }
+
     private String reservationJson(String siteNumber, LocalDate start, LocalDate end, String customerName) {
+        return reservationJson(siteNumber, start, end, customerName, "01000000000");
+    }
+
+    private String reservationJson(String siteNumber, LocalDate start, LocalDate end, String customerName, String phoneNumber) {
         return """
             {
               "siteNumber": "%s",
               "startDate": "%s",
               "endDate": "%s",
-              "customerName": "%s"
+              "customerName": "%s",
+              "phoneNumber": "%s"
             }
-            """.formatted(siteNumber, start.format(FMT), end.format(FMT), customerName);
+            """.formatted(siteNumber, start.format(FMT), end.format(FMT), customerName, phoneNumber);
     }
 }
