@@ -277,6 +277,74 @@ class ReservationAcceptanceTest {
         }
     }
 
+    /**
+     * T-3: 취소된 예약을 중복 체크에서 제외하도록 구현 완료. "취소 후 재예약" 케이스와
+     * "취소되지 않은 예약은 여전히 막는다" 회귀 케이스 모두 그린이다.
+     */
+    @Nested
+    @DisplayName("T-3-1: 취소된 예약은 같은 사이트·같은 기간의 새 예약을 막지 않는다")
+    class CancelledReservationFreesSlot {
+
+        @Test
+        @DisplayName("예약을 취소하면 같은 사이트·같은 기간으로 다시 예약할 수 있다")
+        void allowsReReservationAfterCancel() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            io.restassured.response.Response created =
+                given()
+                    .contentType(ContentType.JSON)
+                    .body(reservationJson(SITE, start, end, "firstbooker"))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(201)
+                    .extract().response();
+            Long reservationId = created.jsonPath().getLong("id");
+            String confirmationCode = created.jsonPath().getString("confirmationCode");
+
+            given()
+                .queryParam("confirmationCode", confirmationCode)
+            .when()
+                .delete("/api/reservations/" + reservationId)
+            .then()
+                .statusCode(200);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "secondbooker"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201)
+                .body("customerName", equalTo("secondbooker"));
+        }
+
+        @Test
+        @DisplayName("취소되지 않은 예약은 여전히 같은 자리 재예약을 막는다 (회귀)")
+        void stillBlocksReReservationWhenNotCancelled() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "firstbooker"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "secondbooker"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+        }
+    }
+
     private String reservationJson(String siteNumber, LocalDate start, LocalDate end, String customerName) {
         return reservationJson(siteNumber, start, end, customerName, "01000000000");
     }
