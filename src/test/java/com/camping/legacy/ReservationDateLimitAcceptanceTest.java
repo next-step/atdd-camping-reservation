@@ -44,15 +44,15 @@ class ReservationDateLimitAcceptanceTest {
     class 예약_생성 {
 
         @Test
-        @DisplayName("오늘로부터 30일 이내 날짜로 예약하면 예약이 완료된다")
-        void 오늘로부터_30일_이내_날짜로_예약하면_예약이_완료된다() {
+        @DisplayName("시작 날짜가 오늘로부터 30일 이내이면 예약이 완료된다")
+        void 시작_날짜가_오늘로부터_30일_이내이면_예약이_완료된다() {
             String startDate = LocalDate.now().plusDays(30).toString();
 
             given()
                 .contentType(ContentType.JSON)
                 .body("""
                     {
-                      "siteNumber": "A-1",
+                      "siteNumber": "A-10",
                       "startDate": "%s",
                       "endDate": "%s",
                       "customerName": "테스터",
@@ -66,15 +66,15 @@ class ReservationDateLimitAcceptanceTest {
         }
 
         @Test
-        @DisplayName("30일 초과 첫 경계 날짜로 예약하면 거부된다")
-        void 삼십일_초과_첫_경계_날짜로_예약하면_거부된다() {
+        @DisplayName("시작 날짜가 오늘로부터 30일을 초과하면 거부된다")
+        void 시작_날짜가_오늘로부터_30일을_초과하면_거부된다() {
             String startDate = LocalDate.now().plusDays(31).toString();
 
             given()
                 .contentType(ContentType.JSON)
                 .body("""
                     {
-                      "siteNumber": "A-1",
+                      "siteNumber": "A-10",
                       "startDate": "%s",
                       "endDate": "%s",
                       "customerName": "테스터",
@@ -88,15 +88,15 @@ class ReservationDateLimitAcceptanceTest {
         }
 
         @Test
-        @DisplayName("30일을 크게 초과한 날짜로 예약해도 거부된다")
-        void 삼십일을_크게_초과한_날짜로_예약해도_거부된다() {
+        @DisplayName("시작 날짜가 오늘로부터 30일을 크게 초과해도 거부된다")
+        void 시작_날짜가_오늘로부터_30일을_크게_초과해도_거부된다() {
             String startDate = LocalDate.now().plusDays(60).toString();
 
             given()
                 .contentType(ContentType.JSON)
                 .body("""
                     {
-                      "siteNumber": "A-1",
+                      "siteNumber": "A-10",
                       "startDate": "%s",
                       "endDate": "%s",
                       "customerName": "테스터",
@@ -115,15 +115,15 @@ class ReservationDateLimitAcceptanceTest {
     class 예약_수정 {
 
         @Test
-        @DisplayName("30일을 초과한 날짜로 예약 일정을 변경하면 거부된다")
-        void 삼십일을_초과한_날짜로_예약_일정을_변경하면_거부된다() {
+        @DisplayName("시작 날짜가 오늘로부터 30일을 초과하도록 변경하면 거부된다")
+        void 시작_날짜가_오늘로부터_30일을_초과하도록_변경하면_거부된다() {
             String validDate = LocalDate.now().plusDays(1).toString();
 
             var created = given()
                 .contentType(ContentType.JSON)
                 .body("""
                     {
-                      "siteNumber": "A-1",
+                      "siteNumber": "A-10",
                       "startDate": "%s",
                       "endDate": "%s",
                       "customerName": "테스터",
@@ -156,15 +156,15 @@ class ReservationDateLimitAcceptanceTest {
         }
 
         @Test
-        @DisplayName("시작일만 30일 초과로 변경해도 거부된다")
-        void 시작일만_삼십일_초과로_변경해도_거부된다() {
+        @DisplayName("시작 날짜만 오늘로부터 30일을 초과하도록 변경해도 거부된다")
+        void 시작_날짜만_오늘로부터_30일을_초과하도록_변경해도_거부된다() {
             String validDate = LocalDate.now().plusDays(1).toString();
 
             var created = given()
                 .contentType(ContentType.JSON)
                 .body("""
                     {
-                      "siteNumber": "A-1",
+                      "siteNumber": "A-10",
                       "startDate": "%s",
                       "endDate": "%s",
                       "customerName": "테스터",
