@@ -372,9 +372,12 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
-        // 시작일 30일 초과 체크 (단일 필드 수정 포함)
+        // 시작일 단일 필드 체크 (30일 초과 + 과거 날짜)
         if (request.getStartDate() != null) {
             LocalDate today = LocalDate.now();
+            if (request.getStartDate().isBefore(today)) {
+                throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+            }
             if (ChronoUnit.DAYS.between(today, request.getStartDate()) > 30) {
                 throw new RuntimeException("오늘로부터 30일 이내 날짜만 예약 가능합니다.");
             }
