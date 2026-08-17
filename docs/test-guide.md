@@ -62,3 +62,16 @@ class 예약_수정 {
 ## 테스트 수량
 
 규칙 하나에 경계 실측 하나면 충분하다. 더 추가하고 싶으면 티켓으로 등록하고 다음으로 넘어간다.
+
+
+## 같은 규칙의 여러 무효 값
+
+"빈 문자열"과 "공백만"처럼 같은 규칙을 서로 다른 무효 값으로 검증할 때는 테스트를 따로 늘리지 않고
+`@ParameterizedTest` + `@ValueSource`로 한 메서드에 묶는다.
+
+```java
+@ParameterizedTest
+@ValueSource(strings = {"", "   "})
+@DisplayName("전화번호가 빈 값이면 예약이 거부된다")
+void 전화번호가_빈_값이면_예약이_거부된다(String blankPhoneNumber) { ... }
+```
