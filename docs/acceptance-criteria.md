@@ -746,12 +746,14 @@ endDate, startDate)`로 겹침을 판정하며, 이 규칙 자체(겹치면 거�
 
 ---
 
-## 요구사항 2: 취소된 예약은 중복 체크에서 제외된다
+## 요구사항 2: 취소된(CANCELLED) 예약은 중복 체크에서 제외된다
 
-생성(POST) 시 같은 사이트·같은 기간에 취소된(`CANCELLED` 또는 `CANCELLED_SAME_DAY`) 예약만 있다면
-겹침으로 보지 않고 허용한다. 취소 상태는 `cancelReservation`이 시작일이 오늘이면
-`CANCELLED_SAME_DAY`, 아니면 `CANCELLED`로 나눠 저장하므로(`ReservationService.java:308-324`) 두
-값 모두 실측했다.
+생성(POST) 시 같은 사이트·같은 기간에 취소된(`CANCELLED`) 예약만 있다면 겹침으로 보지 않고
+허용한다. 취소 상태는 `cancelReservation`이 시작일이 오늘이면 `CANCELLED_SAME_DAY`, 아니면
+`CANCELLED`로 나눠 저장하는데(`ReservationService.java:308-324`), 이 요구사항은 **`CANCELLED`만
+다룬다** — `CANCELLED_SAME_DAY`(당일 취소)는 재예약을 허용해야 하는지 요구사항이 침묵하므로
+범위 밖으로 두고 T-9로 분리했다 (아래 요구사항 2의 두 번째 예시 참고). 두 상태 모두 일단 실측은
+해뒀다.
 
 ## 예시
 
@@ -785,7 +787,7 @@ POST /api/reservations
 → HTTP 409로 거부됨 (버그). 취소된 예약이 자리를 계속 막고 있다 — 신고된 증상 그대로 재현됨.
 수정 후에는 HTTP 201로 예약이 생성돼야 한다.
 
-### 거부 — 취소된(CANCELLED_SAME_DAY) 예약의 자리에 재예약 (현재 버그)
+### 거부 — 취소된(CANCELLED_SAME_DAY) 예약의 자리에 재예약 (참고용, 범위 밖 — T-9)
 
 준비:
 1. `POST {"siteNumber":"A-11","startDate":"2026-08-17","endDate":"2026-08-17",...}` (오늘 날짜) →
@@ -804,19 +806,22 @@ POST /api/reservations
 }
 ```
 
-실측 응답 (현재 동작 — 버그):
+실측 응답 (현재 동작 — 이 티켓에서는 수정하지 않음, 현행 유지):
 ```json
 {
   "message": "해당 기간에 이미 예약이 존재합니다."
 }
 ```
-→ HTTP 409로 거부됨 (버그). `CANCELLED_SAME_DAY` 상태도 동일하게 자리를 막는다. 수정 후에는 HTTP
-201로 생성돼야 한다.
+→ HTTP 409로 거부됨. `CANCELLED`와 동일한 원인(겹침 판정 쿼리에 `status` 조건이 없음)으로 막히지만,
+당일 취소 후 같은 자리를 즉시 재예약 가능하게 할지는 별도 정책 판단이 필요해 요구사항이 침묵한다.
+이 티켓(T-3)에서는 `CANCELLED_SAME_DAY`를 손대지 않고 **현재 동작(예약 불가) 그대로 유지**하며,
+정책 결정은 T-9로 남긴다.
 
 ## 이유
 
 고객센터 신고(T-3) 원문: "예약을 취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나옵니다."
-위 두 예시로 그대로 재현했다.
+신고 원문이 가리키는 `CANCELLED` 예시로 재현했다. `CANCELLED_SAME_DAY` 예시는 원인이 같다는 것을
+확인하기 위해 실측했을 뿐, 이 요구사항의 정식 조건은 아니다(T-9 참고).
 
 원인은 `ReservationRepository.java:21`의
 `existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Campsite campsite, LocalDate
@@ -832,5 +837,7 @@ endDate, LocalDate startDate)`가 순수 Spring Data 파생 쿼리로, 메서드
 판정 로직 자체를 고칠 때 이 메서드도 함께 확인해야 한다. `cancelReservation`
 (`ReservationService.java:308-324`)이 남기는 취소 상태값은 `"CANCELLED"`와 `"CANCELLED_SAME_DAY"` 두
 가지이며 (`Reservation.status`는 enum이 아닌 `String`, `Reservation.java:39`), `getCancellationRate`
-(`ReservationService.java:817-823`)도 이 두 값을 함께 "취소"로 취급하고 있어 겹침 판정에서 제외할
-때도 두 값 모두 제외해야 한다.
+(`ReservationService.java:817-823`)도 이 두 값을 함께 "취소"로 취급한다. 다만 이 요구사항(2)에서
+겹침 판정에서 제외해야 하는 값은 `"CANCELLED"`뿐이다 — `"CANCELLED_SAME_DAY"`를 함께 제외할지는
+T-9에서 정책이 정해진 뒤 판단한다. 3단계(구현)에서 상태 조건을 추가할 때 `"CANCELLED_SAME_DAY"`까지
+같이 걸러내지 않도록 주의해야 한다.

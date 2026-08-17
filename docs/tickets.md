@@ -71,3 +71,16 @@ id=9(A-12, 2026-08-18~2026-08-19)를 `PUT /api/reservations/9?confirmationCode=S
 
 ---
 
+T-9 당일 취소(CANCELLED_SAME_DAY)된 예약 자리의 재예약 가능 여부가 정책으로 정해지지 않음
+
+내용: T-3 작업 중 확인. `cancelReservation`(`ReservationService.java:308-324`)은 취소 시점에
+`startDate`가 오늘이면 `"CANCELLED_SAME_DAY"`, 아니면 `"CANCELLED"`로 상태를 나눠 저장한다. T-3은
+신고 원문("취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나온다")을 따라 `"CANCELLED"`
+상태만 중복 체크에서 제외하도록 범위를 좁혔고, `"CANCELLED_SAME_DAY"`는 현재 동작(재예약 불가,
+HTTP 409) 그대로 남겨뒀다.
+
+당일 취소된 자리를 같은 날 바로 재예약 가능하게 할지(예: 노쇼 방지, 당일 취소 위약금 정책과 얽힐
+수 있음)는 요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
+
+---
+
