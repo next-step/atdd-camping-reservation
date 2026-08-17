@@ -19,6 +19,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   데이터를 다루는 작업 전에 이 파일을 먼저 읽을 것.
 - 모든 API는 `/api` 아래에 있다 (`/api/reservations`, `/api/sites`).
 
+## 작업 시작 전
+
+작업을 시작할 때 `docs/principles.md`와 `docs/plan.md`를 먼저 읽는다.
+
 ## `docs/` 파일별 역할
 
 | 파일 | 내용 |
