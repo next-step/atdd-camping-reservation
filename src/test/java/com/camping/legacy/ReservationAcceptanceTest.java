@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Map;
 
 import static io.restassured.RestAssured.given;
@@ -58,13 +59,59 @@ class ReservationAcceptanceTest {
                 .body("message", equalTo("예약 시작일은 오늘로부터 30일 이내여야 합니다."));
     }
 
+    @Test
+    @DisplayName("전화번호를 입력하면 예약되고 확인 코드가 발급된다")
+    void shouldCreateReservationWhenPhoneNumberIsProvided() {
+        LocalDate startDate = LocalDate.now().plusDays(28);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequest(startDate, "B-15", "010-9999-9999"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue())
+                .body("confirmationCode", matchesPattern("[A-Z0-9]{6}"));
+    }
+
+    @Test
+    @DisplayName("전화번호를 입력하지 않으면 예약이 거절된다")
+    void shouldRejectReservationWhenPhoneNumberIsMissing() {
+        LocalDate startDate = LocalDate.now().plusDays(27);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequestWithoutPhoneNumber(startDate, "B-14"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(400)
+                .body("message", equalTo("전화번호를 입력해야 합니다."));
+    }
+
     private Map<String, Object> reservationRequest(LocalDate startDate, String siteNumber) {
+        return reservationRequest(startDate, siteNumber, "010-9999-9999");
+    }
+
+    private Map<String, Object> reservationRequest(
+            LocalDate startDate, String siteNumber, String phoneNumber) {
         return Map.of(
                 "customerName", "테스트고객",
                 "startDate", startDate.toString(),
                 "endDate", startDate.toString(),
                 "siteNumber", siteNumber,
-                "phoneNumber", "010-9999-9999"
+                "phoneNumber", phoneNumber
         );
+    }
+
+    private Map<String, Object> reservationRequestWithoutPhoneNumber(
+            LocalDate startDate, String siteNumber) {
+        Map<String, Object> request = new HashMap<>();
+        request.put("customerName", "테스트고객");
+        request.put("startDate", startDate.toString());
+        request.put("endDate", startDate.toString());
+        request.put("siteNumber", siteNumber);
+        return request;
     }
 }
