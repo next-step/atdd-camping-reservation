@@ -53,3 +53,21 @@ T-7 전화번호 형식(유효성) 검증이 인수 조건으로 명시되어 �
 
 ---
 
+T-8 예약 수정(PUT) 시 사이트/기간 중복 체크가 아예 없음
+
+내용: T-3 작업 중 확인. `createReservation`(`ReservationService.java:140-147`, STEP 4)에는
+`existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual`로 같은 사이트·겹치는 기간의
+예약이 있는지 확인하는 체크가 있으나, `updateReservation`(`ReservationService.java:364-455`)에는
+이 체크가 전혀 없다. 확인 코드·날짜 유효성·이름·전화번호만 검증한 뒤 바로
+`reservation.setCampsite/setStartDate/setEndDate`로 저장한다(427-432행).
+
+실측: 시드 예약 id=2(김철수, A-3, 2026-08-31~2026-09-01, CONFIRMED)가 있는 상태에서, 별도 예약
+id=9(A-12, 2026-08-18~2026-08-19)를 `PUT /api/reservations/9?confirmationCode=SP65GD`로
+`{"siteNumber":"A-3","startDate":"2026-08-31","endDate":"2026-09-01"}`로 수정 시도하면 HTTP
+200으로 성공하며 완전히 겹치는 이중 예약이 그대로 저장된다.
+
+수정 경로에도 생성과 동일한 중복 체크를 적용해야 하는지, 적용한다면 자기 자신(수정 대상 예약)을
+겹침 판정에서 어떻게 제외할지는 요구사항이 침묵하므로 이 티켓에서는 판단하지 않는다.
+
+---
+
