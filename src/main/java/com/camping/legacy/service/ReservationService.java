@@ -120,19 +120,20 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
+            }
+            String cleaned = phoneNumber.replaceAll("-", "");
+            if (cleaned.length() < 10) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else if (cleaned.length() > 11) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else {
+                // 숫자인지 확인
+                try {
+                    Long.parseLong(cleaned);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
                 }
             }
 
@@ -407,6 +408,13 @@ public class ReservationService {
         if (request.getCustomerName() != null) {
             if (request.getCustomerName().trim().isEmpty()) {
                 throw new RuntimeException("예약자 이름을 입력해주세요.");
+            }
+        }
+
+        // 전화번호 검증
+        if (request.getPhoneNumber() != null) {
+            if (request.getPhoneNumber().trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
             }
         }
 
