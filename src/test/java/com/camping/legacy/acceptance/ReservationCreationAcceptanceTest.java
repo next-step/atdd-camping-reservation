@@ -17,8 +17,9 @@ import static org.hamcrest.Matchers.matchesPattern;
 /**
  * docs/acceptance-criteria.md 기반 인수 테스트 초안.
  *
- * acceptance-criteria.md에 "질문"으로 남아 있는 경계(정확히 오늘+30일째, 시작일=오늘)는
- * 답이 정해지지 않아 테스트를 만들지 않았다. 답이 정해지면 추가한다.
+ * acceptance-criteria.md에 "질문"으로 남아 있는 경계(정확히 오늘+30일째, 시작일=오늘,
+ * 전화번호 형식 유효성 판단 기준)는 답이 정해지지 않아 테스트를 만들지 않았다.
+ * 답이 정해지면 추가한다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReservationCreationAcceptanceTest {
@@ -97,6 +98,55 @@ class ReservationCreationAcceptanceTest {
                 .when().post("/api/reservations")
                 .then().statusCode(409)
                 .body("message", equalTo("종료일이 시작일보다 이전일 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("전화번호가 없으면 예약이 거부된다")
+    void 전화번호가_없으면_거부된다() {
+        ReservationRequest request = reservationRequest("B-1", 1, 2);
+        request.setPhoneNumber(null);
+
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요"));
+    }
+
+    @Test
+    @DisplayName("전화번호가 빈 문자열이면 예약이 거부된다")
+    void 전화번호가_빈문자열이면_거부된다() {
+        ReservationRequest request = reservationRequest("B-2", 1, 2);
+        request.setPhoneNumber("");
+
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요"));
+    }
+
+
+    @Test
+    @DisplayName("전화번호가 공백이면 예약이 거부된다")
+    void 전화번호가_공백이면_거부된다() {
+        ReservationRequest request = reservationRequest("B-3", 1, 2);
+        request.setPhoneNumber("   ");
+
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요"));
+    }
+
+    @Test
+    @DisplayName("전화번호가 10~11자리 숫자면 예약이 생성되고 확인 코드가 발급된다")
+    void 전화번호가_10에서_11자리_숫자면_예약된다() {
+        ReservationRequest request = reservationRequest("B-4", 1, 2);
+        request.setPhoneNumber("01012345678");
+
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .body("confirmationCode", matchesPattern("^[A-Z0-9]{6}$"));
     }
 
     private ReservationRequest reservationRequest(String siteNumber, long startOffsetDays, long endOffsetDays) {
