@@ -19,7 +19,8 @@ import java.time.LocalDate;
 import static io.restassured.RestAssured.given;
 
 /**
- * T-3: 동일 사이트, 동일 기간에 중복 예약은 불가하다 / 취소된 예약은 중복 체크에서 제외된다.
+ * T-3: 동일 사이트, 동일 기간에 중복 예약은 불가하다 / 취소된(CANCELLED) 예약은 중복 체크에서
+ * 제외된다. CANCELLED_SAME_DAY(당일 취소)는 범위 밖 — T-9 참고.
  *
  * 인수 조건: docs/acceptance-criteria.md
  */
@@ -172,7 +173,7 @@ class ReservationDuplicateBookingAcceptanceTest {
     }
 
     @Nested
-    @DisplayName("T-3: 취소된 예약은 중복 체크에서 제외된다")
+    @DisplayName("T-3: 취소된(CANCELLED) 예약은 중복 체크에서 제외된다")
     class T3_취소된_예약은_중복_체크에서_제외된다 {
 
         @Nested
@@ -223,55 +224,6 @@ class ReservationDuplicateBookingAcceptanceTest {
                           "phoneNumber": "010-1111-6666"
                         }
                         """.formatted(startDate, endDate))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(201);
-            }
-
-            @Test
-            @DisplayName("취소된(CANCELLED_SAME_DAY) 예약의 자리에 같은 기간으로 재예약하면 예약이 완료된다")
-            void 취소된_CANCELLED_SAME_DAY_예약의_자리에_같은_기간으로_재예약하면_예약이_완료된다() {
-                String today = LocalDate.now().toString();
-
-                Response created = given()
-                    .contentType(ContentType.JSON)
-                    .body("""
-                        {
-                          "siteNumber": "A-16",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(today, today))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(201)
-                    .extract().response();
-
-                long id = ((Number) created.path("id")).longValue();
-                String confirmationCode = created.path("confirmationCode");
-
-                given()
-                    .queryParam("confirmationCode", confirmationCode)
-                .when()
-                    .delete("/api/reservations/" + id)
-                .then()
-                    .statusCode(200);
-
-                given()
-                    .contentType(ContentType.JSON)
-                    .body("""
-                        {
-                          "siteNumber": "A-16",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터7",
-                          "phoneNumber": "010-1111-8888"
-                        }
-                        """.formatted(today, today))
                 .when()
                     .post("/api/reservations")
                 .then()
