@@ -43,127 +43,137 @@ class ReservationDateValidationAcceptanceTest {
     }
 
     @Nested
-    @DisplayName("과거 날짜 검증")
-    class 과거_날짜_검증 {
+    @DisplayName("T-1: 과거 날짜로 예약할 수 없고, 종료일이 시작일보다 이전일 수 없다")
+    class T1_과거_날짜로_예약할_수_없고_종료일이_시작일보다_이전일_수_없다 {
 
-        @Test
-        @DisplayName("과거 날짜로 예약하면 거부된다")
-        void 과거_날짜로_예약하면_거부된다() {
-            String yesterday = LocalDate.now().minusDays(1).toString();
+        @Nested
+        @DisplayName("예약 생성")
+        class 예약_생성 {
 
-            given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "siteNumber": "A-5",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(yesterday, yesterday))
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(409);
+            @Test
+            @DisplayName("과거 날짜로 예약하면 거부된다")
+            void 과거_날짜로_예약하면_거부된다() {
+                String yesterday = LocalDate.now().minusDays(1).toString();
+
+                given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                            {
+                              "siteNumber": "A-5",
+                              "startDate": "%s",
+                              "endDate": "%s",
+                              "customerName": "테스터",
+                              "phoneNumber": "010-1111-2222"
+                            }
+                            """.formatted(yesterday, yesterday))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(409);
+            }
+
+            @Test
+            @DisplayName("종료일이 시작일보다 이전이면 거부된다")
+            void 종료일이_시작일보다_이전이면_거부된다() {
+                String startDate = LocalDate.now().plusDays(2).toString();
+                String endDate = LocalDate.now().plusDays(1).toString();
+
+                given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                            {
+                              "siteNumber": "A-7",
+                              "startDate": "%s",
+                              "endDate": "%s",
+                              "customerName": "테스터",
+                              "phoneNumber": "010-1111-2222"
+                            }
+                            """.formatted(startDate, endDate))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(409);
+            }
         }
 
-        @Test
-        @DisplayName("시작일만 과거로 수정해도 거부된다")
-        void 시작일만_과거로_수정해도_거부된다() {
-            String tomorrow = LocalDate.now().plusDays(1).toString();
+        @Nested
+        @DisplayName("예약 수정")
+        class 예약_수정 {
 
-            var created = given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "siteNumber": "A-5",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(tomorrow, tomorrow))
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(201)
-                .extract().response();
+            @Test
+            @DisplayName("시작일만 과거로 수정해도 거부된다")
+            void 시작일만_과거로_수정해도_거부된다() {
+                String tomorrow = LocalDate.now().plusDays(1).toString();
 
-            long id = ((Number) created.path("id")).longValue();
-            String confirmationCode = created.path("confirmationCode");
-            String yesterday = LocalDate.now().minusDays(1).toString();
+                var created = given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                            {
+                              "siteNumber": "A-5",
+                              "startDate": "%s",
+                              "endDate": "%s",
+                              "customerName": "테스터",
+                              "phoneNumber": "010-1111-2222"
+                            }
+                            """.formatted(tomorrow, tomorrow))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(201)
+                    .extract().response();
 
-            given()
-                .contentType(ContentType.JSON)
-                .queryParam("confirmationCode", confirmationCode)
-                .body("""
-                        {
-                          "startDate": "%s"
-                        }
-                        """.formatted(yesterday))
-            .when()
-                .put("/api/reservations/" + id)
-            .then()
-                .statusCode(400);
+                long id = ((Number) created.path("id")).longValue();
+                String confirmationCode = created.path("confirmationCode");
+                String yesterday = LocalDate.now().minusDays(1).toString();
+
+                given()
+                    .contentType(ContentType.JSON)
+                    .queryParam("confirmationCode", confirmationCode)
+                    .body("""
+                            {
+                              "startDate": "%s"
+                            }
+                            """.formatted(yesterday))
+                .when()
+                    .put("/api/reservations/" + id)
+                .then()
+                    .statusCode(400);
+            }
         }
     }
 
     @Nested
-    @DisplayName("날짜 순서 검증")
-    class 날짜_순서_검증 {
+    @DisplayName("T-1: 예약 완료 시 6자리 영숫자 확인 코드가 생성된다")
+    class T1_예약_완료_시_6자리_영숫자_확인_코드가_생성된다 {
 
-        @Test
-        @DisplayName("종료일이 시작일보다 이전이면 거부된다")
-        void 종료일이_시작일보다_이전이면_거부된다() {
-            String startDate = LocalDate.now().plusDays(2).toString();
-            String endDate = LocalDate.now().plusDays(1).toString();
+        @Nested
+        @DisplayName("예약 생성")
+        class 예약_생성 {
 
-            given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "siteNumber": "A-7",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(startDate, endDate))
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(409);
-        }
-    }
+            @Test
+            @DisplayName("예약이 완료되면 6자리 영숫자 확인 코드가 생성된다")
+            void 예약이_완료되면_6자리_영숫자_확인_코드가_생성된다() {
+                String tomorrow = LocalDate.now().plusDays(1).toString();
 
-    @Nested
-    @DisplayName("확인 코드")
-    class 확인_코드 {
+                String confirmationCode = given()
+                    .contentType(ContentType.JSON)
+                    .body("""
+                            {
+                              "siteNumber": "A-9",
+                              "startDate": "%s",
+                              "endDate": "%s",
+                              "customerName": "테스터",
+                              "phoneNumber": "010-1111-2222"
+                            }
+                            """.formatted(tomorrow, tomorrow))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(201)
+                    .extract().path("confirmationCode");
 
-        @Test
-        @DisplayName("예약이 완료되면 6자리 영숫자 확인 코드가 생성된다")
-        void 예약이_완료되면_6자리_영숫자_확인_코드가_생성된다() {
-            String tomorrow = LocalDate.now().plusDays(1).toString();
-
-            String confirmationCode = given()
-                .contentType(ContentType.JSON)
-                .body("""
-                        {
-                          "siteNumber": "A-9",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(tomorrow, tomorrow))
-            .when()
-                .post("/api/reservations")
-            .then()
-                .statusCode(201)
-                .extract().path("confirmationCode");
-
-            assertThat(confirmationCode).matches("[A-Z0-9]{6}");
+                assertThat(confirmationCode).matches("[A-Z0-9]{6}");
+            }
         }
     }
 }
