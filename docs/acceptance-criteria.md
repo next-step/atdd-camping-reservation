@@ -21,12 +21,26 @@
 
 ```
 POST /api/reservations
-{"siteNumber":"A-1","startDate":"2026-09-15","endDate":"2026-09-15","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-1",
+  "startDate": "2026-09-15",
+  "endDate": "2026-09-15",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답:
 ```json
-{"id":6,"customerName":"테스터","startDate":"2026-09-15","endDate":"2026-09-15","siteNumber":"A-1","status":"CONFIRMED","confirmationCode":"T7MG9X"}
+{
+  "id": 6,
+  "customerName": "테스터",
+  "startDate": "2026-09-15",
+  "endDate": "2026-09-15",
+  "siteNumber": "A-1",
+  "status": "CONFIRMED",
+  "confirmationCode": "T7MG9X"
+}
 ```
 → HTTP 201. 30일 뒤는 허용한다.
 
@@ -34,12 +48,26 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-2","startDate":"2026-09-16","endDate":"2026-09-16","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-2",
+  "startDate": "2026-09-16",
+  "endDate": "2026-09-16",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":7,"customerName":"테스터","startDate":"2026-09-16","endDate":"2026-09-16","siteNumber":"A-2","status":"CONFIRMED","confirmationCode":"JAIEZD"}
+{
+  "id": 7,
+  "customerName": "테스터",
+  "startDate": "2026-09-16",
+  "endDate": "2026-09-16",
+  "siteNumber": "A-2",
+  "status": "CONFIRMED",
+  "confirmationCode": "JAIEZD"
+}
 ```
 → HTTP 201로 성공 (버그). 수정 후에는 HTTP 409와 오류 메시지를 반환해야 한다.
 
@@ -47,12 +75,26 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-3","startDate":"2026-10-15","endDate":"2026-10-15","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-3",
+  "startDate": "2026-10-15",
+  "endDate": "2026-10-15",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":8,"customerName":"테스터","startDate":"2026-10-15","endDate":"2026-10-15","siteNumber":"A-3","status":"CONFIRMED","confirmationCode":"E5799E"}
+{
+  "id": 8,
+  "customerName": "테스터",
+  "startDate": "2026-10-15",
+  "endDate": "2026-10-15",
+  "siteNumber": "A-3",
+  "status": "CONFIRMED",
+  "confirmationCode": "E5799E"
+}
 ```
 → HTTP 201로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -60,12 +102,21 @@ POST /api/reservations
 
 ```
 PUT /api/reservations/6?confirmationCode=70363O
-{"startDate":"2026-09-16"}
+{
+  "startDate": "2026-09-16"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"startDate":"2026-09-16","endDate":"2026-08-17","siteNumber":"B-1","status":"CONFIRMED","confirmationCode":"70363O"}
+{
+  "id": 6,
+  "startDate": "2026-09-16",
+  "endDate": "2026-08-17",
+  "siteNumber": "B-1",
+  "status": "CONFIRMED",
+  "confirmationCode": "70363O"
+}
 ```
 → HTTP 200으로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -73,12 +124,22 @@ PUT /api/reservations/6?confirmationCode=70363O
 
 ```
 PUT /api/reservations/6?confirmationCode=70363O
-{"startDate":"2026-09-16","endDate":"2026-09-16"}
+{
+  "startDate": "2026-09-16",
+  "endDate": "2026-09-16"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"startDate":"2026-09-16","endDate":"2026-09-16","siteNumber":"B-1","status":"CONFIRMED","confirmationCode":"70363O"}
+{
+  "id": 6,
+  "startDate": "2026-09-16",
+  "endDate": "2026-09-16",
+  "siteNumber": "B-1",
+  "status": "CONFIRMED",
+  "confirmationCode": "70363O"
+}
 ```
 → HTTP 200으로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -103,12 +164,20 @@ startDate가 오늘보다 이전이거나 endDate가 startDate보다 이전이�
 
 ```
 POST /api/reservations
-{"siteNumber":"A-5","startDate":"2026-08-16","endDate":"2026-08-16","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-5",
+  "startDate": "2026-08-16",
+  "endDate": "2026-08-16",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답:
 ```json
-{"message":"과거 날짜로 예약할 수 없습니다."}
+{
+  "message": "과거 날짜로 예약할 수 없습니다."
+}
 ```
 → HTTP 409. 생성 경로는 이미 거부한다.
 
@@ -116,12 +185,20 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-5","startDate":"2026-08-18","endDate":"2026-08-17","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-5",
+  "startDate": "2026-08-18",
+  "endDate": "2026-08-17",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답:
 ```json
-{"message":"종료일이 시작일보다 이전일 수 없습니다."}
+{
+  "message": "종료일이 시작일보다 이전일 수 없습니다."
+}
 ```
 → HTTP 409. 생성 경로는 이미 거부한다.
 
@@ -129,12 +206,17 @@ POST /api/reservations
 
 ```
 PUT /api/reservations/6?confirmationCode=E30IF2
-{"startDate":"2026-08-16","endDate":"2026-08-16"}
+{
+  "startDate": "2026-08-16",
+  "endDate": "2026-08-16"
+}
 ```
 
 실측 응답:
 ```json
-{"message":"과거 날짜로 예약할 수 없습니다."}
+{
+  "message": "과거 날짜로 예약할 수 없습니다."
+}
 ```
 → HTTP 400. 두 필드 모두 전달 시 수정 경로도 거부한다.
 
@@ -142,12 +224,22 @@ PUT /api/reservations/6?confirmationCode=E30IF2
 
 ```
 PUT /api/reservations/6?confirmationCode=E30IF2
-{"startDate":"2026-08-16"}
+{
+  "startDate": "2026-08-16"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"customerName":"테스터","startDate":"2026-08-16","endDate":"2026-08-18","siteNumber":"A-5","status":"CONFIRMED","confirmationCode":"E30IF2"}
+{
+  "id": 6,
+  "customerName": "테스터",
+  "startDate": "2026-08-16",
+  "endDate": "2026-08-18",
+  "siteNumber": "A-5",
+  "status": "CONFIRMED",
+  "confirmationCode": "E30IF2"
+}
 ```
 → HTTP 200으로 성공 (버그). 수정 후에는 HTTP 400을 반환해야 한다.
 
@@ -171,12 +263,26 @@ startDate 단독 전달 시 블록이 실행되지 않아 과거 날짜가 그�
 
 ```
 POST /api/reservations
-{"siteNumber":"A-8","startDate":"2026-08-18","endDate":"2026-08-18","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-8",
+  "startDate": "2026-08-18",
+  "endDate": "2026-08-18",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답:
 ```json
-{"id":7,"customerName":"테스터","startDate":"2026-08-18","endDate":"2026-08-18","siteNumber":"A-8","status":"CONFIRMED","confirmationCode":"A7FF89"}
+{
+  "id": 7,
+  "customerName": "테스터",
+  "startDate": "2026-08-18",
+  "endDate": "2026-08-18",
+  "siteNumber": "A-8",
+  "status": "CONFIRMED",
+  "confirmationCode": "A7FF89"
+}
 ```
 → HTTP 201. confirmationCode는 6자리 [A-Z0-9].
 
@@ -213,12 +319,27 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-11","startDate":"2026-08-20","endDate":"2026-08-20","customerName":"테스터"}
+{
+  "siteNumber": "A-11",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "customerName": "테스터"
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-11","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"YSA2C8","createdAt":null}
+{
+  "id": 6,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-11",
+  "phoneNumber": null,
+  "status": "CONFIRMED",
+  "confirmationCode": "YSA2C8",
+  "createdAt": null
+}
 ```
 → HTTP 201로 성공 (버그). 수정 후에는 HTTP 409와 오류 메시지를 반환해야 한다.
 
@@ -226,12 +347,28 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-12","startDate":"2026-08-20","endDate":"2026-08-20","customerName":"테스터","phoneNumber":""}
+{
+  "siteNumber": "A-12",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "customerName": "테스터",
+  "phoneNumber": ""
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":7,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-12","phoneNumber":"","status":"CONFIRMED","confirmationCode":"P9X92L","createdAt":null}
+{
+  "id": 7,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-12",
+  "phoneNumber": "",
+  "status": "CONFIRMED",
+  "confirmationCode": "P9X92L",
+  "createdAt": null
+}
 ```
 → HTTP 201로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -239,12 +376,28 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-14","startDate":"2026-08-20","endDate":"2026-08-20","customerName":"테스터","phoneNumber":"   "}
+{
+  "siteNumber": "A-14",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "customerName": "테스터",
+  "phoneNumber": "   "
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":9,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-14","phoneNumber":"   ","status":"CONFIRMED","confirmationCode":"S9ORUL","createdAt":null}
+{
+  "id": 9,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-14",
+  "phoneNumber": "   ",
+  "status": "CONFIRMED",
+  "confirmationCode": "S9ORUL",
+  "createdAt": null
+}
 ```
 → HTTP 201로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -252,12 +405,28 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-16","startDate":"2026-08-20","endDate":"2026-08-20","customerName":"테스터","phoneNumber":"010-1111-2222"}
+{
+  "siteNumber": "A-16",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "customerName": "테스터",
+  "phoneNumber": "010-1111-2222"
+}
 ```
 
 실측 응답:
 ```json
-{"id":10,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-16","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"NG5HWM","createdAt":null}
+{
+  "id": 10,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-16",
+  "phoneNumber": "010-1111-2222",
+  "status": "CONFIRMED",
+  "confirmationCode": "NG5HWM",
+  "createdAt": null
+}
 ```
 → HTTP 201. phoneNumber가 있으면 기존대로 통과한다.
 
@@ -265,12 +434,20 @@ POST /api/reservations
 
 ```
 POST /api/reservations
-{"siteNumber":"A-15","startDate":"2026-08-20","endDate":"2026-08-20","customerName":"테스터","phoneNumber":"123"}
+{
+  "siteNumber": "A-15",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "customerName": "테스터",
+  "phoneNumber": "123"
+}
 ```
 
 실측 응답:
 ```json
-{"message":"전화번호 형식이 올바르지 않습니다."}
+{
+  "message": "전화번호 형식이 올바르지 않습니다."
+}
 ```
 → HTTP 409. 형식 검증은 이미 있고 정상 동작한다. "필수" 검증은 이 형식 검증보다 먼저 실행되어야 한다.
 
@@ -280,12 +457,24 @@ POST /api/reservations
 
 ```
 PUT /api/reservations/6?confirmationCode=Q7Z0WY
-{"phoneNumber":""}
+{
+  "phoneNumber": ""
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-17","phoneNumber":"","status":"CONFIRMED","confirmationCode":"Q7Z0WY","createdAt":null}
+{
+  "id": 6,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-17",
+  "phoneNumber": "",
+  "status": "CONFIRMED",
+  "confirmationCode": "Q7Z0WY",
+  "createdAt": null
+}
 ```
 → HTTP 200으로 성공 (버그). 수정 후에는 HTTP 400을 반환해야 한다 (수정 실패 컨벤션).
 
@@ -293,12 +482,24 @@ PUT /api/reservations/6?confirmationCode=Q7Z0WY
 
 ```
 PUT /api/reservations/6?confirmationCode=Q7Z0WY
-{"phoneNumber":"   "}
+{
+  "phoneNumber": "   "
+}
 ```
 
 실측 응답 (현재 동작 — 버그):
 ```json
-{"id":6,"customerName":"테스터","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-17","phoneNumber":"   ","status":"CONFIRMED","confirmationCode":"Q7Z0WY","createdAt":null}
+{
+  "id": 6,
+  "customerName": "테스터",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-17",
+  "phoneNumber": "   ",
+  "status": "CONFIRMED",
+  "confirmationCode": "Q7Z0WY",
+  "createdAt": null
+}
 ```
 → HTTP 200으로 성공 (버그). 수정 후에는 거부해야 한다.
 
@@ -308,12 +509,24 @@ PUT /api/reservations/6?confirmationCode=Q7Z0WY
 
 ```
 PUT /api/reservations/7?confirmationCode=2C6ZJ9
-{"customerName":"테스터2"}
+{
+  "customerName": "테스터2"
+}
 ```
 
 실측 응답:
 ```json
-{"id":7,"customerName":"테스터2","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-18","phoneNumber":"010-2222-3333","status":"CONFIRMED","confirmationCode":"2C6ZJ9","createdAt":null}
+{
+  "id": 7,
+  "customerName": "테스터2",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-18",
+  "phoneNumber": "010-2222-3333",
+  "status": "CONFIRMED",
+  "confirmationCode": "2C6ZJ9",
+  "createdAt": null
+}
 ```
 → HTTP 200. phoneNumber를 건드리지 않으면 기존 값(010-2222-3333)이 유지된다. 이 동작은 그대로 둔다.
 
@@ -321,12 +534,24 @@ PUT /api/reservations/7?confirmationCode=2C6ZJ9
 
 ```
 PUT /api/reservations/7?confirmationCode=2C6ZJ9
-{"phoneNumber":"010-9999-8888"}
+{
+  "phoneNumber": "010-9999-8888"
+}
 ```
 
 실측 응답:
 ```json
-{"id":7,"customerName":"테스터2","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"A-18","phoneNumber":"010-9999-8888","status":"CONFIRMED","confirmationCode":"2C6ZJ9","createdAt":null}
+{
+  "id": 7,
+  "customerName": "테스터2",
+  "startDate": "2026-08-20",
+  "endDate": "2026-08-20",
+  "siteNumber": "A-18",
+  "phoneNumber": "010-9999-8888",
+  "status": "CONFIRMED",
+  "confirmationCode": "2C6ZJ9",
+  "createdAt": null
+}
 ```
 → HTTP 200. 정상 형식의 새 번호로 바꾸는 것은 그대로 허용한다.
 
