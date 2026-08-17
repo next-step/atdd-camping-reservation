@@ -25,3 +25,13 @@ T-5 확인 코드 생성 로직 중복 — generateConfirmationCode() 데드코�
 
 ---
 
+T-6 전화번호 중복(유일성) 검증 로직이 없음
+
+내용: T-2 작업 중 확인. `phoneNumber` 컬럼(`Reservation.java:37`)에는 `unique` 제약이 없고,
+`ReservationRepository`에도 전화번호 기준 조회/중복 체크 메서드(`existsByPhoneNumber` 등)가 없다.
+`createReservation`/`updateReservation` 어디에도 같은 전화번호로 이미 예약이 있는지 확인하는 로직이 없어
+동일한 전화번호로 몇 건이든 예약을 만들 수 있다. 전화번호가 유일해야 하는지는 요구사항이 침묵하므로
+이 티켓에서는 판단하지 않는다.
+
+---
+
