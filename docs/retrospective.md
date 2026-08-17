@@ -1,0 +1,1 @@
+- `test-guide.md` 및 `plan.md` 의 `AI에게 주는 지시` 추가로 AI에게 지시해야하는 제약 감소
