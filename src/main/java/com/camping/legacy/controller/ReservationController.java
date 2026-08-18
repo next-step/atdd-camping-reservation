@@ -36,7 +36,10 @@ public class ReservationController {
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+            HttpStatus status = "전화번호를 입력해야 합니다.".equals(e.getMessage())
+                    ? HttpStatus.BAD_REQUEST
+                    : HttpStatus.CONFLICT;
+            return ResponseEntity.status(status).body(error);
         }
     }
     
