@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -49,8 +50,10 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final Clock clock;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+    private static final int MAX_ADVANCE_RESERVATION_DAYS = 30;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -87,9 +90,11 @@ public class ReservationService {
                     throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
                 } else {
                     // 과거 날짜 체크 (중첩 레벨 4)
-                    LocalDate today = LocalDate.now();
+                    LocalDate today = LocalDate.now(clock);
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+                    } else if (startDate.isAfter(today.plusDays(MAX_ADVANCE_RESERVATION_DAYS))) {
+                        throw new RuntimeException("예약 시작일은 오늘로부터 30일 이내여야 합니다.");
                     } else {
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
