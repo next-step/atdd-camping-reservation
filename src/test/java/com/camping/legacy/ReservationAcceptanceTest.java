@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.matchesPattern;
 
@@ -62,7 +61,7 @@ class ReservationAcceptanceTest {
                 .post("/api/reservations")
             .then()
                 .statusCode(409)
-                .body("message", containsString("30"));
+                .body("message", equalTo("예약 시작일은 오늘로부터 30일 이내여야 합니다."));
         }
 
         @Test
