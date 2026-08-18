@@ -396,6 +396,10 @@ public class ReservationService {
         if (request.getCustomerName() != null) {
             if (request.getCustomerName().trim().isEmpty()) {
                 throw new RuntimeException("예약자 이름을 입력해주세요.");
+            } else if (request.getCustomerName().length() < 2) {
+                throw new RuntimeException("예약자 이름은 최소 2자 이상이어야 합니다.");
+            } else if (request.getCustomerName().length() > 20) {
+                throw new RuntimeException("예약자 이름은 최대 20자까지 가능합니다.");
             }
         }
 

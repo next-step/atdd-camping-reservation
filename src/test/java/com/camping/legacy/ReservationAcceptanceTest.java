@@ -344,6 +344,148 @@ class ReservationAcceptanceTest {
         }
     }
 
+    /**
+     * T-4: 예약자 이름 2~20자 제한은 생성 경로에 이미 구현되어 있다. 경계값(1자/2자/20자/21자)
+     * 확인용 회귀 테스트.
+     */
+    @Nested
+    @DisplayName("T-4-1: 예약자 이름은 2자 이상 20자 이하여야 한다 (생성)")
+    class CustomerNameLengthOnCreate {
+
+        @Test
+        @DisplayName("이름이 1자면 거부된다")
+        void rejectsNameTooShort() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "A"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("예약자 이름은 최소 2자 이상이어야 합니다."));
+        }
+
+        @Test
+        @DisplayName("이름이 2자면 허용된다 (경계값)")
+        void allowsNameAtMinLength() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "AB"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201);
+        }
+
+        @Test
+        @DisplayName("이름이 20자면 허용된다 (경계값)")
+        void allowsNameAtMaxLength() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "ABCDEFGHIJKLMNOPQRST"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(201);
+        }
+
+        @Test
+        @DisplayName("이름이 21자면 거부된다")
+        void rejectsNameTooLong() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            given()
+                .contentType(ContentType.JSON)
+                .body(reservationJson(SITE, start, end, "ABCDEFGHIJKLMNOPQRSTU"))
+            .when()
+                .post("/api/reservations")
+            .then()
+                .statusCode(409)
+                .body("message", equalTo("예약자 이름은 최대 20자까지 가능합니다."));
+        }
+    }
+
+    /**
+     * T-4: 예약자 이름 2~20자 제한을 수정(updateReservation) 경로에도 추가해 구현 완료.
+     * PUT은 검증 실패 시 400을 반환한다(POST의 409와 다른 이 엔드포인트의 기존 관례).
+     */
+    @Nested
+    @DisplayName("T-4-2: 예약자 이름 길이 제한은 수정 시에도 적용돼야 한다")
+    class CustomerNameLengthOnUpdate {
+
+        @Test
+        @DisplayName("수정 시 이름이 1자면 거부된다")
+        void rejectsNameTooShortOnUpdate() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            io.restassured.response.Response created =
+                given()
+                    .contentType(ContentType.JSON)
+                    .body(reservationJson(SITE, start, end, "original"))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(201)
+                    .extract().response();
+            Long reservationId = created.jsonPath().getLong("id");
+            String confirmationCode = created.jsonPath().getString("confirmationCode");
+
+            given()
+                .contentType(ContentType.JSON)
+                .queryParam("confirmationCode", confirmationCode)
+                .body("""
+                    { "customerName": "A" }
+                    """)
+            .when()
+                .put("/api/reservations/" + reservationId)
+            .then()
+                .statusCode(400)
+                .body("message", equalTo("예약자 이름은 최소 2자 이상이어야 합니다."));
+        }
+
+        @Test
+        @DisplayName("수정 시 이름이 21자면 거부된다")
+        void rejectsNameTooLongOnUpdate() {
+            LocalDate start = LocalDate.now().plusDays(5);
+            LocalDate end = start.plusDays(1);
+
+            io.restassured.response.Response created =
+                given()
+                    .contentType(ContentType.JSON)
+                    .body(reservationJson(SITE, start, end, "original"))
+                .when()
+                    .post("/api/reservations")
+                .then()
+                    .statusCode(201)
+                    .extract().response();
+            Long reservationId = created.jsonPath().getLong("id");
+            String confirmationCode = created.jsonPath().getString("confirmationCode");
+
+            given()
+                .contentType(ContentType.JSON)
+                .queryParam("confirmationCode", confirmationCode)
+                .body("""
+                    { "customerName": "ABCDEFGHIJKLMNOPQRSTU" }
+                    """)
+            .when()
+                .put("/api/reservations/" + reservationId)
+            .then()
+                .statusCode(400)
+                .body("message", equalTo("예약자 이름은 최대 20자까지 가능합니다."));
+        }
+    }
+
     private String reservationJson(String siteNumber, LocalDate start, LocalDate end, String customerName) {
         return reservationJson(siteNumber, start, end, customerName, "01000000000");
     }
