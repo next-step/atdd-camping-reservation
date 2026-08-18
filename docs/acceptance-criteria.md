@@ -14,7 +14,7 @@ When   시작일이 오늘 + 30일    Then  201 Created, 확인 코드 발급
 When   시작일이 오늘 + 31일    Then  409 "예약 시작일은 오늘로부터 30일 이내여야 합니다."
 ```
 
-- **현재 상태**: 구현되어 있고 정상 동작함(`ReservationService.java:93-94`, 커밋 `3a34d8e`). `ChronoUnit.DAYS.between(today, startDate) > MAX_RESERVATION_DAYS`로 검사. 오늘=2026-08-18 기준 직접 호출로 확인: `startDate=2026-09-17`(+30일) → `201 Created`(`confirmationCode:"3XCXKF"`), `startDate=2026-09-18`(+31일) → `409` `{"message":"예약 시작일은 오늘로부터 30일 이내여야 합니다."}`. 정확히 30일째는 포함(허용)으로 확정됨.
+- **현재 상태**: 구현되어 있고 정상 동작함(`ReservationService.java:93-94`, 커밋 `3a34d8e`). `ChronoUnit.DAYS.between(today, startDate) > MAX_ADVANCE_BOOKING_DAYS`로 검사(사전 예약 허용 기간). `MAX_RESERVATION_DAYS`는 체류 기간(종료일-시작일) 제한에 쓰는 별도 상수임. 오늘=2026-08-18 기준 직접 호출로 확인: `startDate=2026-09-17`(+30일) → `201 Created`(`confirmationCode:"3XCXKF"`), `startDate=2026-09-18`(+31일) → `409` `{"message":"예약 시작일은 오늘로부터 30일 이내여야 합니다."}`. 정확히 30일째는 포함(허용)으로 확정됨.
 
 ### 2. 과거 날짜로 예약할 수 없고, 종료일이 시작일보다 이전일 수 없다
 

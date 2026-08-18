@@ -51,6 +51,7 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+    private static final int MAX_ADVANCE_BOOKING_DAYS = 30;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -90,12 +91,12 @@ public class ReservationService {
                     LocalDate today = LocalDate.now();
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
-                    } else if (java.time.temporal.ChronoUnit.DAYS.between(today, startDate) > MAX_RESERVATION_DAYS) {
+                    } else if (java.time.temporal.ChronoUnit.DAYS.between(today, startDate) > MAX_ADVANCE_BOOKING_DAYS) {
                         throw new RuntimeException("예약 시작일은 오늘로부터 30일 이내여야 합니다.");
                     } else {
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-                        if (days > 30) {
+                        if (days > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
                     }
@@ -138,8 +139,8 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNotIn(
-                    campsite, endDate, startDate, List.of("CANCELLED", "CANCELLED_SAME_DAY"));
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusIn(
+                    campsite, endDate, startDate, List.of("CONFIRMED"));
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
