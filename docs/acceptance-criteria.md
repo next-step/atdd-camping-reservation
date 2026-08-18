@@ -85,5 +85,5 @@ When   같은 사이트·같은 기간으로 재예약    Then  201 Created, 확
 When   같은 사이트·같은 기간에 CONFIRMED 예약이 남아있는 상태에서 겹치는 새 예약    Then  409 "해당 기간에 이미 예약이 존재합니다."
 ```
 
-- **현재 상태**: 구현되어 있고 정상 동작함(`ReservationService.java:141-142`, 커밋 `ed18c2a`). 중복 체크가 `existsBy...StatusNotIn(campsite, endDate, startDate, List.of("CANCELLED","CANCELLED_SAME_DAY"))`로 취소 상태를 제외. 오늘=2026-08-18 기준 직접 호출로 확인: A-13·2026-08-25~26 예약 생성(`201`) → 취소(`200` "예약이 취소되었습니다.") → 같은 사이트·기간 재예약(`201 Created`, `confirmationCode:"7OI1BU"`).
+- **현재 상태**: 구현되어 있고 정상 동작함(`ReservationService.java:142-143`). 중복 체크가 `existsBy...StatusIn(campsite, endDate, startDate, List.of("CONFIRMED"))`로 CONFIRMED만 포함(문서와 코드 표현 일치). 오늘=2026-08-18 기준 직접 호출로 확인: A-13·2026-08-25~26 예약 생성(`201`) → 취소(`200` "예약이 취소되었습니다.") → 같은 사이트·기간 재예약(`201 Created`, `confirmationCode:"7OI1BU"`).
 
