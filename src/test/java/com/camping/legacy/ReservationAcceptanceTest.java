@@ -90,6 +90,65 @@ class ReservationAcceptanceTest {
                 .body("message", equalTo("전화번호를 입력해야 합니다."));
     }
 
+    @Test
+    @DisplayName("취소한 예약의 자리는 다시 예약할 수 있다")
+    void shouldCreateReservationAfterPreviousReservationIsCancelled() {
+        LocalDate startDate = LocalDate.now().plusDays(26);
+
+        io.restassured.response.Response reservation = given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequest(startDate, "B-5"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(201)
+                .extract()
+                .response();
+
+        Number reservationId = reservation.path("id");
+        String confirmationCode = reservation.path("confirmationCode");
+
+        given()
+                .queryParam("confirmationCode", confirmationCode)
+        .when()
+                .delete("/api/reservations/{id}", reservationId.longValue())
+        .then()
+                .statusCode(200);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequest(startDate, "B-5"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue())
+                .body("confirmationCode", matchesPattern("[A-Z0-9]{6}"));
+    }
+
+    @Test
+    @DisplayName("예약이 된 자리에 예약하면 거절된다")
+    void shouldRejectReservationWhenSiteIsAlreadyReserved() {
+        LocalDate startDate = LocalDate.now().plusDays(25);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequest(startDate, "B-6"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(201);
+
+        given()
+                .contentType(ContentType.JSON)
+                .body(reservationRequest(startDate, "B-6"))
+        .when()
+                .post("/api/reservations")
+        .then()
+                .statusCode(409)
+                .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+    }
+
     private Map<String, Object> reservationRequest(LocalDate startDate, String siteNumber) {
         return reservationRequest(startDate, siteNumber, "010-9999-9999");
     }

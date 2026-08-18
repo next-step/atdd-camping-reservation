@@ -138,8 +138,12 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository
+                    .findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                            campsite, endDate, startDate)
+                    .stream()
+                    .anyMatch(reservation -> !"CANCELLED".equals(reservation.getStatus())
+                            && !"CANCELLED_SAME_DAY".equals(reservation.getStatus()));
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
