@@ -149,6 +149,41 @@ class ReservationCreationAcceptanceTest {
                 .body("confirmationCode", matchesPattern("^[A-Z0-9]{6}$"));
     }
 
+    @Test
+    @DisplayName("취소된 예약과 겹치는 기간으로 예약하면 생성되고 확인 코드가 발급된다")
+    void 취소된_예약과_겹치는_기간은_예약된다() {
+        ReservationRequest first = reservationRequest("A-11", 3, 4);
+        var created = RestAssured.given().contentType(ContentType.JSON).body(first)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .extract().response();
+
+        RestAssured.given().queryParam("confirmationCode", created.path("confirmationCode").toString())
+                .when().delete("/api/reservations/" + created.path("id").toString())
+                .then().statusCode(200);
+
+        ReservationRequest second = reservationRequest("A-11", 3, 4);
+        RestAssured.given().contentType(ContentType.JSON).body(second)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .body("confirmationCode", matchesPattern("^[A-Z0-9]{6}$"));
+    }
+
+    @Test
+    @DisplayName("확정된 예약과 겹치는 기간으로 예약하면 거부된다")
+    void 확정된_예약과_겹치는_기간은_거부된다() {
+        ReservationRequest first = reservationRequest("A-12", 3, 4);
+        RestAssured.given().contentType(ContentType.JSON).body(first)
+                .when().post("/api/reservations")
+                .then().statusCode(201);
+
+        ReservationRequest second = reservationRequest("A-12", 3, 4);
+        RestAssured.given().contentType(ContentType.JSON).body(second)
+                .when().post("/api/reservations")
+                .then().statusCode(409)
+                .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+    }
+
     private ReservationRequest reservationRequest(String siteNumber, long startOffsetDays, long endOffsetDays) {
         ReservationRequest request = new ReservationRequest();
         request.setSiteNumber(siteNumber);
