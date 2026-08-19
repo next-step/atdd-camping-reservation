@@ -4,6 +4,7 @@ import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import lombok.extern.slf4j.Slf4j;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,6 +26,8 @@ import static io.restassured.RestAssured.given;
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReservationDateLimitAcceptanceTest {
+
+    private static final String REJECTED_BY_START_DATE_LIMIT = "오늘로부터 30일 이내 날짜만 예약 가능합니다.";
 
     @LocalServerPort
     int port;
@@ -88,7 +91,8 @@ class ReservationDateLimitAcceptanceTest {
                 .when()
                     .post("/api/reservations")
                 .then()
-                    .statusCode(409);
+                    .statusCode(409)
+                    .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
             }
 
             @Test
@@ -110,7 +114,8 @@ class ReservationDateLimitAcceptanceTest {
                 .when()
                     .post("/api/reservations")
                 .then()
-                    .statusCode(409);
+                    .statusCode(409)
+                    .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
             }
         }
 
@@ -156,7 +161,8 @@ class ReservationDateLimitAcceptanceTest {
                 .when()
                     .put("/api/reservations/" + id)
                 .then()
-                    .statusCode(400);
+                    .statusCode(400)
+                    .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
             }
 
             @Test
@@ -196,7 +202,8 @@ class ReservationDateLimitAcceptanceTest {
                 .when()
                     .put("/api/reservations/" + id)
                 .then()
-                    .statusCode(400);
+                    .statusCode(400)
+                    .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
             }
         }
     }
