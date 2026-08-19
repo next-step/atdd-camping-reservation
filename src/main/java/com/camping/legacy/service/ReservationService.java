@@ -51,7 +51,8 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
     
-    private static final int MAX_RESERVATION_DAYS = 30;
+    private static final int MAX_RESERVATION_DAYS = 30; // 체류 기간(시작일~종료일) 상한
+    private static final int MAX_DAYS_FROM_TODAY = 30; // 오늘로부터 시작일까지 허용 거리 — MAX_RESERVATION_DAYS와 별개 규칙
     
     /**
      * 예약 생성 (절차적 방식)
@@ -93,12 +94,12 @@ public class ReservationService {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
                         // 오늘로부터 시작일까지 거리 체크
-                        if (ChronoUnit.DAYS.between(today, startDate) > 30) {
+                        if (ChronoUnit.DAYS.between(today, startDate) > MAX_DAYS_FROM_TODAY) {
                             throw new RuntimeException("오늘로부터 30일 이내 날짜만 예약 가능합니다.");
                         }
-                        // 예약 기간 체크 (30일 이내)
+                        // 체류 기간 체크 — 위 "오늘로부터 30일 이내" 규칙과는 별개(둘 다 상한이 30일일 뿐)
                         long days = ChronoUnit.DAYS.between(startDate, endDate);
-                        if (days > 30) {
+                        if (days > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
                     }
@@ -375,13 +376,13 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
-        // 시작일 단일 필드 체크 (30일 초과 + 과거 날짜)
+        // 시작일 단일 필드 체크 (오늘로부터 30일 이내 + 과거 날짜) — createReservation과 중복 코드
         if (request.getStartDate() != null) {
             LocalDate today = LocalDate.now();
             if (request.getStartDate().isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
-            if (ChronoUnit.DAYS.between(today, request.getStartDate()) > 30) {
+            if (ChronoUnit.DAYS.between(today, request.getStartDate()) > MAX_DAYS_FROM_TODAY) {
                 throw new RuntimeException("오늘로부터 30일 이내 날짜만 예약 가능합니다.");
             }
         }
