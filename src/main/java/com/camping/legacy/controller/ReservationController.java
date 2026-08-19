@@ -3,6 +3,7 @@ package com.camping.legacy.controller;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.exception.InvalidPhoneNumberException;
 import com.camping.legacy.service.CalendarService;
 import com.camping.legacy.service.ReservationService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,10 @@ public class ReservationController {
         try {
             ReservationResponse response = reservationService.createReservation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (InvalidPhoneNumberException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();
             error.put("message", e.getMessage());

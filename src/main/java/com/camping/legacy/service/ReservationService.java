@@ -5,6 +5,7 @@ import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.exception.InvalidPhoneNumberException;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.regex.Pattern;
 
 /**
  * 예약 서비스 (통합 관리 서비스)
@@ -54,6 +56,8 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     private static final int MAX_ADVANCE_RESERVATION_DAYS = 30;
+    private static final Pattern PHONE_NUMBER_PATTERN =
+            Pattern.compile("^010(?:-\\d{4}-\\d{4}|\\d{8})$");
     
     /**
      * 예약 생성 (절차적 방식)
@@ -120,20 +124,11 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
-                }
+            if (phoneNumber == null || phoneNumber.isBlank()) {
+                throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
+            }
+            if (!PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches()) {
+                throw new InvalidPhoneNumberException("유효한 전화번호가 아닙니다.");
             }
 
             // ============================================================
