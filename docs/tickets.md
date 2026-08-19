@@ -4,6 +4,9 @@ T-1 30일 넘게 남은 날짜인데 예약이 됨
 T-2 전화번호 없이 예약이 완료됨
 내용: 고객센터 신고 — "전화번호를 안 넣었는데 예약이 완료됐습니다."
 ---
+T-3 취소한 예약의 자리에 다시 예약되지 않음
+내용: 고객센터 신고 — "예약을 취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나옵니다."
+---
 T-4 예약 수정으로 30일 제한 우회 가능
 내용: `updateReservation`에는 T-1 규칙(및 체류기간 규칙)이 없어 수정으로 우회 가능 — 적용 여부 미정.
 ---
@@ -33,4 +36,13 @@ T-12 확인 코드 중복 시 처리 없음
 ---
 T-13 예약 수정으로 전화번호를 검증 없이 지울 수 있음
 내용: `updateReservation`(416~418행)은 `phoneNumber`가 null이 아니면 형식 검증 없이 그대로 저장 — 빈 문자열("")을 보내면 기존 전화번호를 지울 수 있음. T-4(수정으로 T-1 규칙 우회 가능)와 같은 결의 문제, T-2(전화번호 필수화) 처리 시 함께 볼 것.
+---
+T-14 예약 수정으로 사이트·기간 중복 예약 금지(T-8) 우회 가능
+내용: T-3 조사 중 발견. `updateReservation`(363~436행)은 사이트나 날짜를 바꿀 때 `createReservation`에 있는 중복 예약 검사(`existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual`, 142~146행)를 전혀 하지 않음 — PUT으로 이미 다른 예약이 있는 사이트·기간으로 수정해도 그대로 통과됨. T-4(수정으로 30일 제한 우회 가능)와 같은 결의 문제.
+---
+T-15 이미 취소된 예약을 다시 취소할 수 있음
+내용: T-3 조사 중 발견. `cancelReservation`(307~323행)은 확인 코드 일치 여부만 확인하고 현재 `status`는 보지 않음 — 이미 `CANCELLED`/`CANCELLED_SAME_DAY` 상태인 예약도 다시 취소 요청을 보내면 그대로 통과되어 `status`와 취소 판정 로직(당일 여부)이 다시 실행됨. 방어(예: 이미 취소된 예약이면 거부) 필요 여부 확정 필요.
+---
+T-16 취소된 예약이 있으면 조회에서 계속 예약 불가로 나옴
+내용: T-3 구현 중 발견. `existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual`(status 필터 없음)를 쓰는 곳이 `createReservation` 말고 두 곳 더 있음 — `SiteService.isAvailable`(159행, `GET /api/sites/{siteNumber}/availability`로 실제 노출됨)과 `ReservationService.checkAvailability`(1042~1052행, 컨트롤러에서 안 씀). `createReservation`과 같은 원인으로, 취소된 예약이 있는 사이트·날짜를 계속 "예약 불가(available: false)"로 응답할 것으로 보임 — 특히 `SiteService.isAvailable`은 실사용자에게 노출된 API라 확인 필요.
 ---
