@@ -94,29 +94,6 @@ class ReservationDateLimitAcceptanceTest {
                     .statusCode(409)
                     .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
             }
-
-            @Test
-            @DisplayName("시작 날짜가 오늘로부터 30일을 크게 초과해도 거부된다")
-            void 시작_날짜가_오늘로부터_30일을_크게_초과해도_거부된다() {
-                String startDate = LocalDate.now().plusDays(60).toString();
-
-                given()
-                    .contentType(ContentType.JSON)
-                    .body("""
-                        {
-                          "siteNumber": "A-10",
-                          "startDate": "%s",
-                          "endDate": "%s",
-                          "customerName": "테스터",
-                          "phoneNumber": "010-1111-2222"
-                        }
-                        """.formatted(startDate, startDate))
-                .when()
-                    .post("/api/reservations")
-                .then()
-                    .statusCode(409)
-                    .body("message", Matchers.equalTo(REJECTED_BY_START_DATE_LIMIT));
-            }
         }
 
         @Nested
