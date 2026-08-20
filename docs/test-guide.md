@@ -19,6 +19,11 @@
 - 날짜는 `LocalDate.now()` 기준 상대값으로 잡는다. 고정 날짜를 쓰지 않는다. `data.sql`이 `DATEADD(..., CURRENT_DATE)`로 시드를 넣어 오늘이 바뀌면 고정 날짜가 깨진다.
 - 테스트마다 다른 사이트를 쓴다. `@SpringBootTest` 컨텍스트 하나를 공유해 DB가 테스트 사이에 이어지고, 예약 충돌 검사에 서로 걸린다.
 - 시드 예약이 있는 사이트는 피한다. `data.sql`이 `A-1`·`A-2`·`A-3`·`A-4`·`A-6`에 예약을 넣어 둔다.
+- 사이트 점유 현황 (테스트가 새 사이트를 쓰면 여기 갱신한다):
+  - 시드: A-1~A-4, A-6
+  - ReservationDateRuleAcceptanceTest: A-10~A-14
+  - ReservationPhoneRuleAcceptanceTest: B-11~B-14
+  - ReservationConflictRuleAcceptanceTest: A-15~A-17
 
 ## 초안을 어떻게 판정하는가
 
