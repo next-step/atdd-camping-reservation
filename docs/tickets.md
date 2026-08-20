@@ -1,0 +1,139 @@
+T-1 30일 넘게 남은 날짜인데 예약이 됨  
+내용: 고객센터 신고 — "오늘로부터 30일 넘게 남은 날짜인데 예약이 됩니다."  
+---
+
+T-2 전화번호 없이 예약이 완료됨  
+내용: 고객센터 신고 — "전화번호를 안 넣었는데 예약이 완료됐습니다."  
+요구사항: 전화번호는 필수다. 없으면 예약할 수 없다.  
+번호 주의 — 아래 발견 항목에 같은 번호(구 T-2)가 있었으나 사양 확인으로 종결됐다.
+이제 T-2는 이 신고를 가리킨다. 다음부터 발견 항목은 신고 티켓과 번호 공간을 분리한다.  
+---
+
+T-3 취소한 예약의 자리에 다시 예약되지 않음  
+내용: 고객센터 신고 — "예약을 취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나옵니다."  
+요구사항: 동일 사이트, 동일 기간에 중복 예약은 불가하다. 취소된 예약은 중복 체크에서 제외된다.  
+
+고객 상황 재현 원본 (2026-08-20, 실제 서버 직접 호출):
+
+수정 전 —
+
+```
+$ curl -X POST http://localhost:8080/api/reservations -H 'Content-Type: application/json' \
+    -d '{"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27","customerName":"Tester","phoneNumber":"010-1234-5678"}'
+HTTP 201  {"id":6,...,"status":"CONFIRMED","confirmationCode":"2K0JE5"}
+
+$ curl -X DELETE "http://localhost:8080/api/reservations/6?confirmationCode=2K0JE5"
+HTTP 200  {"message":"예약이 취소되었습니다."}
+
+$ curl http://localhost:8080/api/reservations/6
+HTTP 200  {"id":6,...,"status":"CANCELLED",...}
+
+$ curl -X POST http://localhost:8080/api/reservations -H 'Content-Type: application/json' \
+    -d '{"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27","customerName":"Tester2","phoneNumber":"010-2222-3333"}'
+HTTP 409  {"message":"해당 기간에 이미 예약이 존재합니다."}      ← 신고 증상
+```
+
+수정 후 (서버 재기동, 같은 순서) —
+
+```
+$ POST   B-5 2026-08-26~27            → HTTP 201  {"id":6,...,"confirmationCode":"3BD474"}
+$ DELETE /api/reservations/6?confirmationCode=3BD474 → HTTP 200  {"message":"예약이 취소되었습니다."}
+$ GET    /api/reservations/6          → status: CANCELLED
+$ POST   B-5 2026-08-26~27 (Tester2)  → HTTP 201
+  {"id":7,"customerName":"Tester2","startDate":"2026-08-26","endDate":"2026-08-27",
+   "siteNumber":"B-5","status":"CONFIRMED","confirmationCode":"EEHU3F"}   ← 취소한 자리에 예약됨
+```
+---
+
+아래는 티켓을 처리하며 발견한 것(F-n). 신고 티켓(T-n)과 번호가 두 번 겹쳐서
+2026-08-20에 번호 공간을 분리했다 — 구 T-3~T-9는 숫자를 유지한 채 F-3~F-9가 됐다.
+발견 항목은 등록만 하고, 그 티켓에서 다루지 않는다.
+
+(종결) 구 T-2 숙박 길이 최대 30일 제한의 근거가 없음  
+내용: 요구사항에 없는데 코드가 강제한다. `ReservationService:96`의 `days > 30`.
+31박 요청은 409 `{"message":"예약 기간은 최대 30일입니다."}`, 30박은 201로 실측 확인.
+T-1의 리드타임 상한(AC-1)과 별개 규칙이라 T-1에서는 유지만 하고 손대지 않았다.
+**2026-08-20 종결** — "체류 기간이 31일 이상이면 거절되는 규칙은 사양이 맞습니다"로 확인받았다.
+`acceptance-criteria.md` AC-3의 이유에 반영했다.  
+---
+
+F-3 예약자 이름·전화번호 형식 제한의 근거가 없음  
+내용: 요구사항에 없는데 코드가 강제한다. 이름 2~20자(`ReservationService:110-114`),
+전화번호 하이픈 제거 후 10~11자리 숫자(`:118-132`). 거부 시 전부 409.
+빈 이름·1자 이름·9자리 번호가 실제로 어떤 응답을 주는지는 아직 호출해 보지 않았다.
+무엇이 확인되면 정리되는가 — 가입/예약 폼의 입력 규격이 확인되면 정리된다.  
+---
+
+F-4 예약 생성 실패가 전부 409로 나감  
+내용: 요구사항에 없는데 코드가 강제한다. `ReservationController:36-40`이 모든
+`RuntimeException`을 CONFLICT로 매핑해서, 과거 날짜·숙박 초과 같은 입력 검증 실패도
+409를 준다(C0·C2 실측). 중복 예약만 409이고 검증 실패는 400이어야 하는지 미확정.
+T-1의 AC-1 위반 응답도 이 매핑을 그대로 따르게 잡아 뒀다.
+무엇이 확인되면 정리되는가 — API 오류 응답 규약이 확인되면 정리된다.  
+---
+
+F-5 수정(PUT)에는 날짜 규칙이 없어 우회된다  
+내용: `updateReservation`(`ReservationService:370-388`)이 종료일 역전과 과거 날짜만 보고
+숙박 길이 검사를 하지 않는다. 1박으로 만든 뒤 60박으로 PUT하니 200으로 통과했다.
+생성 경로에만 걸린 제한이라, T-1의 리드타임 상한도 생성만 고치면 같은 구멍이 남는다.
+T-1을 어디에 구현할지 정할 때 이 티켓을 같이 본다.  
+2026-08-20 실측 추가(T-2 처리 중): 전화번호도 같다. 유효한 전화번호로 만든 예약에
+`PUT {"phoneNumber":""}` 를 보내니 200으로 통과해 빈 값으로 덮였다. 생성 경로에
+필수 검사(AC-4)를 넣어도 수정 경로는 뚫려 있다 — 날짜·전화번호 모두 이 티켓에서 함께 본다.  
+---
+
+F-7 시드 데이터의 한글이 깨져서 조회된다  
+내용: `data.sql`은 디스크에서 UTF-8인데(`file` 확인), `GET /api/reservations/1`의
+`customerName`이 "홍길동"과 일치하지 않는다. 같은 응답 스트림에서 자바 문자열 리터럴
+("대형")은 멀쩡하다. `spring.sql.init.encoding`이 없어 SQL 초기화가 플랫폼 기본
+charset(윈도우 한글=MS949)으로 읽는 것으로 보인다.
+T-1 구현 전부터 있던 것이고 이번 변경과 무관하다. 리눅스/CI에서도 재현되는지 미확인.
+무엇이 확인되면 정리되는가 — 다른 OS에서 같은 증상이 나는지 확인되면 정리된다.  
+---
+
+(처리됨) F-6 생성·수정 응답의 createdAt이 항상 null  
+내용: `ReservationResponse.from()`은 `createdAt`을 채우는데, `createReservation`·
+`updateReservation`·`searchReservations`·`getReservationsByNameAndPhone`은 손으로 필드를
+옮기며 빠뜨린다. 같은 리소스인데 조회 경로에 따라 `createdAt`이 있기도 없기도 하다.
+POST 응답 7건 전부 `"createdAt":null`로 실측 확인.  
+**2026-08-20 처리됨** — 정책 확인이 필요 없는 내부 불일치라 발견 티켓 중 이것만 처리했다.
+네 곳의 손 매핑을 `from()`으로 교체(AC-7). 나머지 발견 티켓(F-3·F-4·F-5·F-8·F-9·F-10)은
+정책 확인, F-7은 다른 OS 재현 확인이 필요해 처리하지 않고 남긴다.  
+---
+
+F-8 조회 경로가 예약할 수 없는 날짜를 "예약 가능"으로 안내한다  
+내용: AC-1(리드타임 30일)이 생성 경로에만 걸려 있어서, 검색·가용성 조회는 창 밖 날짜를
+그대로 가능하다고 답한다. 2026-08-14 기준 실측:
+- `GET /api/sites/search?startDate=2026-09-14&endDate=2026-09-14` → 35건 (전 사이트)
+- `GET /api/sites/available?date=2026-09-14` → 35건
+- `GET /api/sites/A-7/availability?date=2026-09-14` → `{"available":true}`
+- `GET /api/sites/search?startDate=2027-08-14...` → 35건 (1년 뒤도 동일)
+- 같은 날짜로 `POST /api/reservations` → 409 `오늘로부터 30일 이내만 예약할 수 있습니다.`
+안내와 실제가 어긋난다. 사용자는 9/14를 예약 가능으로 보고 들어갔다가 거부당한다.
+F-5(수정 경로에 규칙 없음)와 같은 뿌리다 — 규칙이 `createReservation` 한 곳에만 있다.
+무엇이 확인되면 정리되는가 — 조회에도 같은 창을 적용할지, 조회는 열어두고 생성만 막을지
+정해지면 정리된다. Q-1과 함께 본다.  
+---
+
+F-10 취소된 예약이 조회에서 여전히 자리를 차지한다  
+내용: 가용성 조회(`ReservationService.checkAvailability:1050`)도 중복 체크처럼 status를
+보지 않아, 취소된 예약이 있는 날짜를 예약 불가로 안내한다. 2026-08-20 실측:
+B-5 예약(id 6)을 취소해 status가 CANCELLED가 된 뒤에도
+`GET /api/sites/B-5/availability?date=2026-08-26` → `{"available":false}`.
+T-3이 생성 경로의 중복 체크만 고치면, 이 날짜는 "불가로 안내되지만 실제로는 예약되는"
+상태가 된다 — F-8과 반대 방향의 안내/실제 불일치. 캘린더(`getMonthlyCalendar`)와
+`findByCampsite...` 계열 조회도 같은 뿌리다.
+무엇이 확인되면 정리되는가 — 조회가 취소를 빈자리로 보여줄지(그래야 할 개연성이 높다)
+확인되면 정리된다. F-8과 함께 본다.  
+---
+
+F-9 UI 날짜 선택기 상한과 서버 규칙이 다르다  
+내용: `templates/reservation/form.html:97-98`이 상한을 "오늘 + 1개월"로 잡는다.
+`maxDate.setMonth(getMonth() + 1)` → 2026-08-14 기준 2026-09-14. 서버는 "오늘 + 30일"
+이라 2026-09-13까지다. 하루가 어긋나 달력에서 9/14를 고를 수 있고, 제출하면
+`form.html:170`이 `예약 실패: 오늘로부터 30일 이내만 예약할 수 있습니다.` 를 띄운다.
+개월 단위와 일 단위가 섞여 있어 달의 길이에 따라 어긋나는 폭이 달라진다(2월이면 반대로 짧아짐).
+같은 파일의 `formatDate`가 `toISOString()`(UTC)을 쓰는 것도 함께 볼 것 — KST 오전 9시
+이전에는 하루 전 날짜가 나온다. 미확인.
+무엇이 확인되면 정리되는가 — 예약 가능 기간의 단위가 "30일"인지 "1개월"인지 정해지면 정리된다.  
+---

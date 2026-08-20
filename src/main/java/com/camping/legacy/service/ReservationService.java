@@ -51,6 +51,9 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+
+    // 취소는 행 삭제가 아니라 상태 변경이다(cancelReservation). 중복 체크는 이 상태들을 제외한다 - AC-6
+    private static final List<String> CANCELLED_STATUSES = List.of("CANCELLED", "CANCELLED_SAME_DAY");
     
     /**
      * 예약 생성 (절차적 방식)
@@ -96,6 +99,13 @@ public class ReservationService {
                         if (days > 30) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
+
+                        // 예약 가능 기간 체크 (오늘로부터 30일 이내) - AC-1
+                        // 위 days는 숙박 길이(시작일~종료일)이고, 아래 leadDays는 리드타임(오늘~시작일)이다.
+                        long leadDays = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+                        if (leadDays > 30) {
+                            throw new RuntimeException("오늘로부터 30일 이내만 예약할 수 있습니다.");
+                        }
                     }
                 }
             }
@@ -114,8 +124,10 @@ public class ReservationService {
                 }
             }
 
-            // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            // 전화번호 검증 - 필수(AC-4). 예전엔 없으면 형식 검사를 건너뛰고 저장까지 됐다.
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
+            } else {
                 String cleaned = phoneNumber.replaceAll("-", "");
                 if (cleaned.length() < 10) {
                     throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
@@ -134,8 +146,8 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNotIn(
+                    campsite, endDate, startDate, CANCELLED_STATUSES);
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
@@ -257,19 +269,10 @@ public class ReservationService {
             log.info("===========================================");
 
             // ============================================================
-            // STEP 11: 응답 객체 생성 (직접 변환)
+            // STEP 11: 응답 객체 생성
             // ============================================================
-            ReservationResponse response = new ReservationResponse();
-            response.setId(saved.getId());
-            response.setCustomerName(saved.getCustomerName());
-            response.setStartDate(saved.getStartDate());
-            response.setEndDate(saved.getEndDate());
-            response.setPhoneNumber(saved.getPhoneNumber());
-            response.setSiteNumber(saved.getCampsite().getSiteNumber());
-            response.setConfirmationCode(saved.getConfirmationCode());
-            response.setStatus(saved.getStatus());
-
-            return response;
+            // 손 매핑이 createdAt을 빠뜨리던 자리 - AC-7. 조회 경로들과 같은 from()을 쓴다.
+            return ReservationResponse.from(saved);
         }
     }
     
@@ -337,24 +340,11 @@ public class ReservationService {
                            (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
                 .collect(Collectors.toList());
 
-        // DTO 변환 로직 중복 - ReservationResponse.from() 대신 직접 변환
-        List<ReservationResponse> responses = new ArrayList<>();
-        for (Reservation r : reservations) {
-            ReservationResponse response = new ReservationResponse();
-            response.setId(r.getId());
-            response.setCustomerName(r.getCustomerName());
-            response.setStartDate(r.getStartDate());
-            response.setEndDate(r.getEndDate());
-            response.setPhoneNumber(r.getPhoneNumber());
-            response.setSiteNumber(r.getCampsite().getSiteNumber());
-            response.setConfirmationCode(r.getConfirmationCode());
-            response.setStatus(r.getStatus());
-            responses.add(response);
-        }
-
-        return responses;
+        return reservations.stream()
+                .map(ReservationResponse::from)
+                .collect(Collectors.toList());
     }
-    
+
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
@@ -416,18 +406,7 @@ public class ReservationService {
 
         Reservation updated = reservationRepository.save(reservation);
 
-        // DTO 변환 로직 중복 - 직접 변환
-        ReservationResponse response = new ReservationResponse();
-        response.setId(updated.getId());
-        response.setCustomerName(updated.getCustomerName());
-        response.setStartDate(updated.getStartDate());
-        response.setEndDate(updated.getEndDate());
-        response.setPhoneNumber(updated.getPhoneNumber());
-        response.setSiteNumber(updated.getCampsite().getSiteNumber());
-        response.setConfirmationCode(updated.getConfirmationCode());
-        response.setStatus(updated.getStatus());
-
-        return response;
+        return ReservationResponse.from(updated);
     }
     
     @Transactional(readOnly = true)
@@ -448,22 +427,9 @@ public class ReservationService {
 
         List<Reservation> reservations = reservationRepository.findByCustomerNameAndPhoneNumber(name, phone);
 
-        // DTO 변환 로직 중복
-        List<ReservationResponse> responses = new ArrayList<>();
-        for (Reservation r : reservations) {
-            ReservationResponse response = new ReservationResponse();
-            response.setId(r.getId());
-            response.setCustomerName(r.getCustomerName());
-            response.setStartDate(r.getStartDate());
-            response.setEndDate(r.getEndDate());
-            response.setPhoneNumber(r.getPhoneNumber());
-            response.setSiteNumber(r.getCampsite().getSiteNumber());
-            response.setConfirmationCode(r.getConfirmationCode());
-            response.setStatus(r.getStatus());
-            responses.add(response);
-        }
-
-        return responses;
+        return reservations.stream()
+                .map(ReservationResponse::from)
+                .collect(Collectors.toList());
     }
     
     /**
