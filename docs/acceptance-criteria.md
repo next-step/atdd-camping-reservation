@@ -317,3 +317,12 @@ GET  /api/reservations/my?name=CreatedAt2&phone=010-7777-8888
 `getReservationsByNameAndPhone` 네 곳만 `from()` 대신 손 매핑을 쓰며 `createdAt`을
 빠뜨린다. 손 매핑과 `from()`의 나머지 여덟 필드는 동일하므로, 고치는 방향은 네 곳이
 `from()`을 쓰게 하는 것이다 — 필드를 하나 더 베끼는 것은 다음 필드에서 또 어긋난다.
+
+**구현 후 재실측 (2026-08-20, 서버 재기동).** 같은 리소스(id 6)의 네 경로가 같은 값을 준다.
+
+```
+POST → "createdAt":"2026-08-20T14:28:59.9123999"   (나노초 표기만 GET과 다름 — 같은 시각)
+GET  → "createdAt":"2026-08-20T14:28:59.9124"
+PUT  → "createdAt":"2026-08-20T14:28:59.9124"
+/my  → "createdAt":"2026-08-20T14:28:59.9124"
+```

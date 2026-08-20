@@ -269,19 +269,10 @@ public class ReservationService {
             log.info("===========================================");
 
             // ============================================================
-            // STEP 11: 응답 객체 생성 (직접 변환)
+            // STEP 11: 응답 객체 생성
             // ============================================================
-            ReservationResponse response = new ReservationResponse();
-            response.setId(saved.getId());
-            response.setCustomerName(saved.getCustomerName());
-            response.setStartDate(saved.getStartDate());
-            response.setEndDate(saved.getEndDate());
-            response.setPhoneNumber(saved.getPhoneNumber());
-            response.setSiteNumber(saved.getCampsite().getSiteNumber());
-            response.setConfirmationCode(saved.getConfirmationCode());
-            response.setStatus(saved.getStatus());
-
-            return response;
+            // 손 매핑이 createdAt을 빠뜨리던 자리 - AC-7. 조회 경로들과 같은 from()을 쓴다.
+            return ReservationResponse.from(saved);
         }
     }
     
@@ -349,24 +340,11 @@ public class ReservationService {
                            (r.getPhoneNumber() != null && r.getPhoneNumber().contains(keyword)))
                 .collect(Collectors.toList());
 
-        // DTO 변환 로직 중복 - ReservationResponse.from() 대신 직접 변환
-        List<ReservationResponse> responses = new ArrayList<>();
-        for (Reservation r : reservations) {
-            ReservationResponse response = new ReservationResponse();
-            response.setId(r.getId());
-            response.setCustomerName(r.getCustomerName());
-            response.setStartDate(r.getStartDate());
-            response.setEndDate(r.getEndDate());
-            response.setPhoneNumber(r.getPhoneNumber());
-            response.setSiteNumber(r.getCampsite().getSiteNumber());
-            response.setConfirmationCode(r.getConfirmationCode());
-            response.setStatus(r.getStatus());
-            responses.add(response);
-        }
-
-        return responses;
+        return reservations.stream()
+                .map(ReservationResponse::from)
+                .collect(Collectors.toList());
     }
-    
+
     public ReservationResponse updateReservation(Long id, ReservationRequest request, String confirmationCode) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("예약을 찾을 수 없습니다."));
@@ -428,18 +406,7 @@ public class ReservationService {
 
         Reservation updated = reservationRepository.save(reservation);
 
-        // DTO 변환 로직 중복 - 직접 변환
-        ReservationResponse response = new ReservationResponse();
-        response.setId(updated.getId());
-        response.setCustomerName(updated.getCustomerName());
-        response.setStartDate(updated.getStartDate());
-        response.setEndDate(updated.getEndDate());
-        response.setPhoneNumber(updated.getPhoneNumber());
-        response.setSiteNumber(updated.getCampsite().getSiteNumber());
-        response.setConfirmationCode(updated.getConfirmationCode());
-        response.setStatus(updated.getStatus());
-
-        return response;
+        return ReservationResponse.from(updated);
     }
     
     @Transactional(readOnly = true)
@@ -460,22 +427,9 @@ public class ReservationService {
 
         List<Reservation> reservations = reservationRepository.findByCustomerNameAndPhoneNumber(name, phone);
 
-        // DTO 변환 로직 중복
-        List<ReservationResponse> responses = new ArrayList<>();
-        for (Reservation r : reservations) {
-            ReservationResponse response = new ReservationResponse();
-            response.setId(r.getId());
-            response.setCustomerName(r.getCustomerName());
-            response.setStartDate(r.getStartDate());
-            response.setEndDate(r.getEndDate());
-            response.setPhoneNumber(r.getPhoneNumber());
-            response.setSiteNumber(r.getCampsite().getSiteNumber());
-            response.setConfirmationCode(r.getConfirmationCode());
-            response.setStatus(r.getStatus());
-            responses.add(response);
-        }
-
-        return responses;
+        return reservations.stream()
+                .map(ReservationResponse::from)
+                .collect(Collectors.toList());
     }
     
     /**

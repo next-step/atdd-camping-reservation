@@ -91,11 +91,14 @@ T-1 구현 전부터 있던 것이고 이번 변경과 무관하다. 리눅스/C
 무엇이 확인되면 정리되는가 — 다른 OS에서 같은 증상이 나는지 확인되면 정리된다.  
 ---
 
-F-6 생성·수정 응답의 createdAt이 항상 null  
+(처리됨) F-6 생성·수정 응답의 createdAt이 항상 null  
 내용: `ReservationResponse.from()`은 `createdAt`을 채우는데, `createReservation`·
 `updateReservation`·`searchReservations`·`getReservationsByNameAndPhone`은 손으로 필드를
 옮기며 빠뜨린다. 같은 리소스인데 조회 경로에 따라 `createdAt`이 있기도 없기도 하다.
 POST 응답 7건 전부 `"createdAt":null`로 실측 확인.  
+**2026-08-20 처리됨** — 정책 확인이 필요 없는 내부 불일치라 발견 티켓 중 이것만 처리했다.
+네 곳의 손 매핑을 `from()`으로 교체(AC-7). 나머지 발견 티켓(F-3·F-4·F-5·F-8·F-9·F-10)은
+정책 확인, F-7은 다른 OS 재현 확인이 필요해 처리하지 않고 남긴다.  
 ---
 
 F-8 조회 경로가 예약할 수 없는 날짜를 "예약 가능"으로 안내한다  
