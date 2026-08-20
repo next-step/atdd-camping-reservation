@@ -51,6 +51,9 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+
+    // 취소는 행 삭제가 아니라 상태 변경이다(cancelReservation). 중복 체크는 이 상태들을 제외한다 - AC-6
+    private static final List<String> CANCELLED_STATUSES = List.of("CANCELLED", "CANCELLED_SAME_DAY");
     
     /**
      * 예약 생성 (절차적 방식)
@@ -143,8 +146,8 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNotIn(
+                    campsite, endDate, startDate, CANCELLED_STATUSES);
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }

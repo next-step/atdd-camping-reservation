@@ -12,6 +12,37 @@ T-2 전화번호 없이 예약이 완료됨
 T-3 취소한 예약의 자리에 다시 예약되지 않음  
 내용: 고객센터 신고 — "예약을 취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나옵니다."  
 요구사항: 동일 사이트, 동일 기간에 중복 예약은 불가하다. 취소된 예약은 중복 체크에서 제외된다.  
+
+고객 상황 재현 원본 (2026-08-20, 실제 서버 직접 호출):
+
+수정 전 —
+
+```
+$ curl -X POST http://localhost:8080/api/reservations -H 'Content-Type: application/json' \
+    -d '{"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27","customerName":"Tester","phoneNumber":"010-1234-5678"}'
+HTTP 201  {"id":6,...,"status":"CONFIRMED","confirmationCode":"2K0JE5"}
+
+$ curl -X DELETE "http://localhost:8080/api/reservations/6?confirmationCode=2K0JE5"
+HTTP 200  {"message":"예약이 취소되었습니다."}
+
+$ curl http://localhost:8080/api/reservations/6
+HTTP 200  {"id":6,...,"status":"CANCELLED",...}
+
+$ curl -X POST http://localhost:8080/api/reservations -H 'Content-Type: application/json' \
+    -d '{"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27","customerName":"Tester2","phoneNumber":"010-2222-3333"}'
+HTTP 409  {"message":"해당 기간에 이미 예약이 존재합니다."}      ← 신고 증상
+```
+
+수정 후 (서버 재기동, 같은 순서) —
+
+```
+$ POST   B-5 2026-08-26~27            → HTTP 201  {"id":6,...,"confirmationCode":"3BD474"}
+$ DELETE /api/reservations/6?confirmationCode=3BD474 → HTTP 200  {"message":"예약이 취소되었습니다."}
+$ GET    /api/reservations/6          → status: CANCELLED
+$ POST   B-5 2026-08-26~27 (Tester2)  → HTTP 201
+  {"id":7,"customerName":"Tester2","startDate":"2026-08-26","endDate":"2026-08-27",
+   "siteNumber":"B-5","status":"CONFIRMED","confirmationCode":"EEHU3F"}   ← 취소한 자리에 예약됨
+```
 ---
 
 아래는 티켓을 처리하며 발견한 것(F-n). 신고 티켓(T-n)과 번호가 두 번 겹쳐서
