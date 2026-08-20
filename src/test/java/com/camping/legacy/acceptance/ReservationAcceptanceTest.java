@@ -164,15 +164,6 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .statusCode(409)
                 .body("message", equalTo("전화번호는 숫자만 입력 가능합니다."));
         }
-
-        @Test
-        @DisplayName("01x 로 시작하지 않아도 예약된다")
-        void acceptsNonMobilePrefix() {
-            createWithPhoneNumber("형식앞자리", "A-13", today.plusDays(5), "020-1234-5678")
-                .then()
-                .statusCode(201)
-                .body("confirmationCode", notNullValue());
-        }
     }
 
     @Nested
@@ -393,6 +384,127 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                     .body("confirmationCode", notNullValue());
 
             assertConfirmedCount(baseEnd.plusDays(1), "A-16", 1);
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 전화번호 앞자리")
+    class CreatePhoneNumberPrefix {
+
+        @Test
+        @DisplayName("앞자리가 010이면 예약된다")
+        void acceptsMobilePrefix() {
+            createWithPhoneNumber("앞자리010", "A-17", today.plusDays(5), "010-1234-5678")
+                .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue());
+        }
+
+        @Test
+        @DisplayName("앞자리가 011이면 거절되고 예약이 생성되지 않는다")
+        void rejectsOldMobilePrefix011() {
+            createWithPhoneNumber("앞자리011", "A-19", today.plusDays(5), "011-1234-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("앞자리011");
+        }
+
+        @Test
+        @DisplayName("앞자리가 016이면 거절되고 예약이 생성되지 않는다")
+        void rejectsOldMobilePrefix016() {
+            createWithPhoneNumber("앞자리016", "A-20", today.plusDays(5), "016-1234-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("앞자리016");
+        }
+
+        @Test
+        @DisplayName("앞자리가 019이면 거절되고 예약이 생성되지 않는다")
+        void rejectsOldMobilePrefix019() {
+            createWithPhoneNumber("앞자리019", "A-5", today.plusDays(5), "019-1234-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("앞자리019");
+        }
+
+        @Test
+        @DisplayName("앞자리가 01로 시작하지 않으면 거절되고 예약이 생성되지 않는다")
+        void rejectsNonMobilePrefix() {
+            createWithPhoneNumber("앞자리020", "A-13", today.plusDays(5), "020-1234-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("앞자리020");
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 전화번호 자릿수")
+    class CreatePhoneNumberLength {
+
+        @Test
+        @DisplayName("하이픈이 없어도 11자리면 예약된다")
+        void acceptsElevenDigitsWithoutHyphen() {
+            createWithPhoneNumber("자릿수하이픈없음", "A-18", today.plusDays(5), "01012345678")
+                .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue());
+        }
+
+        @Test
+        @DisplayName("앞자리가 010인데 10자리면 형식 오류로 거절되고 예약이 생성되지 않는다")
+        void rejectsTenDigits() {
+            createWithPhoneNumber("자릿수10", "A-7", today.plusDays(5), "010-123-4567")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+
+            assertNotReserved("자릿수10");
+        }
+
+        @Test
+        @DisplayName("앞자리가 010인데 12자리면 형식 오류로 거절되고 예약이 생성되지 않는다")
+        void rejectsTwelveDigits() {
+            createWithPhoneNumber("자릿수12", "A-11", today.plusDays(5), "010-12345-6789")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+
+            assertNotReserved("자릿수12");
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 앞자리와 자릿수를 함께 어길 때")
+    class CreatePhoneNumberPrefixBeforeLength {
+
+        @Test
+        @DisplayName("10자리 유선 서울 번호는 앞자리 사유로 거절되고 예약이 생성되지 않는다")
+        void rejectsSeoulLandline() {
+            createWithPhoneNumber("유선서울", "A-8", today.plusDays(5), "02-1234-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("유선서울");
+        }
+
+        @Test
+        @DisplayName("10자리 유선 지역 번호는 앞자리 사유로 거절되고 예약이 생성되지 않는다")
+        void rejectsLocalLandline() {
+            createWithPhoneNumber("유선지역", "A-9", today.plusDays(5), "031-123-4567")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
+
+            assertNotReserved("유선지역");
         }
     }
 }
