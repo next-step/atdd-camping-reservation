@@ -8,14 +8,15 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
+import static com.camping.legacy.acceptance.ReservationSteps.assertConfirmedCount;
+import static com.camping.legacy.acceptance.ReservationSteps.assertNotReserved;
 import static com.camping.legacy.acceptance.ReservationSteps.create;
+import static com.camping.legacy.acceptance.ReservationSteps.createCancelled;
 import static com.camping.legacy.acceptance.ReservationSteps.createWithPhoneNumber;
 import static com.camping.legacy.acceptance.ReservationSteps.createWithoutPhoneNumber;
-import static com.camping.legacy.acceptance.ReservationSteps.findByCustomerName;
 import static com.camping.legacy.acceptance.ReservationSteps.findById;
 import static com.camping.legacy.acceptance.ReservationSteps.updateStartDate;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
 class ReservationAcceptanceTest extends AcceptanceTest {
@@ -57,10 +58,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                     .statusCode(409)
                     .body("message", equalTo("예약은 오늘로부터 30일 이내만 가능합니다."));
 
-            findByCustomerName("상한31")
-                    .then()
-                    .statusCode(200)
-                    .body("$", hasSize(0));
+            assertNotReserved("상한31");
         }
     }
 
@@ -99,10 +97,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .statusCode(409)
                 .body("message", equalTo("전화번호를 입력해주세요."));
 
-            findByCustomerName("전화번호생략")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+            assertNotReserved("전화번호생략");
         }
 
         @Test
@@ -113,10 +108,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .statusCode(409)
                 .body("message", equalTo("전화번호를 입력해주세요."));
 
-            findByCustomerName("전화번호null")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+            assertNotReserved("전화번호null");
         }
 
         @Test
@@ -127,10 +119,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .statusCode(409)
                 .body("message", equalTo("전화번호를 입력해주세요."));
 
-            findByCustomerName("전화번호빈값")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+            assertNotReserved("전화번호빈값");
         }
 
         @Test
@@ -141,10 +130,7 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .statusCode(409)
                 .body("message", equalTo("전화번호를 입력해주세요."));
 
-            findByCustomerName("전화번호공백")
-                .then()
-                .statusCode(200)
-                .body("$", hasSize(0));
+            assertNotReserved("전화번호공백");
         }
 
         @Test
@@ -229,6 +215,169 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                     .then()
                     .statusCode(200)
                     .body("startDate", equalTo(today.plusDays(5).toString()));
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 취소된 예약의 자리")
+    class CreateOverCancelledReservation {
+
+        @Test
+        @DisplayName("종료일이 취소된 예약의 시작일 하루 전이면 예약된다")
+        void acceptsRangeEndingBeforeCancelled() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            createCancelled("B-4", baseStart, baseEnd);
+
+            create("취소전날", "B-4", baseStart.minusDays(2), baseStart.minusDays(1))
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseStart.minusDays(1), "B-4", 1);
+        }
+
+        @Test
+        @DisplayName("종료일이 취소된 예약의 시작일과 같은 날이면 예약된다")
+        void acceptsRangeTouchingCancelledStart() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            createCancelled("B-5", baseStart, baseEnd);
+
+            create("취소앞경계", "B-5", baseStart.minusDays(2), baseStart)
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseStart, "B-5", 1);
+        }
+
+        @Test
+        @DisplayName("취소된 예약과 기간이 완전히 같아도 예약된다")
+        void acceptsSameRangeAsCancelled() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            createCancelled("B-8", baseStart, baseEnd);
+
+            create("취소동일", "B-8", baseStart, baseEnd)
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseStart, "B-8", 1);
+        }
+
+        @Test
+        @DisplayName("시작일이 취소된 예약의 종료일과 같은 날이면 예약된다")
+        void acceptsRangeTouchingCancelledEnd() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            createCancelled("B-9", baseStart, baseEnd);
+
+            create("취소뒤경계", "B-9", baseEnd, baseEnd.plusDays(1))
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseEnd, "B-9", 1);
+        }
+
+        @Test
+        @DisplayName("시작일이 취소된 예약의 종료일 다음날이면 예약된다")
+        void acceptsRangeStartingAfterCancelled() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            createCancelled("B-10", baseStart, baseEnd);
+
+            create("취소다음날", "B-10", baseEnd.plusDays(1), baseEnd.plusDays(2))
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseEnd.plusDays(1), "B-10", 1);
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 취소하지 않은 예약의 자리")
+    class CreateOverConfirmedReservation {
+
+        @Test
+        @DisplayName("종료일이 확정 예약의 시작일 하루 전이면 예약된다")
+        void acceptsRangeEndingBeforeConfirmed() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            create("B-14", baseStart, baseEnd);
+
+            create("확정전날", "B-14", baseStart.minusDays(2), baseStart.minusDays(1))
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseStart.minusDays(1), "B-14", 1);
+        }
+
+        @Test
+        @DisplayName("종료일이 확정 예약의 시작일과 같은 날이면 거절되고 그 자리는 그대로 하나다")
+        void rejectsRangeTouchingConfirmedStart() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            create("B-15", baseStart, baseEnd);
+
+            create("확정앞경계", "B-15", baseStart.minusDays(2), baseStart)
+                    .then()
+                    .statusCode(409)
+                    .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+
+            assertConfirmedCount(baseStart, "B-15", 1);
+            assertNotReserved("확정앞경계");
+        }
+
+        @Test
+        @DisplayName("확정 예약과 기간이 완전히 같으면 거절되고 그 자리는 그대로 하나다")
+        void rejectsSameRangeAsConfirmed() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            create("A-14", baseStart, baseEnd);
+
+            create("확정동일", "A-14", baseStart, baseEnd)
+                    .then()
+                    .statusCode(409)
+                    .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+
+            assertConfirmedCount(baseStart, "A-14", 1);
+            assertNotReserved("확정동일");
+        }
+
+        @Test
+        @DisplayName("시작일이 확정 예약의 종료일과 같은 날이면 거절되고 그 자리는 그대로 하나다")
+        void rejectsRangeTouchingConfirmedEnd() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            create("A-15", baseStart, baseEnd);
+
+            create("확정뒤경계", "A-15", baseEnd, baseEnd.plusDays(1))
+                    .then()
+                    .statusCode(409)
+                    .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+
+            assertConfirmedCount(baseEnd, "A-15", 1);
+            assertNotReserved("확정뒤경계");
+        }
+
+        @Test
+        @DisplayName("시작일이 확정 예약의 종료일 다음날이면 예약된다")
+        void acceptsRangeStartingAfterConfirmed() {
+            LocalDate baseStart = today.plusDays(5);
+            LocalDate baseEnd = today.plusDays(7);
+            create("A-16", baseStart, baseEnd);
+
+            create("확정다음날", "A-16", baseEnd.plusDays(1), baseEnd.plusDays(2))
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseEnd.plusDays(1), "A-16", 1);
         }
     }
 }
