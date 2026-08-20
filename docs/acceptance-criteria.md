@@ -108,3 +108,103 @@ curl -X PUT 'http://localhost:8080/api/reservations/18?confirmationCode=ZPN6ST' 
 200
 {"id":18,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"ZPN6ST","createdAt":null}
 ```
+
+---
+
+## T-2 전화번호는 예약에 반드시 있어야 한다
+
+### 1. 생성 — 전화번호 필수
+
+```
+규칙   전화번호가 없으면 예약을 만들지 않는다.
+       필드 생략, null, 빈 문자열, 공백만 문자열을 모두 "없음"으로 본다
+이유   고객센터 신고 "전화번호를 안 넣었는데 예약이 완료됐습니다"
+       내 예약 조회는 이름과 전화번호로 찾는다. 전화번호 없는 예약은 그 경로로 영영 찾을 수 없다
+
+Given  오늘이 D일, 시드가 쓰지 않는 사이트
+When   phoneNumber 필드 생략  Then  409 "전화번호를 입력해주세요." 예약은 생성되지 않는다
+                        지금  201 Created — 신고된 증상
+When   phoneNumber 이 null   Then  409 "전화번호를 입력해주세요." 예약은 생성되지 않는다
+                        지금  201 Created — 신고된 증상
+When   phoneNumber 이 ""     Then  409 "전화번호를 입력해주세요." 예약은 생성되지 않는다
+                        지금  201 Created — 신고된 증상
+When   phoneNumber 이 "   "  Then  409 "전화번호를 입력해주세요." 예약은 생성되지 않는다
+                        지금  201 Created — 신고된 증상
+When   phoneNumber 이 "010-1111-2222"  Then  201 Created, 확인 코드 발급             (회귀)
+```
+
+예시 (실측 2026-08-20, 8081 포트)
+```
+# 필드 생략 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"CK0RJ8","createdAt":null}
+
+# 빈 문자열 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","numberOfPeople":2}'
+
+201
+{"id":7,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","status":"CONFIRMED","confirmationCode":"53MU0F","createdAt":null}
+
+# 공백만 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","numberOfPeople":2}'
+
+201
+{"id":8,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","status":"CONFIRMED","confirmationCode":"BCVP0W","createdAt":null}
+
+# null 명시 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"numberOfPeople":2}'
+
+201
+{"id":9,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"I12I96","createdAt":null}
+
+# 정상 전화번호
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":10,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"MS60PL","createdAt":null}
+```
+
+### 2. 생성 — 값이 있을 때의 형식 검증
+
+```
+규칙   전화번호가 있을 때의 형식 판정은 이번 티켓에서 바꾸지 않는다
+이유   신고는 "없는데 통과한다"만 문제 삼았다. 없음을 막아도 있는 값의 판정은 달라지지 않아야 한다
+
+Given  오늘이 D일, 시드가 쓰지 않는 사이트
+When   "010-111-222"     Then  409 "전화번호 형식이 올바르지 않습니다."               (회귀)
+When   "010-abcd-5678"   Then  409 "전화번호는 숫자만 입력 가능합니다."                (회귀)
+When   "020-1234-5678"   Then  201 Created — 01x 가 아니어도 통과한다                (회귀)
+
+질문   통신사 앞자리를 제한하는가 — T-9. 정해지기 전까지 지금 동작인 "허용"을 유지한다
+```
+
+예시 (실측 2026-08-20, 8081 포트)
+```
+# 자릿수 부족
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-6","phoneNumber":"010-111-222","numberOfPeople":2}'
+
+409
+{"message":"전화번호 형식이 올바르지 않습니다."}
+
+# 숫자가 아닌 문자
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-7","phoneNumber":"010-abcd-5678","numberOfPeople":2}'
+
+409
+{"message":"전화번호는 숫자만 입력 가능합니다."}
+
+# 01x 가 아닌 번호 — 통과한다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","numberOfPeople":2}'
+
+201
+{"id":11,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","status":"CONFIRMED","confirmationCode":"B344EL","createdAt":null}
+```
