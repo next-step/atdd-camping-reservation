@@ -98,6 +98,7 @@ curl -X PUT 'http://localhost:8080/api/reservations/18?confirmationCode=ZPN6ST' 
 - 전화번호가 있을 때의 형식 판정은 바꾸지 않는다. 지금 거절하는 것은 계속 거절하고,
   지금 받는 것은 계속 받는다.
 - 통신사 앞자리를 제한할지는 정해지지 않았다(T-9). 정해지기 전까지 지금 동작인 "허용"을 유지한다.
+  → T-9 에서 "010 만 허용"으로 정해졌다.
 - 이 티켓은 생성만 다룬다. 변경으로 전화번호를 비울 수 있는 것은 따로 본다(T-8).
 
 API 스펙
@@ -395,20 +396,160 @@ curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: applicat
 
 ---
 
-## T-9 통신사 앞자리 규칙이 정해지지 않았다
+## T-9 010이 아닌 번호로도 예약이 된다
 
-발견 경위: T-2의 전화번호 형식 경계를 실측하다 나왔다.
+경위: T-2 의 전화번호 형식 경계를 실측하다 나왔다. 확인 연락 수단을 휴대전화로 정하면서 요구사항이 확정됐다.
 
-무엇이 있는가
-- 01로 시작하지 않는 번호도 예약이 된다. 실측: `020-1234-5678` → `201`
-- 자릿수(10~11자리)와 숫자 여부만 본다. 실측: `010-111-222` → `409` "전화번호 형식이 올바르지 않습니다."
-- 요구사항으로 앞자리 제한을 받은 적이 없다. T-2는 이것을 바꾸지 않는다.
+지금 어떤가
+- 앞자리를 전혀 보지 않는다. 011·016·019 같은 옛 휴대전화 번호가 그대로 예약된다.
+  실측: `011-1234-5678` → `201` / `016-1234-5678` → `201` / `019-1234-5678` → `201`
+- 휴대전화가 아닌 번호도 예약된다.
+  실측: `020-1234-5678` → `201` / `02-1234-5678` → `201` / `031-123-4567` → `201`
+- 하이픈을 뺀 자릿수가 10~11이면 통과한다. 그래서 존재하지 않는 10자리 010 번호가 들어온다.
+  실측: `010-123-4567` → `201` / `010-111-222`(9자리) → `409` / `010-12345-6789`(12자리) → `409`
 
-정해야 하는 것
-- 휴대전화 번호만 받는가, 유선번호도 받는가.
-- 받는 앞자리의 목록은 무엇인가. 010만인가, 011·016·017·018·019도인가.
+요구사항
+- 앞자리가 010 인 번호만 받는다. 011·016·017·018·019 도 받지 않는다. 유선번호도 받지 않는다.
+- 앞자리가 010 이면 하이픈을 뺀 자릿수가 11자리여야 한다. 10자리는 받지 않는다.
+- 앞자리를 자릿수보다 먼저 본다. 유선번호처럼 둘을 함께 어기는 값은 앞자리 사유로 거절한다.
+- 전화번호 없음과 숫자 아님의 판정은 바꾸지 않는다.
+- 이 티켓은 생성만 다룬다. 변경 경로가 형식을 보지 않는 것은 따로 본다(T-6·T-8).
 
-무엇이 확인되면 정리되나: 예약 확인 연락을 어떤 수단으로 보내는지 확정되면
+API 스펙
+- `POST /api/reservations` — 앞자리가 010 이 아니면 `409` + `{"message":"010으로 시작하는 휴대전화 번호만 입력 가능합니다."}`
+  없음(`전화번호를 입력해주세요.`)·숫자 아님(`전화번호는 숫자만 입력 가능합니다.`)과 사유가 다르므로 문구를 나눈다.
+- `POST /api/reservations` — 앞자리가 010 인데 자릿수가 11이 아니면 `409` + `{"message":"전화번호 형식이 올바르지 않습니다."}`
+  기존 자릿수 오류와 같은 문구다.
+- 기존 응답(성공 `201`, 없음 `409`, 숫자 아님 `409`)은 그대로 둔다.
+- `PUT /api/reservations/{id}` — 이 티켓에서 바꾸지 않는다.
+
+인수 조건: `acceptance-criteria.md`의 T-9
+
+실측 기록
+
+1. 생성 — 앞자리는 010만 (실측 2026-08-20, 8083 포트)
+```
+# 010 — 통과한다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","phoneNumber":"010-1234-5678","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","phoneNumber":"010-1234-5678","status":"CONFIRMED","confirmationCode":"CYBYVE","createdAt":null}
+
+# 011 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"011-1234-5678","numberOfPeople":2}'
+
+201
+{"id":7,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"011-1234-5678","status":"CONFIRMED","confirmationCode":"2K786U","createdAt":null}
+
+# 019 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"019-1234-5678","numberOfPeople":2}'
+
+201
+{"id":8,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"019-1234-5678","status":"CONFIRMED","confirmationCode":"8C6C55","createdAt":null}
+
+# 016 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":"016-1234-5678","numberOfPeople":2}'
+
+201
+{"id":9,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":"016-1234-5678","status":"CONFIRMED","confirmationCode":"FDMU6F","createdAt":null}
+
+# 020 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"020-1234-5678","numberOfPeople":2}'
+
+201
+{"id":10,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"020-1234-5678","status":"CONFIRMED","confirmationCode":"SCTNLM","createdAt":null}
+```
+
+2. 생성 — 010일 때의 자릿수 (실측 2026-08-20, 8083 포트)
+```
+# 하이픈 없는 11자리 — 통과한다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"01012345678","numberOfPeople":2}'
+
+201
+{"id":13,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"01012345678","status":"CONFIRMED","confirmationCode":"5IGI6D","createdAt":null}
+
+# 010 인데 10자리 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-9","phoneNumber":"010-123-4567","numberOfPeople":2}'
+
+201
+{"id":14,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-9","phoneNumber":"010-123-4567","status":"CONFIRMED","confirmationCode":"KJK45I","createdAt":null}
+
+# 9자리
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-15","phoneNumber":"010-111-222","numberOfPeople":2}'
+
+409
+{"message":"전화번호 형식이 올바르지 않습니다."}
+
+# 12자리
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"A-8","phoneNumber":"010-12345-6789","numberOfPeople":2}'
+
+409
+{"message":"전화번호 형식이 올바르지 않습니다."}
+```
+
+3. 생성 — 앞자리와 자릿수를 함께 어길 때 (실측 2026-08-20, 8083 포트)
+```
+# 유선 서울, 10자리 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-6","phoneNumber":"02-1234-5678","numberOfPeople":2}'
+
+201
+{"id":11,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-6","phoneNumber":"02-1234-5678","status":"CONFIRMED","confirmationCode":"9Z13WW","createdAt":null}
+
+# 유선 지역, 10자리 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-7","phoneNumber":"031-123-4567","numberOfPeople":2}'
+
+201
+{"id":12,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-7","phoneNumber":"031-123-4567","status":"CONFIRMED","confirmationCode":"TLFF7C","createdAt":null}
+```
+
+4. 생성 — 바뀌지 않는 판정 (실측 2026-08-20, 8083 포트)
+```
+# 필드 생략
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-11","numberOfPeople":2}'
+
+409
+{"message":"전화번호를 입력해주세요."}
+
+# null 명시
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-12","phoneNumber":null,"numberOfPeople":2}'
+
+409
+{"message":"전화번호를 입력해주세요."}
+
+# 빈 문자열
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-13","phoneNumber":"","numberOfPeople":2}'
+
+409
+{"message":"전화번호를 입력해주세요."}
+
+# 공백만
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-14","phoneNumber":"   ","numberOfPeople":2}'
+
+409
+{"message":"전화번호를 입력해주세요."}
+
+# 숫자가 아닌 문자 — 앞자리는 010 이다
+curl -X POST 'http://localhost:8083/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"A-7","phoneNumber":"010-abcd-5678","numberOfPeople":2}'
+
+409
+{"message":"전화번호는 숫자만 입력 가능합니다."}
+```
 
 ---
 
