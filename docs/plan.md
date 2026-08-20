@@ -52,6 +52,8 @@
 - 호출할 수 있는 것은 `/api` 아래에 있다
 - 샌드박스에서 `bootRun`이 tmpdir 권한으로 죽으면 `./gradlew bootJar` 후 `java -Djava.io.tmpdir=$TMPDIR -jar build/libs/*.jar`로 띄운다
 - 테스트 실행: `./gradlew test`. 결과 줄이 안 보이면 캐시다. `./gradlew test --rerun-tasks`로 다시 돌린다
+- 실측 전에 포트가 비었는지 본다: `lsof -nP -iTCP:8080 -sTCP:LISTEN`. 이미 떠 있으면 이전 세션의 낡은 코드다.
+  그 응답을 실측으로 쓰면 판정이 거짓이 된다. 빈 포트로 옮겨 띄운다
 - 데이터를 다루기 전에 `src/main/resources/data.sql`을 읽는다
 
 테스트를 어떻게 짤지는 이 파일에 적지 않는다. 무엇을 단언하고 어떻게 격리할지는
