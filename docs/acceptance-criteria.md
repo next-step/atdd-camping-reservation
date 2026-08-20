@@ -281,3 +281,39 @@ POST A-7 오늘~오늘 → 현재 실측 409 {"message":"해당 기간에 이미
 POST B-5 → 201 → DELETE → 200 → status CANCELLED → 같은 자리 POST → 201 (id 7)
 POST A-5 → 201 → 같은 기간 POST → 409 {"message":"해당 기간에 이미 예약이 존재합니다."}
 ```
+
+---
+
+## F-6 생성·수정 응답의 createdAt
+
+실측 기준일 **2026-08-20**. 발견 티켓 처리 — 신고가 아니라 내부 불일치라 정책 확인이
+필요 없다: 같은 리소스는 조회 경로와 무관하게 같은 데이터를 줘야 한다.
+
+### AC-7 생성·수정 응답의 createdAt은 단건 조회와 같은 저장 값이다
+
+**규칙** — `POST`·`PUT`(그리고 검색 경로) 응답의 `createdAt`이 null이 아니고,
+`GET /api/reservations/{id}`가 주는 저장 값과 같다.
+
+**예시** — 같은 리소스(id 9)인데 경로마다 값이 다르다. **지금은 null이고, 이 티켓 이후 채워져야 한다.**
+
+```
+POST {"siteNumber":"B-8","startDate":"2026-08-30","endDate":"2026-08-31",...}
+현재 실측 →  201   {"id":9,...,"createdAt":null}
+
+GET  /api/reservations/9
+현재 실측 →  200   createdAt: "2026-08-20T14:25:08.906025"      ← 저장은 돼 있다
+
+PUT  /api/reservations/9?confirmationCode=B0BDEG {"customerName":"CreatedAt2"}
+현재 실측 →  200   {...,"createdAt":null}
+
+GET  /api/reservations/my?name=CreatedAt2&phone=010-7777-8888
+현재 실측 →  200   [{...,"createdAt":null}]
+
+이 티켓 이후 →  네 경로 모두 GET 단건과 같은 값
+```
+
+**이유** — 엔티티 `@PrePersist`가 `createdAt`을 저장하고 `ReservationResponse.from()`은
+그것을 채우는데, `createReservation`·`updateReservation`·`searchReservations`·
+`getReservationsByNameAndPhone` 네 곳만 `from()` 대신 손 매핑을 쓰며 `createdAt`을
+빠뜨린다. 손 매핑과 `from()`의 나머지 여덟 필드는 동일하므로, 고치는 방향은 네 곳이
+`from()`을 쓰게 하는 것이다 — 필드를 하나 더 베끼는 것은 다음 필드에서 또 어긋난다.
