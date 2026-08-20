@@ -341,3 +341,42 @@ curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: applicat
 201
 {"id":19,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"E0N1RA","createdAt":null}
 ```
+
+### 3. 생성 — 당일 취소한 예약의 자리
+
+```
+규칙   취소 상태는 둘이다. 시작일이 오늘인 예약을 취소하면 "당일 취소", 그 밖은 일반 취소로 남는다.
+       둘 다 취소다. 둘 다 겹침 검사에서 세지 않는다
+이유   당일 취소도 자리를 내놓는 행위다. 상태 이름이 갈린다고 자리가 계속 막히면 1절과 같은 신고가 다시 난다
+
+Given  시드가 쓰지 않는 사이트에 오늘 시작하는 예약이 있고, 그것을 취소했다 (상태가 당일 취소가 된다)
+When   같은 사이트·같은 기간                  Then  201 Created, 확인 코드 발급
+```
+
+날짜 경계는 1절에서 잡았다. 여기서 새로 도는 축은 날짜가 아니라 **취소 상태**이므로 상태 하나만 더 본다.
+1절은 일반 취소를, 이 절은 당일 취소를 부른다. 둘을 합쳐야 취소 상태 전부가 검사에서 빠진다는 것이 잡힌다.
+
+예시 (실측 2026-08-20)
+```
+# 준비 — B-13 에 오늘 시작 예약 생성
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"회귀당일","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":24,...,"status":"CONFIRMED","confirmationCode":"YN58DV"}
+
+# 준비 — 취소. 시작일이 오늘이므로 당일 취소로 남는다
+curl -X DELETE 'http://localhost:8080/api/reservations/24?confirmationCode=YN58DV'
+200
+{"message":"예약이 취소되었습니다."}
+
+curl 'http://localhost:8080/api/reservations/24'
+{"id":24,...,"status":"CANCELLED_SAME_DAY","confirmationCode":"YN58DV"}
+
+# 같은 사이트·같은 기간 재예약
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"당일취소자리","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":26,...,"status":"CONFIRMED","confirmationCode":"985IJI"}
+```

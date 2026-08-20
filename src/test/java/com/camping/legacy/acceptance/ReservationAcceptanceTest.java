@@ -296,6 +296,21 @@ class ReservationAcceptanceTest extends AcceptanceTest {
 
             assertConfirmedCount(baseEnd.plusDays(1), "B-10", 1);
         }
+
+        @Test
+        @DisplayName("당일 취소한 예약과 기간이 완전히 같아도 예약된다")
+        void acceptsSameRangeAsSameDayCancelled() {
+            LocalDate baseStart = today;
+            LocalDate baseEnd = today.plusDays(1);
+            createCancelled("B-11", baseStart, baseEnd);
+
+            create("당일취소동일", "B-11", baseStart, baseEnd)
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", notNullValue());
+
+            assertConfirmedCount(baseStart, "B-11", 1);
+        }
     }
 
     @Nested
