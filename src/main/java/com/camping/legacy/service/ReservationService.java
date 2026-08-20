@@ -121,8 +121,10 @@ public class ReservationService {
                 }
             }
 
-            // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            // 전화번호 검증 - 필수(AC-4). 예전엔 없으면 형식 검사를 건너뛰고 저장까지 됐다.
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
+            } else {
                 String cleaned = phoneNumber.replaceAll("-", "");
                 if (cleaned.length() < 10) {
                     throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
