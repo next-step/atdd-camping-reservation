@@ -51,6 +51,8 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+    /** 예약 가능 시점 상한 — 오늘로부터 며칠 뒤까지 시작할 수 있는가 */
+    private static final int MAX_DAYS_UNTIL_START = 30;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -91,6 +93,9 @@ public class ReservationService {
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
+                        // 시작일의 예약 가능 시점 체크
+                        validateStartDateWithinBookingWindow(today, startDate);
+
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
                         if (days > 30) {
@@ -385,6 +390,9 @@ public class ReservationService {
             if (startDate.isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
+
+            // 시작일의 예약 가능 시점 체크
+            validateStartDateWithinBookingWindow(today, startDate);
         }
 
         // 고객 이름 검증 (중복 코드 4)
@@ -1074,5 +1082,15 @@ public class ReservationService {
         }
 
         return true;
+    }
+
+    /**
+     * 시작일의 예약 가능 시점 검증
+     */
+    private void validateStartDateWithinBookingWindow(LocalDate today, LocalDate startDate) {
+        long daysUntilStart = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+        if (daysUntilStart > MAX_DAYS_UNTIL_START) {
+            throw new RuntimeException("예약은 오늘로부터 30일 이내만 가능합니다.");
+        }
     }
 }
