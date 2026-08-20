@@ -24,6 +24,7 @@
   - ReservationDateRuleAcceptanceTest: A-10~A-14
   - ReservationPhoneRuleAcceptanceTest: B-11~B-14
   - ReservationConflictRuleAcceptanceTest: A-15~A-17
+  - ReservationCreatedAtAcceptanceTest: A-18~A-19
 
 ## 초안을 어떻게 판정하는가
 
