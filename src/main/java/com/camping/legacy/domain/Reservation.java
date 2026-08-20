@@ -7,6 +7,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "reservations")
@@ -14,7 +15,10 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 public class Reservation {
-    
+
+    /** 취소된 예약의 상태 */
+    public static final List<String> CANCELLED_STATUSES = List.of("CANCELLED", "CANCELLED_SAME_DAY");
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -35,7 +39,7 @@ public class Reservation {
     private Campsite campsite;
     
     private String phoneNumber;
-    
+
     private String status;
     
     @Column(length = 6)
