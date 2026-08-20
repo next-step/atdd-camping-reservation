@@ -208,3 +208,136 @@ curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: applicat
 201
 {"id":11,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","status":"CONFIRMED","confirmationCode":"B344EL","createdAt":null}
 ```
+
+---
+
+## T-3 취소한 예약은 그 자리를 점유하지 않는다
+
+### 1. 생성 — 취소된 예약의 자리
+
+```
+규칙   취소된 예약은 새 예약의 겹침 검사에서 세지 않는다.
+       취소된 예약과 겹치는 기간은 같은 사이트라도 다시 예약할 수 있다
+이유   고객센터 신고 "예약을 취소했는데 같은 날짜에 다시 예약하려니 이미 예약이 있다고 나옵니다"
+       취소는 자리를 내놓는 행위다. 내놓은 자리가 계속 막혀 있으면 그 사이트·기간은 영영 팔리지 않는다
+
+Given  시드가 쓰지 않는 사이트에 08-25~08-27 예약이 있고, 그것을 취소했다
+
+When   08-23~08-24 (종료일이 08-25 하루 전)   Then  201 Created, 확인 코드 발급            (회귀)
+When   08-23~08-25 (종료일이 08-25 와 같은 날) Then  201 Created, 확인 코드 발급
+When   08-25~08-27 (완전 동일)               Then  201 Created, 확인 코드 발급
+When   08-27~08-28 (시작일이 08-27 과 같은 날) Then  201 Created, 확인 코드 발급
+When   08-28~08-29 (시작일이 08-27 다음날)    Then  201 Created, 확인 코드 발급            (회귀)
+```
+
+예시 (실측 2026-08-20, 8081 포트)
+```
+# 준비 — B-1 에 08-25~08-27 생성 (B-2~B-5 도 같게 준비한다)
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"SBSSZF","createdAt":null}
+
+# 준비 — 취소
+curl -X DELETE 'http://localhost:8081/api/reservations/6?confirmationCode=SBSSZF'
+
+200
+{"message":"예약이 취소되었습니다."}
+
+# 종료일이 08-25 하루 전 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":11,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"JYO4L3","createdAt":null}
+
+# 종료일이 08-25 와 같은 날 — 앞 경계. 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-2","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 완전 동일 — 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-3","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 과 같은 날 — 뒤 경계. 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-4","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 다음날 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":12,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"H8M5DK","createdAt":null}
+```
+
+### 2. 생성 — 취소하지 않은 예약의 자리
+
+```
+규칙   취소되지 않은 예약과 겹치는 기간은 거절한다.
+       점유 구간은 시작일과 종료일을 모두 포함하고, 그 바깥 하루부터 겹치지 않는다
+이유   겹침 검사에서 취소를 빼는 변경은, 잘못 손대면 확정 예약까지 함께 빠져 이중 예약이 된다.
+
+Given  시드가 쓰지 않는 사이트에 08-25~08-27 예약이 있고, 취소하지 않았다
+
+When   08-23~08-24 (종료일이 08-25 하루 전)   Then  201 Created, 확인 코드 발급               (회귀)
+When   08-23~08-25 (종료일이 08-25 와 같은 날) Then  409 "해당 기간에 이미 예약이 존재합니다."  (회귀)
+When   08-25~08-27 (완전 동일)               Then  409 "해당 기간에 이미 예약이 존재합니다."  (회귀)
+When   08-27~08-28 (시작일이 08-27 과 같은 날) Then  409 "해당 기간에 이미 예약이 존재합니다."  (회귀)
+When   08-28~08-29 (시작일이 08-27 다음날)    Then  201 Created, 확인 코드 발급               (회귀)
+```
+
+예시 (실측 2026-08-20, 8081 포트)
+```
+# 준비 — B-6 에 08-25~08-27 생성. 취소하지 않는다 (B-7~B-10 도 같게 준비한다)
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":13,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"DR76XV","createdAt":null}
+
+# 종료일이 08-25 하루 전 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":18,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"3PBSHB","createdAt":null}
+
+# 종료일이 08-25 와 같은 날 — 앞 경계
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-7","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 완전 동일
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-8","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 과 같은 날 — 뒤 경계
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-9","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 다음날 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":19,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"E0N1RA","createdAt":null}
+```
