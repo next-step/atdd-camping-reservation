@@ -13,32 +13,6 @@ When   시작일이 D+31    Then  409 "예약은 오늘로부터 30일 이내만
                         지금  201 Created — 신고된 증상
 ```
 
-30일째는 상한 안이므로 D+31을 막아도 D+30의 결과는 바뀌지 않는다.
-
-예시 (실측 2026-08-20)
-```
-# D+29
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":8,"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"3XSWY7","createdAt":null}
-
-# D+30
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-2","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":9,"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-2","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"8ZEUOY","createdAt":null}
-
-# D+31 — 거절되어야 하는데 생성된다
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-3","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":10,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-3","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"5MIZS7","createdAt":null}
-```
-
 ### 2. 생성 — 시작일 하한
 
 ```
@@ -50,23 +24,6 @@ When   시작일이 D-1     Then  409 "과거 날짜로 예약할 수 없습니�
 When   시작일이 D       Then  201 Created, 확인 코드 발급                              (회귀)
 
 질문   당일 시작 예약을 받는가 — T-7. 정해지기 전까지 지금 동작인 "허용"을 유지한다
-```
-
-예시 (실측 2026-08-20)
-```
-# D-1
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-19","endDate":"2026-08-19","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"과거 날짜로 예약할 수 없습니다."}
-
-# D
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"B-7","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":13,"customerName":"실측","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"B-7","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"C0AXXP","createdAt":null}
 ```
 
 ### 3. 변경 — 시작일 상한
@@ -81,32 +38,6 @@ When   시작일을 D+29 로 변경   Then  200 OK, 변경이 반영된다      
 When   시작일을 D+30 으로 변경  Then  200 OK, 변경이 반영된다                            (회귀)
 When   시작일을 D+31 로 변경   Then  400 "예약은 오늘로부터 30일 이내만 가능합니다." 예약의 날짜는 바뀌지 않는다
                           지금  200 OK — 그대로 반영된다
-```
-
-30일째는 상한 안이므로 D+31을 막아도 D+30의 결과는 바뀌지 않는다.
-
-예시 (실측 2026-08-20)
-```
-# D+29
-curl -X PUT 'http://localhost:8080/api/reservations/16?confirmationCode=LF62PD' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-11","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-200
-{"id":16,"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-11","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"LF62PD","createdAt":null}
-
-# D+30
-curl -X PUT 'http://localhost:8080/api/reservations/17?confirmationCode=WAOZ86' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-12","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-200
-{"id":17,"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-12","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"WAOZ86","createdAt":null}
-
-# D+31 — 거절되어야 하는데 반영된다
-curl -X PUT 'http://localhost:8080/api/reservations/18?confirmationCode=ZPN6ST' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-200
-{"id":18,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"ZPN6ST","createdAt":null}
 ```
 
 ---
@@ -133,44 +64,6 @@ When   phoneNumber 이 "   "  Then  409 "전화번호를 입력해주세요." �
 When   phoneNumber 이 "010-1111-2222"  Then  201 Created, 확인 코드 발급             (회귀)
 ```
 
-예시 (실측 2026-08-20, 8081 포트)
-```
-# 필드 생략 — 거절되어야 하는데 생성된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","numberOfPeople":2}'
-
-201
-{"id":6,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"CK0RJ8","createdAt":null}
-
-# 빈 문자열 — 거절되어야 하는데 생성된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","numberOfPeople":2}'
-
-201
-{"id":7,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","status":"CONFIRMED","confirmationCode":"53MU0F","createdAt":null}
-
-# 공백만 — 거절되어야 하는데 생성된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","numberOfPeople":2}'
-
-201
-{"id":8,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","status":"CONFIRMED","confirmationCode":"BCVP0W","createdAt":null}
-
-# null 명시 — 거절되어야 하는데 생성된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"numberOfPeople":2}'
-
-201
-{"id":9,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"I12I96","createdAt":null}
-
-# 정상 전화번호
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":10,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"MS60PL","createdAt":null}
-```
-
 ### 2. 생성 — 값이 있을 때의 형식 검증
 
 ```
@@ -183,30 +76,6 @@ When   "010-abcd-5678"   Then  409 "전화번호는 숫자만 입력 가능합�
 When   "020-1234-5678"   Then  201 Created — 01x 가 아니어도 통과한다                (회귀)
 
 질문   통신사 앞자리를 제한하는가 — T-9. 정해지기 전까지 지금 동작인 "허용"을 유지한다
-```
-
-예시 (실측 2026-08-20, 8081 포트)
-```
-# 자릿수 부족
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-6","phoneNumber":"010-111-222","numberOfPeople":2}'
-
-409
-{"message":"전화번호 형식이 올바르지 않습니다."}
-
-# 숫자가 아닌 문자
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-7","phoneNumber":"010-abcd-5678","numberOfPeople":2}'
-
-409
-{"message":"전화번호는 숫자만 입력 가능합니다."}
-
-# 01x 가 아닌 번호 — 통과한다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","numberOfPeople":2}'
-
-201
-{"id":11,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","status":"CONFIRMED","confirmationCode":"B344EL","createdAt":null}
 ```
 
 ---
@@ -230,57 +99,6 @@ When   08-27~08-28 (시작일이 08-27 과 같은 날) Then  201 Created, 확인
 When   08-28~08-29 (시작일이 08-27 다음날)    Then  201 Created, 확인 코드 발급            (회귀)
 ```
 
-예시 (실측 2026-08-20, 8081 포트)
-```
-# 준비 — B-1 에 08-25~08-27 생성 (B-2~B-5 도 같게 준비한다)
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":6,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"SBSSZF","createdAt":null}
-
-# 준비 — 취소
-curl -X DELETE 'http://localhost:8081/api/reservations/6?confirmationCode=SBSSZF'
-
-200
-{"message":"예약이 취소되었습니다."}
-
-# 종료일이 08-25 하루 전 — 안 겹침
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":11,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"JYO4L3","createdAt":null}
-
-# 종료일이 08-25 와 같은 날 — 앞 경계. 통과해야 하는데 거절된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-2","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 완전 동일 — 통과해야 하는데 거절된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-3","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 시작일이 08-27 과 같은 날 — 뒤 경계. 통과해야 하는데 거절된다
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-4","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 시작일이 08-27 다음날 — 안 겹침
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":12,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"H8M5DK","createdAt":null}
-```
-
 ### 2. 생성 — 취소하지 않은 예약의 자리
 
 ```
@@ -297,51 +115,6 @@ When   08-27~08-28 (시작일이 08-27 과 같은 날) Then  409 "해당 기간�
 When   08-28~08-29 (시작일이 08-27 다음날)    Then  201 Created, 확인 코드 발급               (회귀)
 ```
 
-예시 (실측 2026-08-20, 8081 포트)
-```
-# 준비 — B-6 에 08-25~08-27 생성. 취소하지 않는다 (B-7~B-10 도 같게 준비한다)
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":13,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"DR76XV","createdAt":null}
-
-# 종료일이 08-25 하루 전 — 안 겹침
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":18,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"3PBSHB","createdAt":null}
-
-# 종료일이 08-25 와 같은 날 — 앞 경계
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-7","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 완전 동일
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-8","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 시작일이 08-27 과 같은 날 — 뒤 경계
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-9","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-409
-{"message":"해당 기간에 이미 예약이 존재합니다."}
-
-# 시작일이 08-27 다음날 — 안 겹침
-curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":19,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"E0N1RA","createdAt":null}
-```
-
 ### 3. 생성 — 당일 취소한 예약의 자리
 
 ```
@@ -351,32 +124,4 @@ curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: applicat
 
 Given  시드가 쓰지 않는 사이트에 오늘 시작하는 예약이 있고, 그것을 취소했다 (상태가 당일 취소가 된다)
 When   같은 사이트·같은 기간                  Then  201 Created, 확인 코드 발급
-```
-
-날짜 경계는 1절에서 잡았다. 여기서 새로 도는 축은 날짜가 아니라 **취소 상태**이므로 상태 하나만 더 본다.
-1절은 일반 취소를, 이 절은 당일 취소를 부른다. 둘을 합쳐야 취소 상태 전부가 검사에서 빠진다는 것이 잡힌다.
-
-예시 (실측 2026-08-20)
-```
-# 준비 — B-13 에 오늘 시작 예약 생성
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"회귀당일","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":24,...,"status":"CONFIRMED","confirmationCode":"YN58DV"}
-
-# 준비 — 취소. 시작일이 오늘이므로 당일 취소로 남는다
-curl -X DELETE 'http://localhost:8080/api/reservations/24?confirmationCode=YN58DV'
-200
-{"message":"예약이 취소되었습니다."}
-
-curl 'http://localhost:8080/api/reservations/24'
-{"id":24,...,"status":"CANCELLED_SAME_DAY","confirmationCode":"YN58DV"}
-
-# 같은 사이트·같은 기간 재예약
-curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
-  -d '{"customerName":"당일취소자리","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
-
-201
-{"id":26,...,"status":"CONFIRMED","confirmationCode":"985IJI"}
 ```

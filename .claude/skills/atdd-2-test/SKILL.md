@@ -12,6 +12,7 @@ description: Use when 인수 조건이 확정되고 인수 테스트를 쓸 때
 | 파일 | 왜 |
 |---|---|
 | `docs/acceptance-criteria.md` | 이번 티켓 절. 시나리오 하나가 테스트 하나 |
+| `docs/tickets.md` | 이번 티켓의 실측 기록. 단언할 응답 본문의 원본 |
 | `docs/test-guide.md` | 초안이 지켜야 하는 제약 |
 | `src/test/.../acceptance/` | 기존 공통 호출부와 바탕 클래스 |
 | `src/main/resources/data.sql` | 시드가 점유한 사이트 |

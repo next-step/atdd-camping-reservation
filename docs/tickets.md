@@ -19,6 +19,73 @@ API 스펙
 
 인수 조건: `acceptance-criteria.md`의 T-1
 
+실측 기록
+
+1. 생성 — 시작일 상한 (실측 2026-08-20)
+```
+# D+29
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":8,"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"3XSWY7","createdAt":null}
+
+# D+30
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-2","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":9,"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-2","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"8ZEUOY","createdAt":null}
+
+# D+31 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-3","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":10,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-3","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"5MIZS7","createdAt":null}
+```
+
+2. 생성 — 시작일 하한 (실측 2026-08-20)
+```
+# D-1
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-19","endDate":"2026-08-19","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"과거 날짜로 예약할 수 없습니다."}
+
+# D
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"B-7","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":13,"customerName":"실측","startDate":"2026-08-20","endDate":"2026-08-20","siteNumber":"B-7","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"C0AXXP","createdAt":null}
+```
+
+3. 변경 — 시작일 상한 (실측 2026-08-20)
+```
+# D+29
+curl -X PUT 'http://localhost:8080/api/reservations/16?confirmationCode=LF62PD' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-11","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+200
+{"id":16,"customerName":"실측","startDate":"2026-09-18","endDate":"2026-09-18","siteNumber":"B-11","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"LF62PD","createdAt":null}
+
+# D+30
+curl -X PUT 'http://localhost:8080/api/reservations/17?confirmationCode=WAOZ86' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-12","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+200
+{"id":17,"customerName":"실측","startDate":"2026-09-19","endDate":"2026-09-19","siteNumber":"B-12","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"WAOZ86","createdAt":null}
+
+# D+31 — 거절되어야 하는데 반영된다
+curl -X PUT 'http://localhost:8080/api/reservations/18?confirmationCode=ZPN6ST' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+200
+{"id":18,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"ZPN6ST","createdAt":null}
+```
+
 ---
 ## T-2 전화번호 없이 예약이 완료됨 (처리완료)
 
@@ -41,6 +108,70 @@ API 스펙
 - `PUT /api/reservations/{id}` — 이 티켓에서 바꾸지 않는다.
 
 인수 조건: `acceptance-criteria.md`의 T-2
+
+실측 기록
+
+1. 생성 — 전화번호 필수 (실측 2026-08-20)
+```
+# 필드 생략 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-1","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"CK0RJ8","createdAt":null}
+
+# 빈 문자열 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","numberOfPeople":2}'
+
+201
+{"id":7,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-2","phoneNumber":"","status":"CONFIRMED","confirmationCode":"53MU0F","createdAt":null}
+
+# 공백만 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","numberOfPeople":2}'
+
+201
+{"id":8,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-3","phoneNumber":"   ","status":"CONFIRMED","confirmationCode":"BCVP0W","createdAt":null}
+
+# null 명시 — 거절되어야 하는데 생성된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"numberOfPeople":2}'
+
+201
+{"id":9,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-4","phoneNumber":null,"status":"CONFIRMED","confirmationCode":"I12I96","createdAt":null}
+
+# 정상 전화번호
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":10,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"MS60PL","createdAt":null}
+```
+
+2. 생성 — 값이 있을 때의 형식 검증 (실측 2026-08-20)
+```
+# 자릿수 부족
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-6","phoneNumber":"010-111-222","numberOfPeople":2}'
+
+409
+{"message":"전화번호 형식이 올바르지 않습니다."}
+
+# 숫자가 아닌 문자
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-7","phoneNumber":"010-abcd-5678","numberOfPeople":2}'
+
+409
+{"message":"전화번호는 숫자만 입력 가능합니다."}
+
+# 01x 가 아닌 번호 — 통과한다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","numberOfPeople":2}'
+
+201
+{"id":11,"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-26","siteNumber":"B-8","phoneNumber":"020-1234-5678","status":"CONFIRMED","confirmationCode":"B344EL","createdAt":null}
+```
 
 ---
 
@@ -67,6 +198,129 @@ API 스펙
   취소되지 않은 예약과 겹치면 지금대로 `409` + `{"message":"해당 기간에 이미 예약이 존재합니다."}`
 
 인수 조건: `acceptance-criteria.md`의 T-3
+
+실측 기록
+
+1. 생성 — 취소된 예약의 자리 (실측 2026-08-20)
+```
+# 준비 — B-1 에 08-25~08-27 생성 (B-2~B-5 도 같게 준비한다)
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"SBSSZF","createdAt":null}
+
+# 준비 — 취소
+curl -X DELETE 'http://localhost:8081/api/reservations/6?confirmationCode=SBSSZF'
+
+200
+{"message":"예약이 취소되었습니다."}
+
+# 종료일이 08-25 하루 전 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":11,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"JYO4L3","createdAt":null}
+
+# 종료일이 08-25 와 같은 날 — 앞 경계. 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-2","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 완전 동일 — 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-3","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 과 같은 날 — 뒤 경계. 통과해야 하는데 거절된다
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-4","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 다음날 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":12,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-5","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"H8M5DK","createdAt":null}
+```
+
+2. 생성 — 취소하지 않은 예약의 자리 (실측 2026-08-20)
+```
+# 준비 — B-6 에 08-25~08-27 생성. 취소하지 않는다 (B-7~B-10 도 같게 준비한다)
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":13,"customerName":"준비","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"DR76XV","createdAt":null}
+
+# 종료일이 08-25 하루 전 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":18,"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-24","siteNumber":"B-6","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"3PBSHB","createdAt":null}
+
+# 종료일이 08-25 와 같은 날 — 앞 경계
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-23","endDate":"2026-08-25","siteNumber":"B-7","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 완전 동일
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-25","endDate":"2026-08-27","siteNumber":"B-8","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 과 같은 날 — 뒤 경계
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-27","endDate":"2026-08-28","siteNumber":"B-9","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+409
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+
+# 시작일이 08-27 다음날 — 안 겹침
+curl -X POST 'http://localhost:8081/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":19,"customerName":"실측","startDate":"2026-08-28","endDate":"2026-08-29","siteNumber":"B-10","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"E0N1RA","createdAt":null}
+```
+
+3. 생성 — 당일 취소한 예약의 자리 (실측 2026-08-20)
+```
+# 준비 — B-13 에 오늘 시작 예약 생성
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"회귀당일","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":24,...,"status":"CONFIRMED","confirmationCode":"YN58DV"}
+
+# 준비 — 취소. 시작일이 오늘이므로 당일 취소로 남는다
+curl -X DELETE 'http://localhost:8080/api/reservations/24?confirmationCode=YN58DV'
+200
+{"message":"예약이 취소되었습니다."}
+
+curl 'http://localhost:8080/api/reservations/24'
+{"id":24,...,"status":"CANCELLED_SAME_DAY","confirmationCode":"YN58DV"}
+
+# 같은 사이트·같은 기간 재예약
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"당일취소자리","startDate":"2026-08-20","endDate":"2026-08-21","siteNumber":"B-13","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":26,...,"status":"CONFIRMED","confirmationCode":"985IJI"}
+```
 
 ---
 

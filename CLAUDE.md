@@ -22,7 +22,8 @@ Spring Boot / JPA / Thymeleaf. DB는 H2 인메모리라 기동마다 초기화�
 
 - `principles.md` 일하는 방식 / `plan.md` 작업 순서와 실행 방법 — 스킬은 `plan.md`의 실행본이다.
   어긋나면 계획 쪽도 함께 고친다
-- `acceptance-criteria.md` 확정한 규칙·예시·이유 / `tickets.md` 받은 티켓과 발견한 티켓 — 이 저장소에 쌓는다
+- `acceptance-criteria.md` 확정한 규칙과 이유 / `tickets.md` 받은 티켓·발견한 티켓·실측 기록
+  호출과 응답 전문은 티켓에만 둔다. 인수 조건은 무엇을 통과로 볼지만 적는다
 - `test-guide.md` 테스트 초안에 줄 제약 / `code-guide.md` 코드가 지킬 제약 /
   `retrospective.md` 무엇을 겪었는가 — 저장소가 바뀌어도 딸려 간다
 
