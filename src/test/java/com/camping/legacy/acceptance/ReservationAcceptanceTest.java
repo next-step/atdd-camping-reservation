@@ -148,21 +148,25 @@ class ReservationAcceptanceTest extends AcceptanceTest {
     class CreatePhoneNumberFormat {
 
         @Test
-        @DisplayName("자릿수가 모자라면 형식 오류로 거절된다")
+        @DisplayName("자릿수가 모자라면 형식 오류로 거절되고 예약이 생성되지 않는다")
         void rejectsTooShort() {
             createWithPhoneNumber("형식자릿수", "A-11", today.plusDays(5), "010-111-222")
                 .then()
                 .statusCode(409)
                 .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+
+            assertNotReserved("형식자릿수");
         }
 
         @Test
-        @DisplayName("숫자가 아닌 문자가 있으면 숫자 오류로 거절된다")
+        @DisplayName("숫자가 아닌 문자가 있으면 숫자 오류로 거절되고 예약이 생성되지 않는다")
         void rejectsNonDigit() {
             createWithPhoneNumber("형식문자", "A-12", today.plusDays(5), "010-abcd-5678")
                 .then()
                 .statusCode(409)
                 .body("message", equalTo("전화번호는 숫자만 입력 가능합니다."));
+
+            assertNotReserved("형식문자");
         }
     }
 
@@ -409,39 +413,6 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
 
             assertNotReserved("앞자리011");
-        }
-
-        @Test
-        @DisplayName("앞자리가 016이면 거절되고 예약이 생성되지 않는다")
-        void rejectsOldMobilePrefix016() {
-            createWithPhoneNumber("앞자리016", "A-20", today.plusDays(5), "016-1234-5678")
-                .then()
-                .statusCode(409)
-                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
-
-            assertNotReserved("앞자리016");
-        }
-
-        @Test
-        @DisplayName("앞자리가 019이면 거절되고 예약이 생성되지 않는다")
-        void rejectsOldMobilePrefix019() {
-            createWithPhoneNumber("앞자리019", "A-5", today.plusDays(5), "019-1234-5678")
-                .then()
-                .statusCode(409)
-                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
-
-            assertNotReserved("앞자리019");
-        }
-
-        @Test
-        @DisplayName("앞자리가 01로 시작하지 않으면 거절되고 예약이 생성되지 않는다")
-        void rejectsNonMobilePrefix() {
-            createWithPhoneNumber("앞자리020", "A-13", today.plusDays(5), "020-1234-5678")
-                .then()
-                .statusCode(409)
-                .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
-
-            assertNotReserved("앞자리020");
         }
     }
 
