@@ -12,9 +12,26 @@ import java.util.Map;
 public class ReservationSteps {
 
     public static Response create(String customerName, String siteNumber, LocalDate startDate) {
+        return post(requestBody(customerName, siteNumber, startDate));
+    }
+
+    public static Response createWithPhoneNumber(String customerName, String siteNumber, LocalDate startDate,
+                                                 String phoneNumber) {
+        Map<String, Object> body = requestBody(customerName, siteNumber, startDate);
+        body.put("phoneNumber", phoneNumber);
+        return post(body);
+    }
+
+    public static Response createWithoutPhoneNumber(String customerName, String siteNumber, LocalDate startDate) {
+        Map<String, Object> body = requestBody(customerName, siteNumber, startDate);
+        body.remove("phoneNumber");
+        return post(body);
+    }
+
+    private static Response post(Map<String, Object> body) {
         return RestAssured.given()
                 .contentType(ContentType.JSON)
-                .body(requestBody(customerName, siteNumber, startDate))
+                .body(body)
                 .when()
                 .post("/api/reservations");
     }

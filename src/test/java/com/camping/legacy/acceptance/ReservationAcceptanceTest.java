@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 
 import static com.camping.legacy.acceptance.ReservationSteps.create;
+import static com.camping.legacy.acceptance.ReservationSteps.createWithPhoneNumber;
+import static com.camping.legacy.acceptance.ReservationSteps.createWithoutPhoneNumber;
 import static com.camping.legacy.acceptance.ReservationSteps.findByCustomerName;
 import static com.camping.legacy.acceptance.ReservationSteps.findById;
 import static com.camping.legacy.acceptance.ReservationSteps.updateStartDate;
@@ -82,6 +84,108 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                     .then()
                     .statusCode(201)
                     .body("confirmationCode", notNullValue());
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 전화번호 필수")
+    class CreatePhoneNumberRequired {
+
+        @Test
+        @DisplayName("전화번호 필드를 생략하면 거절되고 예약이 생성되지 않는다")
+        void rejectsMissingField() {
+            createWithoutPhoneNumber("전화번호생략", "A-5", today.plusDays(5))
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+
+            findByCustomerName("전화번호생략")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
+        }
+
+        @Test
+        @DisplayName("전화번호가 null이면 거절되고 예약이 생성되지 않는다")
+        void rejectsNull() {
+            createWithPhoneNumber("전화번호null", "A-7", today.plusDays(5), null)
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+
+            findByCustomerName("전화번호null")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
+        }
+
+        @Test
+        @DisplayName("전화번호가 빈 문자열이면 거절되고 예약이 생성되지 않는다")
+        void rejectsEmpty() {
+            createWithPhoneNumber("전화번호빈값", "A-8", today.plusDays(5), "")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+
+            findByCustomerName("전화번호빈값")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
+        }
+
+        @Test
+        @DisplayName("전화번호가 공백만이면 거절되고 예약이 생성되지 않는다")
+        void rejectsBlank() {
+            createWithPhoneNumber("전화번호공백", "A-9", today.plusDays(5), "   ")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호를 입력해주세요."));
+
+            findByCustomerName("전화번호공백")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(0));
+        }
+
+        @Test
+        @DisplayName("전화번호가 있으면 예약된다")
+        void acceptsPhoneNumber() {
+            createWithPhoneNumber("전화번호정상", "A-10", today.plusDays(5), "010-1111-2222")
+                .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue());
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 전화번호 형식")
+    class CreatePhoneNumberFormat {
+
+        @Test
+        @DisplayName("자릿수가 모자라면 형식 오류로 거절된다")
+        void rejectsTooShort() {
+            createWithPhoneNumber("형식자릿수", "A-11", today.plusDays(5), "010-111-222")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호 형식이 올바르지 않습니다."));
+        }
+
+        @Test
+        @DisplayName("숫자가 아닌 문자가 있으면 숫자 오류로 거절된다")
+        void rejectsNonDigit() {
+            createWithPhoneNumber("형식문자", "A-12", today.plusDays(5), "010-abcd-5678")
+                .then()
+                .statusCode(409)
+                .body("message", equalTo("전화번호는 숫자만 입력 가능합니다."));
+        }
+
+        @Test
+        @DisplayName("01x 로 시작하지 않아도 예약된다")
+        void acceptsNonMobilePrefix() {
+            createWithPhoneNumber("형식앞자리", "A-13", today.plusDays(5), "020-1234-5678")
+                .then()
+                .statusCode(201)
+                .body("confirmationCode", notNullValue());
         }
     }
 
