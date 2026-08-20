@@ -53,6 +53,10 @@ public class ReservationService {
     private static final int MAX_RESERVATION_DAYS = 30;
     /** 예약 가능 시점 상한 — 오늘로부터 며칠 뒤까지 시작할 수 있는가 */
     private static final int MAX_DAYS_UNTIL_START = 30;
+    /** 받는 전화번호의 앞자리 — 확인 연락을 휴대전화로만 보낸다 */
+    private static final String MOBILE_PREFIX = "010";
+    /** 앞자리가 010 인 전화번호의 자릿수 — 하이픈을 뺀 길이 */
+    private static final int MOBILE_PHONE_NUMBER_LENGTH = 11;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -124,9 +128,8 @@ public class ReservationService {
                 throw new RuntimeException("전화번호를 입력해주세요.");
             }
             String cleaned = phoneNumber.replaceAll("-", "");
-            if (cleaned.length() < 10) {
-                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-            } else if (cleaned.length() > 11) {
+            validatePhoneNumberHasMobilePrefix(cleaned);
+            if (cleaned.length() != MOBILE_PHONE_NUMBER_LENGTH) {
                 throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
             } else {
                 // 숫자인지 확인
@@ -1092,6 +1095,15 @@ public class ReservationService {
         long daysUntilStart = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
         if (daysUntilStart > MAX_DAYS_UNTIL_START) {
             throw new RuntimeException("예약은 오늘로부터 30일 이내만 가능합니다.");
+        }
+    }
+
+    /**
+     * 전화번호 앞자리 검증
+     */
+    private void validatePhoneNumberHasMobilePrefix(String cleanedPhoneNumber) {
+        if (!cleanedPhoneNumber.startsWith(MOBILE_PREFIX)) {
+            throw new RuntimeException("010으로 시작하는 휴대전화 번호만 입력 가능합니다.");
         }
     }
 }
