@@ -197,3 +197,79 @@ POST {"siteNumber":"B-4", ..., "phoneNumber":"010-1234-5678"}
 "전화번호를 입력해주세요."를 그대로 썼다 — 기존과 결은 맞지만 사양으로 확인받은 것은
 아니므로 인수 테스트는 상태 코드만 단언한다.
 **무엇이 확인되면 정리되는가** — 거부 문구 사양이 확인되면 정리된다. Q-2와 같은 성격이다.
+
+---
+
+## T-3 취소된 자리의 재예약
+
+실측 기준일 **2026-08-20**, 같은 엔드포인트. 취소는 `DELETE /api/reservations/{id}?confirmationCode=`.
+사이트는 시드·기존 테스트가 안 쓰는 A-5·A-7·B-5를 썼다.
+
+### AC-5 동일 사이트·동일 기간에 중복 예약은 불가하다 (기존 동작, 유지)
+
+**규칙** — 같은 사이트의 겹치는 기간에 취소되지 않은 예약이 있으면 거부한다.
+
+**예시** — 같은 자리를 두 번. 두 번째가 거부된다. 이 동작은 이 티켓 이후에도 같아야 한다.
+
+```
+POST {"siteNumber":"A-5","startDate":"2026-08-28","endDate":"2026-08-29","customerName":"First",...}
+현재 실측 →  201 Created   {"id":7,...,"status":"CONFIRMED","confirmationCode":"33MIDJ"}
+
+POST {"siteNumber":"A-5","startDate":"2026-08-28","endDate":"2026-08-29","customerName":"Second",...}
+현재 실측 →  409 Conflict
+{"message":"해당 기간에 이미 예약이 존재합니다."}
+```
+
+**이유** — 요구사항 첫 줄 그대로다. AC-6(취소 제외)을 넣으며 중복 체크 쿼리를 건드리게
+되므로, 살아 있는 예약의 중복 거부가 안 깨진다는 못을 박아 둔다. 문구는 실측으로 받았고
+이 티켓에서 바꾸지 않으므로 단언 대상이다.
+
+### AC-6 취소된 예약은 중복 체크에서 제외된다
+
+**규칙** — `status`가 `CANCELLED` 또는 `CANCELLED_SAME_DAY`인 예약은 중복 체크에서
+세지 않는다. 취소된 자리에는 같은 사이트·같은 기간이라도 새 예약이 된다.
+(상태값은 `cancelReservation`이 만드는 두 가지가 전부다 — 당일 취소만 이름이 다르다.)
+
+**예시** — 신고 시나리오 그대로. **지금은 마지막 걸음이 거부되고, 이 티켓 이후 성공해야 한다.**
+
+```
+POST   {"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27",...}
+  →  201   {"id":6,...,"status":"CONFIRMED","confirmationCode":"2K0JE5"}
+
+DELETE /api/reservations/6?confirmationCode=2K0JE5
+  →  200   {"message":"예약이 취소되었습니다."}
+
+GET    /api/reservations/6
+  →  200   {"id":6,...,"status":"CANCELLED",...}      ← 취소는 행 삭제가 아니라 상태 변경
+
+POST   {"siteNumber":"B-5","startDate":"2026-08-26","endDate":"2026-08-27","customerName":"Tester2",...}
+현재 실측 →  409 Conflict   {"message":"해당 기간에 이미 예약이 존재합니다."}   ← 신고 증상
+
+이 티켓 이후 →  201 Created
+```
+
+당일 취소도 같다. 시작일 당일에 취소하면 status가 `CANCELLED_SAME_DAY`가 되는데,
+이 상태도 자리를 막는다 — 규칙이 두 상태를 모두 제외해야 하는 근거.
+
+```
+POST A-7 오늘~오늘 → 201 (id 8) → DELETE → 200 → status: CANCELLED_SAME_DAY
+POST A-7 오늘~오늘 → 현재 실측 409 {"message":"해당 기간에 이미 예약이 존재합니다."}
+이 티켓 이후 → 201
+```
+
+**이유** — 신고문과 요구사항 둘째 줄 그대로다. 코드 근거: 취소(`cancelReservation:309-325`)는
+행을 지우지 않고 status만 바꾸는데, 중복 체크
+(`ReservationService:144` → `ReservationRepository:21`의
+`existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual`)는 status 조건이
+아예 없어 취소된 행도 그대로 센다. 엔티티 `@PrePersist`가 status를 `CONFIRMED`로
+채우고 시드도 전부 `CONFIRMED`라, 취소 상태 두 가지를 제외하면 나머지가 전부 산 예약이다.
+
+### Q-4 "동일 기간"의 범위 — 부분 겹침도 중복인가
+
+요구사항은 "동일 사이트, 동일 기간"이라고만 말한다. 코드는 기간이 **하루라도 겹치면**
+거부한다(경계 포함 겹침 판정). 문자 그대로 "동일 기간"만 막는 것이라면 부분 겹침은
+허용해야 하지만, 겹침 거부가 상식적이라 이 티켓은 기존 판정(겹침 전부)을 유지한다.
+**무엇이 확인되면 정리되는가** — 부분 겹침 허용이 사양인지 확인되면 정리된다.
+
+발견 — 취소된 자리를 조회는 여전히 "불가"로 안내한다. **F-10**으로 등록했고 이번 티켓
+(중복 체크 = 생성 경로)에서 다루지 않는다.
