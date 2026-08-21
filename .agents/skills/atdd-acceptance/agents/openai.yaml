@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATDD 인수 조건"
+  short_description: "티켓의 인수 조건을 확정하고 경계를 직접 실측"
+  default_prompt: "Use $atdd-acceptance to define acceptance criteria and directly measure boundaries without writing tests or implementation."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATDD 구현"
+  short_description: "실패하는 인수 테스트를 통과시키는 최소 구현과 검증"
+  default_prompt: "Use $atdd-implement to make the smallest production change that passes the failing acceptance tests and explain the scope."

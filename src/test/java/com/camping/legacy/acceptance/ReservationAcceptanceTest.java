@@ -1,13 +1,18 @@
 package com.camping.legacy.acceptance;
 
+import com.camping.legacy.domain.Campsite;
+import com.camping.legacy.domain.Reservation;
+import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +36,9 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(ReservationAcceptanceTest.FixedClockConfiguration.class)
@@ -44,6 +52,9 @@ class ReservationAcceptanceTest {
 
     @Autowired
     private ReservationRepository reservationRepository;
+
+    @Autowired
+    private CampsiteRepository campsiteRepository;
 
     @BeforeEach
     void setUp() {
@@ -218,6 +229,231 @@ class ReservationAcceptanceTest {
                 Arguments.of("010-123-5678", "B-11"),
                 Arguments.of("010-1234-567A", "B-12")
         );
+    }
+
+    @Nested
+    @DisplayName("예약 변경 전화번호 조건")
+    class UpdatingReservationPhoneNumber {
+
+        private static final String ORIGINAL_PHONE_NUMBER = "010-1111-2222";
+
+        @DisplayName("필수 조건이나 형식 조건을 위반한 전화번호로 예약을 변경할 수 없다")
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("rejectedPhoneNumberUpdates")
+        void rejectInvalidPhoneNumberUpdate(
+                String caseName,
+                String siteNumber,
+                boolean includePhoneNumber,
+                String phoneNumber,
+                String expectedMessage
+        ) {
+            LocalDate reservationDate = TODAY.plusDays(1);
+            Response createdReservation = createReservation(siteNumber, reservationDate);
+            Long reservationId = createdReservation.jsonPath().getLong("id");
+            String confirmationCode = createdReservation.jsonPath().getString("confirmationCode");
+            Map<String, Object> updateRequest = new HashMap<>();
+            if (includePhoneNumber) {
+                updateRequest.put("phoneNumber", phoneNumber);
+            }
+
+            Response updateResponse = updateReservation(
+                    reservationId,
+                    confirmationCode,
+                    updateRequest
+            );
+            Response persistedReservation = getReservation(reservationId);
+
+            assertAll(
+                    () -> assertEquals(400, updateResponse.statusCode()),
+                    () -> assertEquals(expectedMessage, updateResponse.jsonPath().getString("message")),
+                    () -> assertEquals(
+                            ORIGINAL_PHONE_NUMBER,
+                            persistedReservation.jsonPath().getString("phoneNumber")
+                    )
+            );
+        }
+
+        static Stream<Arguments> rejectedPhoneNumberUpdates() {
+            return Stream.of(
+                    Arguments.of("전화번호 필드 누락", "B-1", false, null, "전화번호를 입력해주세요."),
+                    Arguments.of("전화번호 null", "B-2", true, null, "전화번호를 입력해주세요."),
+                    Arguments.of("전화번호 빈 문자열", "B-3", true, "", "전화번호를 입력해주세요."),
+                    Arguments.of("전화번호 공백 문자열", "B-4", true, "     ", "전화번호를 입력해주세요."),
+                    Arguments.of("010이 아닌 접두사", "B-5", true, "011-1234-5678", "유효한 전화번호가 아닙니다."),
+                    Arguments.of("하이픈 일부 누락", "B-6", true, "010-12345678", "유효한 전화번호가 아닙니다."),
+                    Arguments.of("자릿수 부족", "B-7", true, "010-123-5678", "유효한 전화번호가 아닙니다."),
+                    Arguments.of("숫자 외 문자 포함", "B-8", true, "010-1234-567A", "유효한 전화번호가 아닙니다."),
+                    Arguments.of("010이 아닌 숫자 형식", "B-9", true, "12345678910", "유효한 전화번호가 아닙니다.")
+            );
+        }
+
+        @DisplayName("허용된 전화번호 형식으로 예약을 변경할 수 있다")
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("allowedPhoneNumberUpdates")
+        void updateReservationWithValidPhoneNumber(
+                String caseName,
+                String siteNumber,
+                String phoneNumber
+        ) {
+            LocalDate reservationDate = TODAY.plusDays(1);
+            Response createdReservation = createReservation(siteNumber, reservationDate);
+            Long reservationId = createdReservation.jsonPath().getLong("id");
+            String confirmationCode = createdReservation.jsonPath().getString("confirmationCode");
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("phoneNumber", phoneNumber);
+
+            Response updateResponse = updateReservation(
+                    reservationId,
+                    confirmationCode,
+                    updateRequest
+            );
+            Response persistedReservation = getReservation(reservationId);
+
+            assertAll(
+                    () -> assertEquals(200, updateResponse.statusCode()),
+                    () -> assertEquals(phoneNumber, updateResponse.jsonPath().getString("phoneNumber")),
+                    () -> assertEquals(
+                            phoneNumber,
+                            persistedReservation.jsonPath().getString("phoneNumber")
+                    )
+            );
+        }
+
+        static Stream<Arguments> allowedPhoneNumberUpdates() {
+            return Stream.of(
+                    Arguments.of("하이픈 형식", "B-10", "010-2222-3333"),
+                    Arguments.of("숫자만 형식", "B-11", "01022223333")
+            );
+        }
+
+        private Response createReservation(String siteNumber, LocalDate reservationDate) {
+            Response response = RestAssured.given()
+                    .contentType(JSON)
+                    .body(reservationRequest(
+                            siteNumber,
+                            reservationDate,
+                            reservationDate,
+                            ORIGINAL_PHONE_NUMBER
+                    ))
+                    .when()
+                    .post("/api/reservations");
+            assertEquals(201, response.statusCode());
+            return response;
+        }
+
+        private Response updateReservation(
+                Long reservationId,
+                String confirmationCode,
+                Map<String, Object> updateRequest
+        ) {
+            return RestAssured.given()
+                    .contentType(JSON)
+                    .queryParam("confirmationCode", confirmationCode)
+                    .body(updateRequest)
+                    .when()
+                    .put("/api/reservations/{id}", reservationId);
+        }
+
+        private Response getReservation(Long reservationId) {
+            return RestAssured.given()
+                    .when()
+                    .get("/api/reservations/{id}", reservationId)
+                    .then()
+                    .statusCode(200)
+                    .extract()
+                    .response();
+        }
+    }
+
+    @Nested
+    @DisplayName("취소한 예약 자리의 재예약")
+    class RebookingCancelledReservation {
+
+        @DisplayName("확정된 예약과 같은 사이트와 날짜에는 새 예약을 만들 수 없다")
+        @Test
+        void rejectRebookingConfirmedReservation() {
+            LocalDate reservationDate = TODAY.plusDays(1);
+            Long existingReservationId = saveReservation("B-13", reservationDate, "CONFIRMED");
+
+            Response rebookingResponse = createReservation("B-13", reservationDate);
+            List<Map<String, Object>> storedReservations = getReservations(reservationDate);
+
+            assertAll(
+                    () -> assertEquals(409, rebookingResponse.statusCode()),
+                    () -> assertEquals(
+                            "해당 기간에 이미 예약이 존재합니다.",
+                            rebookingResponse.jsonPath().getString("message")
+                    ),
+                    () -> assertEquals(1, storedReservations.size()),
+                    () -> assertEquals(existingReservationId.intValue(), storedReservations.getFirst().get("id")),
+                    () -> assertEquals("CONFIRMED", storedReservations.getFirst().get("status"))
+            );
+        }
+
+        @DisplayName("취소된 예약과 같은 사이트와 날짜에는 새 예약을 만들 수 있다")
+        @ParameterizedTest(name = "{0} 상태")
+        @CsvSource({
+                "CANCELLED, B-14",
+                "CANCELLED_SAME_DAY, B-15"
+        })
+        void allowRebookingCancelledReservation(String cancelledStatus, String siteNumber) {
+            LocalDate reservationDate = TODAY.plusDays(1);
+            Long cancelledReservationId = saveReservation(siteNumber, reservationDate, cancelledStatus);
+
+            Response rebookingResponse = createReservation(siteNumber, reservationDate);
+            List<Map<String, Object>> storedReservations = getReservations(reservationDate);
+            Object rebookedReservationId = rebookingResponse.jsonPath().get("id");
+            List<String> storedStatuses = storedReservations.stream()
+                    .map(reservation -> (String) reservation.get("status"))
+                    .toList();
+
+            assertAll(
+                    () -> assertEquals(201, rebookingResponse.statusCode()),
+                    () -> assertNotNull(rebookedReservationId),
+                    () -> assertEquals("CONFIRMED", rebookingResponse.jsonPath().getString("status")),
+                    () -> assertNotEquals(
+                            cancelledReservationId.intValue(),
+                            rebookedReservationId
+                    ),
+                    () -> assertEquals(2, storedReservations.size()),
+                    () -> assertTrue(storedStatuses.contains(cancelledStatus)),
+                    () -> assertTrue(storedStatuses.contains("CONFIRMED"))
+            );
+        }
+
+        private Long saveReservation(String siteNumber, LocalDate reservationDate, String status) {
+            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber).orElseThrow();
+            Reservation reservation = new Reservation(
+                    "기존 예약자",
+                    reservationDate,
+                    reservationDate,
+                    campsite
+            );
+            reservation.setPhoneNumber("010-1234-5678");
+            reservation.setStatus(status);
+            reservation.setConfirmationCode("T4TEST");
+            return reservationRepository.save(reservation).getId();
+        }
+
+        private Response createReservation(String siteNumber, LocalDate reservationDate) {
+            return RestAssured.given()
+                    .contentType(JSON)
+                    .body(reservationRequest(siteNumber, reservationDate, reservationDate))
+                    .when()
+                    .post("/api/reservations");
+        }
+
+        private List<Map<String, Object>> getReservations(LocalDate reservationDate) {
+            return RestAssured.given()
+                    .queryParam("date", reservationDate.toString())
+                    .when()
+                    .get("/api/reservations")
+                    .then()
+                    .statusCode(200)
+                    .extract()
+                    .jsonPath()
+                    .getList("$");
+        }
     }
 
     private void assertReservationRejected(

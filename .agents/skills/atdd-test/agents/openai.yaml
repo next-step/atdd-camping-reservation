@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATDD 테스트"
+  short_description: "인수 조건으로 실패하는 인수 테스트 작성 및 확인"
+  default_prompt: "Use $atdd-test to write acceptance tests from confirmed criteria and stop after verifying the Red state."

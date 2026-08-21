@@ -58,6 +58,8 @@ public class ReservationService {
     private static final int MAX_ADVANCE_RESERVATION_DAYS = 30;
     private static final Pattern PHONE_NUMBER_PATTERN =
             Pattern.compile("^010(?:-\\d{4}-\\d{4}|\\d{8})$");
+    private static final List<String> CANCELLED_STATUSES =
+            List.of("CANCELLED", "CANCELLED_SAME_DAY");
     
     /**
      * 예약 생성 (절차적 방식)
@@ -134,8 +136,16 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository
+                    .findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                            campsite, endDate, startDate)
+                    .stream()
+                    .anyMatch(reservation -> {
+                        boolean samePeriod = reservation.getStartDate().equals(startDate)
+                                && reservation.getEndDate().equals(endDate);
+                        boolean cancelled = CANCELLED_STATUSES.contains(reservation.getStatus());
+                        return !cancelled || !samePeriod;
+                    });
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
@@ -410,9 +420,14 @@ public class ReservationService {
         if (request.getCustomerName() != null) {
             reservation.setCustomerName(request.getCustomerName());
         }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
+        String phoneNumber = request.getPhoneNumber();
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
         }
+        if (!PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches()) {
+            throw new InvalidPhoneNumberException("유효한 전화번호가 아닙니다.");
+        }
+        reservation.setPhoneNumber(phoneNumber);
 
         Reservation updated = reservationRepository.save(reservation);
 
