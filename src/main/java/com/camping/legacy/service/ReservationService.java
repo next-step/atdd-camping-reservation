@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,8 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
     
-    private static final int MAX_RESERVATION_DAYS = 30;
+    private static final int MAX_RESERVATION_DAYS = 30; // 체류 기간(시작일~종료일) 상한
+    private static final int MAX_DAYS_FROM_TODAY = 30; // 오늘로부터 시작일까지 허용 거리 — MAX_RESERVATION_DAYS와 별개 규칙
     
     /**
      * 예약 생성 (절차적 방식)
@@ -91,9 +93,13 @@ public class ReservationService {
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
-                        // 예약 기간 체크 (30일 이내)
-                        long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
-                        if (days > 30) {
+                        // 오늘로부터 시작일까지 거리 체크
+                        if (ChronoUnit.DAYS.between(today, startDate) > MAX_DAYS_FROM_TODAY) {
+                            throw new RuntimeException("오늘로부터 30일 이내 날짜만 예약 가능합니다.");
+                        }
+                        // 체류 기간 체크 — 위 "오늘로부터 30일 이내" 규칙과는 별개(둘 다 상한이 30일일 뿐)
+                        long days = ChronoUnit.DAYS.between(startDate, endDate);
+                        if (days > MAX_RESERVATION_DAYS) {
                             throw new RuntimeException("예약 기간은 최대 30일입니다.");
                         }
                     }
@@ -115,27 +121,30 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
+            }
+            String cleaned = phoneNumber.replaceAll("-", "");
+            if (cleaned.length() < 10) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else if (cleaned.length() > 11) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else {
+                // 숫자인지 확인
+                try {
+                    Long.parseLong(cleaned);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
                 }
             }
 
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            // 취소된(CANCELLED) 예약은 중복 체크에서 제외한다. CANCELLED_SAME_DAY(당일 취소)는
+            // 범위 밖(T-9)이므로 여전히 겹침으로 취급된다.
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndStatusNot(
+                    campsite, endDate, startDate, "CANCELLED");
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
@@ -367,6 +376,17 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
 
+        // 시작일 단일 필드 체크 (오늘로부터 30일 이내 + 과거 날짜) — createReservation과 중복 코드
+        if (request.getStartDate() != null) {
+            LocalDate today = LocalDate.now();
+            if (request.getStartDate().isBefore(today)) {
+                throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+            }
+            if (ChronoUnit.DAYS.between(today, request.getStartDate()) > MAX_DAYS_FROM_TODAY) {
+                throw new RuntimeException("오늘로부터 30일 이내 날짜만 예약 가능합니다.");
+            }
+        }
+
         // 날짜 유효성 검증 (중복 코드 3 - createReservation과 유사)
         if (request.getStartDate() != null && request.getEndDate() != null) {
             LocalDate startDate = request.getStartDate();
@@ -391,6 +411,13 @@ public class ReservationService {
         if (request.getCustomerName() != null) {
             if (request.getCustomerName().trim().isEmpty()) {
                 throw new RuntimeException("예약자 이름을 입력해주세요.");
+            }
+        }
+
+        // 전화번호 검증
+        if (request.getPhoneNumber() != null) {
+            if (request.getPhoneNumber().trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
             }
         }
 
