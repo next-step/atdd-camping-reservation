@@ -427,13 +427,12 @@ public class ReservationService {
             reservation.setCustomerName(request.getCustomerName());
         }
         String phoneNumber = request.getPhoneNumber();
-        if (phoneNumber == null || phoneNumber.isBlank()) {
-            throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
+        if (phoneNumber != null) {
+            if (phoneNumber.isBlank()) {
+                throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
+            }
+            reservation.setPhoneNumber(phoneNumber);
         }
-        if (!PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches()) {
-            throw new InvalidPhoneNumberException("유효한 전화번호가 아닙니다.");
-        }
-        reservation.setPhoneNumber(phoneNumber);
 
         Reservation updated = reservationRepository.save(reservation);
 

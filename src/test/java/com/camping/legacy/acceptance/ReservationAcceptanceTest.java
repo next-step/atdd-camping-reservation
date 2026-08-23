@@ -136,24 +136,41 @@ class ReservationAcceptanceTest {
 
         private static final String ORIGINAL_PHONE_NUMBER = "010-1111-2222";
 
-        @DisplayName("필수 조건이나 형식 조건을 위반한 전화번호로 예약을 변경할 수 없다")
-        @ParameterizedTest(name = "{0}")
-        @MethodSource("rejectedPhoneNumberUpdates")
-        void rejectInvalidPhoneNumberUpdate(
-                String caseName,
-                String siteNumber,
-                boolean includePhoneNumber,
-                String phoneNumber,
-                String expectedMessage
-        ) {
+        @DisplayName("전화번호 없이 이름만 변경하면 기존 전화번호를 유지한다")
+        @Test
+        void updateNameWithoutPhoneNumber() {
             LocalDate reservationDate = TODAY.plusDays(1);
-            Response createdReservation = createReservation(siteNumber, reservationDate);
+            Response createdReservation = createReservation("B-2", reservationDate);
             Long reservationId = createdReservation.jsonPath().getLong("id");
             String confirmationCode = createdReservation.jsonPath().getString("confirmationCode");
             Map<String, Object> updateRequest = new HashMap<>();
-            if (includePhoneNumber) {
-                updateRequest.put("phoneNumber", phoneNumber);
-            }
+            updateRequest.put("customerName", "김철수");
+
+            Response updateResponse = updateReservation(
+                    reservationId,
+                    confirmationCode,
+                    updateRequest
+            );
+            Response persistedReservation = getReservation(reservationId);
+
+            assertAll(
+                    () -> assertEquals(200, updateResponse.statusCode()),
+                    () -> assertEquals("김철수", updateResponse.jsonPath().getString("customerName")),
+                    () -> assertEquals(ORIGINAL_PHONE_NUMBER, updateResponse.jsonPath().getString("phoneNumber")),
+                    () -> assertEquals("김철수", persistedReservation.jsonPath().getString("customerName")),
+                    () -> assertEquals(ORIGINAL_PHONE_NUMBER, persistedReservation.jsonPath().getString("phoneNumber"))
+            );
+        }
+
+        @DisplayName("공백 전화번호로 예약을 변경할 수 없다")
+        @Test
+        void rejectBlankPhoneNumberUpdate() {
+            LocalDate reservationDate = TODAY.plusDays(1);
+            Response createdReservation = createReservation("B-3", reservationDate);
+            Long reservationId = createdReservation.jsonPath().getLong("id");
+            String confirmationCode = createdReservation.jsonPath().getString("confirmationCode");
+            Map<String, Object> updateRequest = new HashMap<>();
+            updateRequest.put("phoneNumber", "     ");
 
             Response updateResponse = updateReservation(
                     reservationId,
@@ -164,29 +181,27 @@ class ReservationAcceptanceTest {
 
             assertAll(
                     () -> assertEquals(400, updateResponse.statusCode()),
-                    () -> assertEquals(expectedMessage, updateResponse.jsonPath().getString("message")),
-                    () -> assertEquals(
-                            ORIGINAL_PHONE_NUMBER,
-                            persistedReservation.jsonPath().getString("phoneNumber")
-                    )
+                    () -> assertEquals("전화번호를 입력해주세요.", updateResponse.jsonPath().getString("message")),
+                    () -> assertEquals(ORIGINAL_PHONE_NUMBER, persistedReservation.jsonPath().getString("phoneNumber"))
             );
         }
 
-            );
-        }
-
+        @DisplayName("전화번호가 있으면 예약 전화번호를 변경한다")
+        @Test
+        void updateReservationWithPhoneNumber() {
             LocalDate reservationDate = TODAY.plusDays(1);
-            Response createdReservation = createReservation(siteNumber, reservationDate);
+            Response createdReservation = createReservation("B-4", reservationDate);
             Long reservationId = createdReservation.jsonPath().getLong("id");
             String confirmationCode = createdReservation.jsonPath().getString("confirmationCode");
             Map<String, Object> updateRequest = new HashMap<>();
-            updateRequest.put("phoneNumber", phoneNumber);
+            updateRequest.put("phoneNumber", "010-2222-3333");
 
             Response updateResponse = updateReservation(
                     reservationId,
                     confirmationCode,
                     updateRequest
             );
+
             Response persistedReservation = getReservation(reservationId);
 
             assertAll(
