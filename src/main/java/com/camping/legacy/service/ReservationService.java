@@ -323,7 +323,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {

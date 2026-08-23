@@ -1,8 +1,5 @@
 package com.camping.legacy.acceptance;
 
-import com.camping.legacy.domain.Campsite;
-import com.camping.legacy.domain.Reservation;
-import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -50,9 +47,6 @@ class ReservationAcceptanceTest {
 
     @Autowired
     private ReservationRepository reservationRepository;
-
-    @Autowired
-    private CampsiteRepository campsiteRepository;
 
     @BeforeEach
     void setUp() {
@@ -269,7 +263,9 @@ class ReservationAcceptanceTest {
         @Test
         void rejectRebookingConfirmedReservation() {
             LocalDate reservationDate = TODAY.plusDays(1);
-            Long existingReservationId = saveReservation("B-13", reservationDate, "CONFIRMED");
+            Response existingReservation = createReservation("B-13", reservationDate);
+            assertEquals(201, existingReservation.statusCode());
+            long existingReservationId = existingReservation.jsonPath().getLong("id");
 
             Response rebookingResponse = createReservation("B-13", reservationDate);
             List<Map<String, Object>> storedReservations = getReservations(reservationDate);
@@ -281,7 +277,7 @@ class ReservationAcceptanceTest {
                             rebookingResponse.jsonPath().getString("message")
                     ),
                     () -> assertEquals(1, storedReservations.size()),
-                    () -> assertEquals(existingReservationId.intValue(), storedReservations.getFirst().get("id")),
+                    () -> assertEquals((int) existingReservationId, storedReservations.getFirst().get("id")),
                     () -> assertEquals("CONFIRMED", storedReservations.getFirst().get("status"))
             );
         }
@@ -289,46 +285,42 @@ class ReservationAcceptanceTest {
         @DisplayName("취소된 예약과 같은 사이트와 날짜에는 새 예약을 만들 수 있다")
         @ParameterizedTest(name = "{0} 상태")
         @CsvSource({
-                "CANCELLED, B-14",
-                "CANCELLED_SAME_DAY, B-15"
+                "CANCELLED, B-14, 1",
+                "CANCELLED_SAME_DAY, B-15, 0"
         })
-        void allowRebookingCancelledReservation(String cancelledStatus, String siteNumber) {
-            LocalDate reservationDate = TODAY.plusDays(1);
-            Long cancelledReservationId = saveReservation(siteNumber, reservationDate, cancelledStatus);
+        void allowRebookingCancelledReservation(
+                String cancelledStatus,
+                String siteNumber,
+                int daysFromToday
+        ) {
+            LocalDate reservationDate = TODAY.plusDays(daysFromToday);
+            Response existingReservation = createReservation(siteNumber, reservationDate);
+            assertEquals(201, existingReservation.statusCode());
+            Long cancelledReservationId = existingReservation.jsonPath().getLong("id");
+            String confirmationCode = existingReservation.jsonPath().getString("confirmationCode");
+
+            Response cancelResponse = cancelReservation(cancelledReservationId, confirmationCode);
+            Response cancelledReservation = getReservation(cancelledReservationId);
 
             Response rebookingResponse = createReservation(siteNumber, reservationDate);
             List<Map<String, Object>> storedReservations = getReservations(reservationDate);
-            Object rebookedReservationId = rebookingResponse.jsonPath().get("id");
+            Long rebookedReservationId = rebookingResponse.jsonPath().getLong("id");
             List<String> storedStatuses = storedReservations.stream()
                     .map(reservation -> (String) reservation.get("status"))
                     .toList();
 
             assertAll(
+                    () -> assertEquals(200, cancelResponse.statusCode()),
+                    () -> assertEquals("예약이 취소되었습니다.", cancelResponse.jsonPath().getString("message")),
+                    () -> assertEquals(cancelledStatus, cancelledReservation.jsonPath().getString("status")),
                     () -> assertEquals(201, rebookingResponse.statusCode()),
                     () -> assertNotNull(rebookedReservationId),
                     () -> assertEquals("CONFIRMED", rebookingResponse.jsonPath().getString("status")),
-                    () -> assertNotEquals(
-                            cancelledReservationId.intValue(),
-                            rebookedReservationId
-                    ),
+                    () -> assertNotEquals(cancelledReservationId, rebookedReservationId),
                     () -> assertEquals(2, storedReservations.size()),
                     () -> assertTrue(storedStatuses.contains(cancelledStatus)),
                     () -> assertTrue(storedStatuses.contains("CONFIRMED"))
             );
-        }
-
-        private Long saveReservation(String siteNumber, LocalDate reservationDate, String status) {
-            Campsite campsite = campsiteRepository.findBySiteNumber(siteNumber).orElseThrow();
-            Reservation reservation = new Reservation(
-                    "기존 예약자",
-                    reservationDate,
-                    reservationDate,
-                    campsite
-            );
-            reservation.setPhoneNumber("010-1234-5678");
-            reservation.setStatus(status);
-            reservation.setConfirmationCode("T4TEST");
-            return reservationRepository.save(reservation).getId();
         }
 
         private Response createReservation(String siteNumber, LocalDate reservationDate) {
@@ -337,6 +329,23 @@ class ReservationAcceptanceTest {
                     .body(reservationRequest(siteNumber, reservationDate, reservationDate))
                     .when()
                     .post("/api/reservations");
+        }
+
+        private Response cancelReservation(Long reservationId, String confirmationCode) {
+            return RestAssured.given()
+                    .queryParam("confirmationCode", confirmationCode)
+                    .when()
+                    .delete("/api/reservations/{id}", reservationId);
+        }
+
+        private Response getReservation(Long reservationId) {
+            return RestAssured.given()
+                    .when()
+                    .get("/api/reservations/{id}", reservationId)
+                    .then()
+                    .statusCode(200)
+                    .extract()
+                    .response();
         }
 
         private List<Map<String, Object>> getReservations(LocalDate reservationDate) {
