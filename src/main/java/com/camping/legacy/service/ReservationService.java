@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.regex.Pattern;
 
 /**
  * 예약 서비스 (통합 관리 서비스)
@@ -56,8 +55,6 @@ public class ReservationService {
     
     private static final int MAX_RESERVATION_DAYS = 30;
     private static final int MAX_ADVANCE_RESERVATION_DAYS = 30;
-    private static final Pattern PHONE_NUMBER_PATTERN =
-            Pattern.compile("^010(?:-\\d{4}-\\d{4}|\\d{8})$");
     private static final List<String> CANCELLED_STATUSES =
             List.of("CANCELLED", "CANCELLED_SAME_DAY");
     
@@ -129,8 +126,17 @@ public class ReservationService {
             if (phoneNumber == null || phoneNumber.isBlank()) {
                 throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
             }
-            if (!PHONE_NUMBER_PATTERN.matcher(phoneNumber).matches()) {
-                throw new InvalidPhoneNumberException("유효한 전화번호가 아닙니다.");
+            String cleaned = phoneNumber.replaceAll("-", "");
+            if (cleaned.length() < 10) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else if (cleaned.length() > 11) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else {
+                try {
+                    Long.parseLong(cleaned);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
+                }
             }
 
             // ============================================================

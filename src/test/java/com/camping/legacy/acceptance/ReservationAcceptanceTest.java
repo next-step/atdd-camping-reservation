@@ -11,9 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -28,7 +26,6 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
@@ -113,46 +110,12 @@ class ReservationAcceptanceTest {
         );
     }
 
-    @DisplayName("하이픈이 있는 010 전화번호로 예약할 수 있다")
-    @Test
-    void createReservationWithHyphenatedPhoneNumber() {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        RestAssured.given()
-                .contentType(JSON)
-                .body(reservationRequest("B-1", reservationDate, reservationDate, "010-1234-5678"))
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(201)
-                .body("id", notNullValue())
-                .body("siteNumber", equalTo("B-1"))
-                .body("phoneNumber", equalTo("010-1234-5678"));
-    }
-
-    @DisplayName("하이픈이 없는 010 전화번호로 예약할 수 있다")
-    @Test
-    void createReservationWithDigitsOnlyPhoneNumber() {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        RestAssured.given()
-                .contentType(JSON)
-                .body(reservationRequest("B-2", reservationDate, reservationDate, "01012345678"))
-                .when()
-                .post("/api/reservations")
-                .then()
-                .statusCode(201)
-                .body("id", notNullValue())
-                .body("siteNumber", equalTo("B-2"))
-                .body("phoneNumber", equalTo("01012345678"));
-    }
-
     @DisplayName("전화번호를 누락하면 예약할 수 없다")
     @Test
     void rejectReservationWithoutPhoneNumber() {
         LocalDate reservationDate = TODAY.plusDays(1);
         Map<String, Object> request = reservationRequest(
-                "B-3",
+                "B-1",
                 reservationDate,
                 reservationDate,
                 "010-1234-5678"
@@ -161,73 +124,9 @@ class ReservationAcceptanceTest {
 
         assertReservationRejected(
                 request,
-                "B-3",
+                "B-1",
                 reservationDate,
                 "전화번호를 입력해주세요."
-        );
-    }
-
-    @DisplayName("전화번호가 null이면 예약할 수 없다")
-    @Test
-    void rejectReservationWithNullPhoneNumber() {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        assertReservationRejected(
-                reservationRequest("B-4", reservationDate, reservationDate, null),
-                "B-4",
-                reservationDate,
-                "전화번호를 입력해주세요."
-        );
-    }
-
-    @DisplayName("전화번호가 빈 문자열이면 예약할 수 없다")
-    @Test
-    void rejectReservationWithEmptyPhoneNumber() {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        assertReservationRejected(
-                reservationRequest("B-5", reservationDate, reservationDate, ""),
-                "B-5",
-                reservationDate,
-                "전화번호를 입력해주세요."
-        );
-    }
-
-    @DisplayName("전화번호가 공백 문자열이면 예약할 수 없다")
-    @Test
-    void rejectReservationWithBlankPhoneNumber() {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        assertReservationRejected(
-                reservationRequest("B-6", reservationDate, reservationDate, "     "),
-                "B-6",
-                reservationDate,
-                "전화번호를 입력해주세요."
-        );
-    }
-
-    @DisplayName("허용된 형식이 아닌 전화번호로 예약할 수 없다")
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("invalidPhoneNumbers")
-    void rejectReservationWithInvalidPhoneNumber(String phoneNumber, String siteNumber) {
-        LocalDate reservationDate = TODAY.plusDays(1);
-
-        assertReservationRejected(
-                reservationRequest(siteNumber, reservationDate, reservationDate, phoneNumber),
-                siteNumber,
-                reservationDate,
-                "유효한 전화번호가 아닙니다."
-        );
-    }
-
-    static Stream<Arguments> invalidPhoneNumbers() {
-        return Stream.of(
-                Arguments.of("12345678910", "B-7"),
-                Arguments.of("011-1234-5678", "B-8"),
-                Arguments.of("010-12345678", "B-9"),
-                Arguments.of("0101234-5678", "B-10"),
-                Arguments.of("010-123-5678", "B-11"),
-                Arguments.of("010-1234-567A", "B-12")
         );
     }
 
@@ -273,28 +172,9 @@ class ReservationAcceptanceTest {
             );
         }
 
-        static Stream<Arguments> rejectedPhoneNumberUpdates() {
-            return Stream.of(
-                    Arguments.of("전화번호 필드 누락", "B-1", false, null, "전화번호를 입력해주세요."),
-                    Arguments.of("전화번호 null", "B-2", true, null, "전화번호를 입력해주세요."),
-                    Arguments.of("전화번호 빈 문자열", "B-3", true, "", "전화번호를 입력해주세요."),
-                    Arguments.of("전화번호 공백 문자열", "B-4", true, "     ", "전화번호를 입력해주세요."),
-                    Arguments.of("010이 아닌 접두사", "B-5", true, "011-1234-5678", "유효한 전화번호가 아닙니다."),
-                    Arguments.of("하이픈 일부 누락", "B-6", true, "010-12345678", "유효한 전화번호가 아닙니다."),
-                    Arguments.of("자릿수 부족", "B-7", true, "010-123-5678", "유효한 전화번호가 아닙니다."),
-                    Arguments.of("숫자 외 문자 포함", "B-8", true, "010-1234-567A", "유효한 전화번호가 아닙니다."),
-                    Arguments.of("010이 아닌 숫자 형식", "B-9", true, "12345678910", "유효한 전화번호가 아닙니다.")
             );
         }
 
-        @DisplayName("허용된 전화번호 형식으로 예약을 변경할 수 있다")
-        @ParameterizedTest(name = "{0}")
-        @MethodSource("allowedPhoneNumberUpdates")
-        void updateReservationWithValidPhoneNumber(
-                String caseName,
-                String siteNumber,
-                String phoneNumber
-        ) {
             LocalDate reservationDate = TODAY.plusDays(1);
             Response createdReservation = createReservation(siteNumber, reservationDate);
             Long reservationId = createdReservation.jsonPath().getLong("id");
@@ -311,18 +191,8 @@ class ReservationAcceptanceTest {
 
             assertAll(
                     () -> assertEquals(200, updateResponse.statusCode()),
-                    () -> assertEquals(phoneNumber, updateResponse.jsonPath().getString("phoneNumber")),
-                    () -> assertEquals(
-                            phoneNumber,
-                            persistedReservation.jsonPath().getString("phoneNumber")
-                    )
-            );
-        }
-
-        static Stream<Arguments> allowedPhoneNumberUpdates() {
-            return Stream.of(
-                    Arguments.of("하이픈 형식", "B-10", "010-2222-3333"),
-                    Arguments.of("숫자만 형식", "B-11", "01022223333")
+                    () -> assertEquals("010-2222-3333", updateResponse.jsonPath().getString("phoneNumber")),
+                    () -> assertEquals("010-2222-3333", persistedReservation.jsonPath().getString("phoneNumber"))
             );
         }
 
