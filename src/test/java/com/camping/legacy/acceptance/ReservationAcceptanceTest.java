@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static io.restassured.http.ContentType.JSON;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -75,7 +76,8 @@ class ReservationAcceptanceTest {
                 .body("id", notNullValue())
                 .body("startDate", equalTo(startDate.toString()))
                 .body("endDate", equalTo(endDate.toString()))
-                .body("siteNumber", equalTo("B-14"));
+                .body("siteNumber", equalTo("B-14"))
+                .body("confirmationCode", matchesPattern("[0-9A-Z]{6}"));
     }
 
     @DisplayName("예약 시작일이 오늘로부터 31일 후이면 예약할 수 없다")
@@ -84,29 +86,38 @@ class ReservationAcceptanceTest {
         LocalDate startDate = TODAY.plusDays(31);
         LocalDate endDate = startDate.plusDays(1);
 
-        Response createResponse = RestAssured.given()
-                .contentType(JSON)
-                .body(reservationRequest("B-15", startDate, endDate))
-                .when()
-                .post("/api/reservations");
+        assertReservationConflict(
+                reservationRequest("B-15", startDate, endDate),
+                "B-15",
+                startDate,
+                "예약 시작일은 오늘로부터 30일 이내여야 합니다."
+        );
+    }
 
-        List<String> reservedSiteNumbers = RestAssured.given()
-                .queryParam("date", startDate.toString())
-                .when()
-                .get("/api/reservations")
-                .then()
-                .statusCode(200)
-                .extract()
-                .jsonPath()
-                .getList("siteNumber", String.class);
+    @DisplayName("과거 날짜에는 예약할 수 없다")
+    @Test
+    void rejectReservationInThePast() {
+        LocalDate reservationDate = TODAY.minusDays(1);
 
-        assertAll(
-                () -> assertEquals(409, createResponse.statusCode()),
-                () -> assertEquals(
-                        "예약 시작일은 오늘로부터 30일 이내여야 합니다.",
-                        createResponse.jsonPath().getString("message")
-                ),
-                () -> assertFalse(reservedSiteNumbers.contains("B-15"))
+        assertReservationConflict(
+                reservationRequest("B-12", reservationDate, reservationDate),
+                "B-12",
+                reservationDate,
+                "과거 날짜로 예약할 수 없습니다."
+        );
+    }
+
+    @DisplayName("종료일이 시작일보다 이전이면 예약할 수 없다")
+    @Test
+    void rejectReservationEndingBeforeStartDate() {
+        LocalDate startDate = TODAY.plusDays(1);
+        LocalDate endDate = TODAY;
+
+        assertReservationConflict(
+                reservationRequest("B-13", startDate, endDate),
+                "B-13",
+                startDate,
+                "종료일이 시작일보다 이전일 수 없습니다."
         );
     }
 
@@ -365,6 +376,35 @@ class ReservationAcceptanceTest {
 
         assertAll(
                 () -> assertEquals(400, createResponse.statusCode()),
+                () -> assertEquals(expectedMessage, createResponse.jsonPath().getString("message")),
+                () -> assertFalse(reservedSiteNumbers.contains(siteNumber))
+        );
+    }
+
+    private void assertReservationConflict(
+            Map<String, Object> request,
+            String siteNumber,
+            LocalDate reservationDate,
+            String expectedMessage
+    ) {
+        Response createResponse = RestAssured.given()
+                .contentType(JSON)
+                .body(request)
+                .when()
+                .post("/api/reservations");
+
+        List<String> reservedSiteNumbers = RestAssured.given()
+                .queryParam("date", reservationDate.toString())
+                .when()
+                .get("/api/reservations")
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getList("siteNumber", String.class);
+
+        assertAll(
+                () -> assertEquals(409, createResponse.statusCode()),
                 () -> assertEquals(expectedMessage, createResponse.jsonPath().getString("message")),
                 () -> assertFalse(reservedSiteNumbers.contains(siteNumber))
         );
