@@ -5,6 +5,7 @@ import com.camping.legacy.domain.Reservation;
 import com.camping.legacy.dto.CalendarResponse;
 import com.camping.legacy.dto.ReservationRequest;
 import com.camping.legacy.dto.ReservationResponse;
+import com.camping.legacy.exception.InvalidPhoneNumberException;
 import com.camping.legacy.repository.CampsiteRepository;
 import com.camping.legacy.repository.ReservationRepository;
 import com.camping.legacy.util.DateUtils;
@@ -15,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -49,8 +51,12 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final CampsiteRepository campsiteRepository;
+    private final Clock clock;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+    private static final int MAX_ADVANCE_RESERVATION_DAYS = 30;
+    private static final List<String> CANCELLED_STATUSES =
+            List.of("CANCELLED", "CANCELLED_SAME_DAY");
     
     /**
      * 예약 생성 (절차적 방식)
@@ -87,9 +93,11 @@ public class ReservationService {
                     throw new RuntimeException("종료일이 시작일보다 이전일 수 없습니다.");
                 } else {
                     // 과거 날짜 체크 (중첩 레벨 4)
-                    LocalDate today = LocalDate.now();
+                    LocalDate today = LocalDate.now(clock);
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
+                    } else if (startDate.isAfter(today.plusDays(MAX_ADVANCE_RESERVATION_DAYS))) {
+                        throw new RuntimeException("예약 시작일은 오늘로부터 30일 이내여야 합니다.");
                     } else {
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
@@ -115,27 +123,35 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
+            if (phoneNumber == null || phoneNumber.isBlank()) {
+                throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
+            }
+            String cleaned = phoneNumber.replaceAll("-", "");
+            if (cleaned.length() < 10) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else if (cleaned.length() > 11) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else {
+                try {
+                    Long.parseLong(cleaned);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
                 }
             }
 
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository
+                    .findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                            campsite, endDate, startDate)
+                    .stream()
+                    .anyMatch(reservation -> {
+                        boolean samePeriod = reservation.getStartDate().equals(startDate)
+                                && reservation.getEndDate().equals(endDate);
+                        boolean cancelled = CANCELLED_STATUSES.contains(reservation.getStatus());
+                        return !cancelled || !samePeriod;
+                    });
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
@@ -307,7 +323,7 @@ public class ReservationService {
             throw new RuntimeException("확인 코드가 일치하지 않습니다.");
         }
         
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (reservation.getStartDate().equals(today)) {
             reservation.setStatus("CANCELLED_SAME_DAY");
         } else {
@@ -410,8 +426,12 @@ public class ReservationService {
         if (request.getCustomerName() != null) {
             reservation.setCustomerName(request.getCustomerName());
         }
-        if (request.getPhoneNumber() != null) {
-            reservation.setPhoneNumber(request.getPhoneNumber());
+        String phoneNumber = request.getPhoneNumber();
+        if (phoneNumber != null) {
+            if (phoneNumber.isBlank()) {
+                throw new InvalidPhoneNumberException("전화번호를 입력해주세요.");
+            }
+            reservation.setPhoneNumber(phoneNumber);
         }
 
         Reservation updated = reservationRepository.save(reservation);

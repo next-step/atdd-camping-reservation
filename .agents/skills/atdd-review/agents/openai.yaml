@@ -1,0 +1,4 @@
+interface:
+  display_name: "ATDD 판정"
+  short_description: "인수 조건과 변경을 대조해 티켓 완료 여부 판정"
+  default_prompt: "Use $atdd-review to judge completion against acceptance criteria and identify remaining work without proposing commits."
