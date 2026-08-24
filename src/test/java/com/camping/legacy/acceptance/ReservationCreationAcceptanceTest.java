@@ -6,8 +6,10 @@ import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDate;
 
@@ -26,6 +28,9 @@ class ReservationCreationAcceptanceTest {
 
     @LocalServerPort
     private int port;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
@@ -182,6 +187,123 @@ class ReservationCreationAcceptanceTest {
                 .when().post("/api/reservations")
                 .then().statusCode(409)
                 .body("message", equalTo("해당 기간에 이미 예약이 존재합니다."));
+    }
+
+    // === 상태 확장성 관련 테스트 ===
+
+    @Test
+    @DisplayName("당일취소(CANCELLED_SAME_DAY) 된 자리에 같은 기간으로 재예약하면 201")
+    void 당일취소된_자리에_재예약하면_생성된다() {
+        ReservationRequest first = reservationRequest("B-7", 0, 1);
+        var created = RestAssured.given().contentType(ContentType.JSON).body(first)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .extract().response();
+
+        RestAssured.given().queryParam("confirmationCode", created.path("confirmationCode").toString())
+                .when().delete("/api/reservations/" + created.path("id").toString())
+                .then().statusCode(200);
+
+        ReservationRequest second = reservationRequest("B-7", 0, 1);
+        RestAssured.given().contentType(ContentType.JSON).body(second)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .body("confirmationCode", matchesPattern("^[A-Z0-9]{6}$"));
+    }
+
+    @Test
+    @DisplayName("예약 생성 시 status는 CONFIRMED이다")
+    void 예약_생성시_상태는_CONFIRMED이다() {
+        ReservationRequest request = reservationRequest("B-8", 1, 2);
+
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .body("status", equalTo("CONFIRMED"));
+    }
+
+    @Test
+    @DisplayName("일반 취소 후 status는 CANCELLED이다")
+    void 일반_취소_후_상태는_CANCELLED이다() {
+        ReservationRequest request = reservationRequest("B-9", 3, 4);
+        var created = RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .extract().response();
+
+        String id = created.path("id").toString();
+        String code = created.path("confirmationCode").toString();
+
+        RestAssured.given().queryParam("confirmationCode", code)
+                .when().delete("/api/reservations/" + id)
+                .then().statusCode(200);
+
+        RestAssured.given()
+                .when().get("/api/reservations/" + id)
+                .then().statusCode(200)
+                .body("status", equalTo("CANCELLED"));
+    }
+
+    @Test
+    @DisplayName("당일 취소 후 status는 CANCELLED_SAME_DAY이다")
+    void 당일_취소_후_상태는_CANCELLED_SAME_DAY이다() {
+        ReservationRequest request = reservationRequest("B-10", 0, 1);
+        var created = RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(201)
+                .extract().response();
+
+        String id = created.path("id").toString();
+        String code = created.path("confirmationCode").toString();
+
+        RestAssured.given().queryParam("confirmationCode", code)
+                .when().delete("/api/reservations/" + id)
+                .then().statusCode(200);
+
+        RestAssured.given()
+                .when().get("/api/reservations/" + id)
+                .then().statusCode(200)
+                .body("status", equalTo("CANCELLED_SAME_DAY"));
+    }
+
+    @Test
+    @DisplayName("status=null인 예약이 있으면 같은 기간 예약 시 충돌(409)로 간주해야 한다")
+    void status가_null인_예약과_겹치면_충돌이다() {
+        LocalDate start = LocalDate.now().plusDays(5);
+        LocalDate end = LocalDate.now().plusDays(6);
+
+        // DB에 status=null인 예약을 직접 삽입
+        Long campsiteId = jdbcTemplate.queryForObject(
+                "SELECT id FROM campsites WHERE site_number = ?", Long.class, "B-11");
+        jdbcTemplate.update(
+                "INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, NULL, ?, CURRENT_TIMESTAMP)",
+                "ghost", start, end, start, campsiteId, "010-0000-0000", "NULL01");
+
+        // 같은 사이트·기간으로 예약 → 충돌(409) 기대
+        ReservationRequest request = reservationRequest("B-11", 5, 6);
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(409);
+    }
+
+    @Test
+    @DisplayName("알 수 없는 상태(PENDING)인 예약이 있으면 같은 기간 예약 시 충돌(409)로 간주해야 한다")
+    void 알수없는_상태의_예약과_겹치면_충돌이다() {
+        LocalDate start = LocalDate.now().plusDays(7);
+        LocalDate end = LocalDate.now().plusDays(8);
+
+        Long campsiteId = jdbcTemplate.queryForObject(
+                "SELECT id FROM campsites WHERE site_number = ?", Long.class, "B-12");
+        jdbcTemplate.update(
+                "INSERT INTO reservations (customer_name, start_date, end_date, reservation_date, campsite_id, phone_number, status, confirmation_code, created_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, 'PENDING', ?, CURRENT_TIMESTAMP)",
+                "unknown", start, end, start, campsiteId, "010-0000-0000", "PEND01");
+
+        ReservationRequest request = reservationRequest("B-12", 7, 8);
+        RestAssured.given().contentType(ContentType.JSON).body(request)
+                .when().post("/api/reservations")
+                .then().statusCode(409);
     }
 
     private ReservationRequest reservationRequest(String siteNumber, long startOffsetDays, long endOffsetDays) {
