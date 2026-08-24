@@ -62,4 +62,6 @@ POST /api/reservations
 Given 상태가 존재하는 사이트
 when STATUS == CANCELLED Then 201 Created, 확인 코드 발급
 when STATUS == CONFIRMED Then 409 "해당 기간에 이미 예약이 존재합니다."
+
+질문 당일 취소가 된 사이트도 예약이 가능한가?
 ---

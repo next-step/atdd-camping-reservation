@@ -43,6 +43,9 @@ T-14 예약 수정으로 사이트·기간 중복 예약 금지(T-8) 우회 가�
 T-15 이미 취소된 예약을 다시 취소할 수 있음
 내용: T-3 조사 중 발견. `cancelReservation`(307~323행)은 확인 코드 일치 여부만 확인하고 현재 `status`는 보지 않음 — 이미 `CANCELLED`/`CANCELLED_SAME_DAY` 상태인 예약도 다시 취소 요청을 보내면 그대로 통과되어 `status`와 취소 판정 로직(당일 여부)이 다시 실행됨. 방어(예: 이미 취소된 예약이면 거부) 필요 여부 확정 필요.
 ---
-T-16 취소된 예약이 있으면 조회에서 계속 예약 불가로 나옴
+T-16 당일 취소(CANCELLED_SAME_DAY) 상태도 재예약 허용 여부 확정 필요
+내용: acceptance-criteria.md 질문 — 당일 취소가 된 사이트도 예약이 가능한가? 현재 수정된 코드는 CONFIRMED만 충돌로 보므로 CANCELLED_SAME_DAY도 재예약이 되지만, 이것이 의도된 동작인지 확정 필요. T-3과 관련.
+---
+T-17 취소된 예약이 있으면 조회에서 계속 예약 불가로 나옴
 내용: T-3 구현 중 발견. `existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual`(status 필터 없음)를 쓰는 곳이 `createReservation` 말고 두 곳 더 있음 — `SiteService.isAvailable`(159행, `GET /api/sites/{siteNumber}/availability`로 실제 노출됨)과 `ReservationService.checkAvailability`(1042~1052행, 컨트롤러에서 안 씀). `createReservation`과 같은 원인으로, 취소된 예약이 있는 사이트·날짜를 계속 "예약 불가(available: false)"로 응답할 것으로 보임 — 특히 `SiteService.isAvailable`은 실사용자에게 노출된 API라 확인 필요.
 ---
