@@ -38,6 +38,26 @@ When 전화번호 10 ~ 11자리 숫자 Then 201 Created, 확인 코드 발급
 ---
 규칙 사이트를 예약할 때는 상태를 확인해야한다.
 이유 사이트의 상태에 따라 예약 가능 여부가 달라진다.
+1단계: 기존 예약 확인
+
+GET /api/reservations/1 → 200
+A-1 사이트, 2026-08-31 ~ 2026-09-02, status: "CONFIRMED"
+
+2단계: 예약 취소
+
+DELETE /api/reservations/1?confirmationCode=ABC123 → 200
+{"message":"예약이 취소되었습니다."}
+
+3단계: 취소 후 상태 확인
+
+GET /api/reservations/1 → 200
+status: "CANCELLED" (취소 반영됨)
+
+4단계: 같은 기간에 재예약 시도
+
+POST /api/reservations
+{"siteNumber":"A-1","startDate":"2026-08-31","endDate":"2026-09-02",...}
+→ 409 {"message":"해당 기간에 이미 예약이 존재합니다."}
 
 Given 상태가 존재하는 사이트
 when STATUS == CANCELLED Then 201 Created, 확인 코드 발급
