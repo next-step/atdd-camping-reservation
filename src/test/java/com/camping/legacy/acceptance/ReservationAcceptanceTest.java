@@ -17,6 +17,7 @@ import static com.camping.legacy.acceptance.ReservationSteps.createWithoutPhoneN
 import static com.camping.legacy.acceptance.ReservationSteps.findById;
 import static com.camping.legacy.acceptance.ReservationSteps.updateStartDate;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.notNullValue;
 
 class ReservationAcceptanceTest extends AcceptanceTest {
@@ -476,6 +477,20 @@ class ReservationAcceptanceTest extends AcceptanceTest {
                 .body("message", equalTo("010으로 시작하는 휴대전화 번호만 입력 가능합니다."));
 
             assertNotReserved("유선지역");
+        }
+    }
+
+    @Nested
+    @DisplayName("생성 - 확인 코드")
+    class CreateConfirmationCode {
+
+        @Test
+        @DisplayName("예약되면 영문자와 숫자로 된 6자리 확인 코드가 발급된다")
+        void issuesSixCharacterAlphanumericCode() {
+            create("확인코드", "A-13", today)
+                    .then()
+                    .statusCode(201)
+                    .body("confirmationCode", matchesPattern("[A-Za-z0-9]{6}"));
         }
     }
 }
