@@ -25,3 +25,43 @@ When 시작일 > 종료일 Then 409  "종료일이 시작일보다 이전일 수
 
 질문 시작일과 종료일이 같은 수 있는가?
 ---
+규칙 예약시 전화번호는 필수이다.
+이유 전화번호가 없으면 유사시에 고객에게 연락할 수 없다.
+
+Given 예약이 없는 사이트
+When 전화번호 == null Then 409 "전화번호를 입력해주세요"
+When 전화번호 == "" or 공백 Then 409 "전화번호를 입력해주세요"
+When 전화번호 != null && != "" Then 201 Created, 확인 코드 발급
+
+질문 전화번호 형식이 유효한지 판단 기준은 없는가? 
+    ex) 0101234-1234
+---
+규칙 사이트를 예약할 때는 상태를 확인해야한다.
+이유 사이트의 상태에 따라 예약 가능 여부가 달라진다.
+1단계: 기존 예약 확인
+
+GET /api/reservations/1 → 200
+A-1 사이트, 2026-08-31 ~ 2026-09-02, status: "CONFIRMED"
+
+2단계: 예약 취소
+
+DELETE /api/reservations/1?confirmationCode=ABC123 → 200
+{"message":"예약이 취소되었습니다."}
+
+3단계: 취소 후 상태 확인
+
+GET /api/reservations/1 → 200
+status: "CANCELLED" (취소 반영됨)
+
+4단계: 같은 기간에 재예약 시도
+
+POST /api/reservations
+{"siteNumber":"A-1","startDate":"2026-08-31","endDate":"2026-09-02",...}
+→ 409 {"message":"해당 기간에 이미 예약이 존재합니다."}
+
+Given 상태가 존재하는 사이트
+when STATUS == CANCELLED Then 201 Created, 확인 코드 발급
+when STATUS == CONFIRMED Then 409 "해당 기간에 이미 예약이 존재합니다."
+when STATUS == CANCELLED_SAME_DAY Then 201 Created, 확인 코드 발급
+when STATUS == null Then 409 "해당 기간에 이미 예약이 존재합니다."
+---

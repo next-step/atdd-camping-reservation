@@ -118,7 +118,9 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요");
+            } else {
                 String cleaned = phoneNumber.replaceAll("-", "");
                 if (cleaned.length() < 10) {
                     throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
@@ -137,8 +139,10 @@ public class ReservationService {
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+            List<Reservation> overlapping = reservationRepository.findByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
                     campsite, endDate, startDate);
+            boolean hasConflict = overlapping.stream()
+                    .anyMatch(r -> !"CANCELLED".equals(r.getStatus()) && !"CANCELLED_SAME_DAY".equals(r.getStatus()));
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }

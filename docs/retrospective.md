@@ -1,0 +1,2 @@
+- 테스트 코드를 작성하는 단계에서 추가한 테스트 제약은 없으나 나머지 API를 확인하는 과정에서 인코딩 문제가 있어 plan.md의 판정 단계에 추가. 
+- plan.md, principles.md, acceptance-criteria.md, test-guide.md 은 AI가 수정하지 못하도록 제약 추가. 
