@@ -9,12 +9,14 @@
 - 이 티켓은 구간의 위쪽 끝만 다룬다. 아래쪽 끝(당일 시작)은 바꾸지 않는다.
   당일 예약을 받을지는 정해지지 않았다(T-7). 정해지기 전까지 지금 동작인 "허용"을 유지한다.
 - 예약 변경으로도 이 범위를 벗어날 수 없다.
+- 예약이 만들어지면 6자리 영숫자 확인 코드를 발급한다.
 
 API 스펙
 - `POST /api/reservations` — 시작일이 범위를 벗어나면 `409` + `{"message":"예약은 오늘로부터 30일 이내만 가능합니다."}`
 - `PUT /api/reservations/{id}` — 같은 조건으로 거절하고, 예약의 날짜는 바뀌지 않는다.
   단 이 경로는 거절을 `400` + `{"message": ...}` 로 응답한다(실측: 과거 날짜로 변경 → `400`). POST의 `409`와 다르다.
   이 티켓은 상태 코드를 통일하지 않고 각 경로의 지금 형태를 따른다.
+- 성공 응답의 `confirmationCode` 는 6자리 영숫자다.
 - 기존 응답(성공 `201`/`200`, 과거 날짜 `409`)은 그대로 둔다.
 
 인수 조건: `acceptance-criteria.md`의 T-1
@@ -84,6 +86,17 @@ curl -X PUT 'http://localhost:8080/api/reservations/18?confirmationCode=ZPN6ST' 
 
 200
 {"id":18,"customerName":"실측","startDate":"2026-09-20","endDate":"2026-09-20","siteNumber":"B-13","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"ZPN6ST","createdAt":null}
+```
+
+4. 생성 — 확인 코드 (실측 2026-08-25)
+
+```
+# D+29 생성
+curl -X POST 'http://localhost:8080/api/reservations' -H 'Content-Type: application/json' \
+  -d '{"customerName":"실측","startDate":"2026-09-23","endDate":"2026-09-23","siteNumber":"B-1","phoneNumber":"010-1111-2222","numberOfPeople":2}'
+
+201
+{"id":6,"customerName":"실측","startDate":"2026-09-23","endDate":"2026-09-23","siteNumber":"B-1","phoneNumber":"010-1111-2222","status":"CONFIRMED","confirmationCode":"4LB0DC","createdAt":null}
 ```
 
 ---
