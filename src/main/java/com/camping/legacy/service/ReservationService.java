@@ -51,6 +51,12 @@ public class ReservationService {
     private final CampsiteRepository campsiteRepository;
     
     private static final int MAX_RESERVATION_DAYS = 30;
+    /** 예약 가능 시점 상한 — 오늘로부터 며칠 뒤까지 시작할 수 있는가 */
+    private static final int MAX_DAYS_UNTIL_START = 30;
+    /** 받는 전화번호의 앞자리 — 확인 연락을 휴대전화로만 보낸다 */
+    private static final String MOBILE_PREFIX = "010";
+    /** 앞자리가 010 인 전화번호의 자릿수 — 하이픈을 뺀 길이 */
+    private static final int MOBILE_PHONE_NUMBER_LENGTH = 11;
     
     /**
      * 예약 생성 (절차적 방식)
@@ -91,6 +97,9 @@ public class ReservationService {
                     if (startDate.isBefore(today)) {
                         throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
                     } else {
+                        // 시작일의 예약 가능 시점 체크
+                        validateStartDateWithinBookingWindow(today, startDate);
+
                         // 예약 기간 체크 (30일 이내)
                         long days = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
                         if (days > 30) {
@@ -115,27 +124,27 @@ public class ReservationService {
             }
 
             // 전화번호 검증
-            if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
-                String cleaned = phoneNumber.replaceAll("-", "");
-                if (cleaned.length() < 10) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else if (cleaned.length() > 11) {
-                    throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
-                } else {
-                    // 숫자인지 확인
-                    try {
-                        Long.parseLong(cleaned);
-                    } catch (NumberFormatException e) {
-                        throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
-                    }
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                throw new RuntimeException("전화번호를 입력해주세요.");
+            }
+            String cleaned = phoneNumber.replaceAll("-", "");
+            validatePhoneNumberHasMobilePrefix(cleaned);
+            if (cleaned.length() != MOBILE_PHONE_NUMBER_LENGTH) {
+                throw new RuntimeException("전화번호 형식이 올바르지 않습니다.");
+            } else {
+                // 숫자인지 확인
+                try {
+                    Long.parseLong(cleaned);
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("전화번호는 숫자만 입력 가능합니다.");
                 }
             }
 
             // ============================================================
             // STEP 4: 예약 가능 여부 확인
             // ============================================================
-            boolean hasConflict = reservationRepository.existsByCampsiteAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-                    campsite, endDate, startDate);
+            boolean hasConflict = reservationRepository.existsByCampsiteAndStatusNotInAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    campsite, Reservation.CANCELLED_STATUSES, endDate, startDate);
             if (hasConflict) {
                 throw new RuntimeException("해당 기간에 이미 예약이 존재합니다.");
             }
@@ -385,6 +394,9 @@ public class ReservationService {
             if (startDate.isBefore(today)) {
                 throw new RuntimeException("과거 날짜로 예약할 수 없습니다.");
             }
+
+            // 시작일의 예약 가능 시점 체크
+            validateStartDateWithinBookingWindow(today, startDate);
         }
 
         // 고객 이름 검증 (중복 코드 4)
@@ -1074,5 +1086,24 @@ public class ReservationService {
         }
 
         return true;
+    }
+
+    /**
+     * 시작일의 예약 가능 시점 검증
+     */
+    private void validateStartDateWithinBookingWindow(LocalDate today, LocalDate startDate) {
+        long daysUntilStart = java.time.temporal.ChronoUnit.DAYS.between(today, startDate);
+        if (daysUntilStart > MAX_DAYS_UNTIL_START) {
+            throw new RuntimeException("예약은 오늘로부터 30일 이내만 가능합니다.");
+        }
+    }
+
+    /**
+     * 전화번호 앞자리 검증
+     */
+    private void validatePhoneNumberHasMobilePrefix(String cleanedPhoneNumber) {
+        if (!cleanedPhoneNumber.startsWith(MOBILE_PREFIX)) {
+            throw new RuntimeException("010으로 시작하는 휴대전화 번호만 입력 가능합니다.");
+        }
     }
 }
